@@ -5,6 +5,8 @@ import { WalletInfo, WalletManager, WalletSecret } from '../../services/WalletMa
 import WalletDeleteDialog from './WalletDeleteDialog';
 import { Theme } from '../../theme';
 import { Card, ThemeButton } from '../../components/common';
+import { PasswordService } from '../../services/PasswordService';
+import { VerifyPasswordDialog, SetPasswordDialog } from '../../components/PasswordDialogs';
 
 export default function WalletDetailPage({ walletId }: { walletId?: string }) {
   const navigator = useNavigator();
@@ -22,6 +24,18 @@ export default function WalletDetailPage({ walletId }: { walletId?: string }) {
   }, [walletId]);
 
   const confirmReveal = async (type: 'mnemonic' | 'privateKey') => {
+    // Check local password
+    const isSet = await PasswordService.isPasswordSet();
+    if (isSet) {
+      // @ts-ignore
+      const verified = await navigator.showDialog(<VerifyPasswordDialog />);
+      if (!verified) return;
+    } else {
+      // @ts-ignore
+      const set = await navigator.showDialog(<SetPasswordDialog />);
+      if (!set) return;
+    }
+
     // @ts-ignore
     const ok = await navigator.showDialog(
       React.createElement(RiskRevealDialog, { type })

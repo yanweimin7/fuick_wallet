@@ -46,4 +46,19 @@ export class WalletService {
         // @ts-ignore
         return dartCallNativeAsync('Wallet.transfer', { rpcUrl, privateKey, to, amount, chainType });
     }
+
+    static computeHash(content: string): Promise<string> {
+        // @ts-ignore
+        return dartCallNativeAsync('Wallet.computeHash', { content });
+    }
+
+    static aesEncrypt(content: string, password: string): Promise<string> {
+        // @ts-ignore
+        return dartCallNativeAsync('Wallet.aesEncrypt', { content, password });
+    }
+
+    static aesDecrypt(encryptedData: string, password: string): Promise<string> {
+        // @ts-ignore
+        return dartCallNativeAsync('Wallet.aesDecrypt', { encryptedData, password });
+    }
 }

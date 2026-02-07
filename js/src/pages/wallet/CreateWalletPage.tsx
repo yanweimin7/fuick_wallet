@@ -4,6 +4,8 @@ import { WalletService } from "../../services/WalletService";
 import { WalletManager } from "../../services/WalletManager";
 import { Theme } from "../../theme";
 import { ThemeButton, Card } from "../../components/common";
+import { PasswordService } from "../../services/PasswordService";
+import { SetPasswordDialog, VerifyPasswordDialog } from "../../components/PasswordDialogs";
 
 export default function CreateWalletPage(props: { nextPath?: string }) {
   const navigator = useNavigator();
@@ -15,6 +17,24 @@ export default function CreateWalletPage(props: { nextPath?: string }) {
 
     const createAndNavigate = async () => {
       try {
+        const isSet = await PasswordService.isPasswordSet();
+        if (!isSet) {
+          // @ts-ignore
+          const set = await navigator.showDialog(<SetPasswordDialog />);
+          if (!set) {
+            navigator.pop();
+            return;
+          }
+        } else if (!PasswordService.getCachedPassword()) {
+          // Password set but not cached (not verified in this session)
+          // @ts-ignore
+          const verified = await navigator.showDialog(<VerifyPasswordDialog />);
+          if (!verified) {
+            navigator.pop();
+            return;
+          }
+        }
+
         const w = await WalletManager.getInstance().createWallet();
         if (w) {
           // 延迟一点跳转，让用户看到完成状态（可选，或者直接跳）

@@ -4,6 +4,8 @@ import { WalletManager } from "../../services/WalletManager";
 import { ChainRegistry } from "../../services/ChainRegistry";
 import { Theme } from "../../theme";
 import { ThemeButton, ThemeInput, Card } from "../../components/common";
+import { PasswordService } from "../../services/PasswordService";
+import { SetPasswordDialog, VerifyPasswordDialog } from "../../components/PasswordDialogs";
 
 export default function ImportWalletPage(props: { nextPath?: string }) {
   const navigator = useNavigator();
@@ -12,11 +14,23 @@ export default function ImportWalletPage(props: { nextPath?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!mnemonic) {
       setError("Please enter a mnemonic phrase");
       return;
     }
+
+    const isSet = await PasswordService.isPasswordSet();
+    if (!isSet) {
+      // @ts-ignore
+      const set = await navigator.showDialog(<SetPasswordDialog />);
+      if (!set) return;
+    } else if (!PasswordService.getCachedPassword()) {
+      // @ts-ignore
+      const verified = await navigator.showDialog(<VerifyPasswordDialog />);
+      if (!verified) return;
+    }
+
     setLoading(true);
     setError("");
 

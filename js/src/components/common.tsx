@@ -101,7 +101,7 @@ export const ScreenTitle = ({ title, subtitle }: { title: string; subtitle?: str
   </Column>
 );
 
-interface InputProps {
+export interface InputProps {
   label?: string;
   value: string;
   onChanged: (val: string) => void;
@@ -112,12 +112,8 @@ interface InputProps {
 
 export const ThemeInput = ({ label, value, onChanged, hint, maxLines = 1, secure = false }: InputProps) => (
   <Column crossAxisAlignment="start">
-    {label && (
-      <>
-        <Text text={label} fontWeight="bold" color={Theme.colors.textPrimary} />
-        <SizedBox height={8} />
-      </>
-    )}
+    {label && <Text text={label} fontWeight="bold" color={Theme.colors.textPrimary} />}
+    {label && <SizedBox height={8} />}
     <Container
       padding={{ horizontal: 12, vertical: 4 }}
       decoration={{

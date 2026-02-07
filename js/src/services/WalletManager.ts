@@ -1,6 +1,7 @@
 import { StorageService } from "./StorageService";
 import { WalletService, WalletAccount } from "./WalletService";
 import { ChainRegistry } from "./ChainRegistry";
+import { PasswordService } from "./PasswordService";
 
 export enum WalletType {
     Mnemonic = 'mnemonic',
@@ -58,7 +59,7 @@ export class WalletManager {
         return this.wallets.find(w => w.id === id);
     }
 
-    async createWallet(name?: string): Promise<WalletInfo> {
+    async createWallet(name?: string, type: WalletType = WalletType.Mnemonic): Promise<WalletInfo | null> {
         const { mnemonic } = await WalletService.createWallet();
         if (!mnemonic) throw new Error("Failed to create wallet");
         return this._saveNewWallet(name, mnemonic, WalletType.Mnemonic);
@@ -140,7 +141,7 @@ export class WalletManager {
         };
 
         // 1. Save secret first (safest)
-        await StorageService.setItem(this._getSecretKey(id), secret);
+        await this.saveSecret(id, secret);
 
         // 2. Add to list and save list
         this.wallets.push(info);
@@ -172,8 +173,51 @@ export class WalletManager {
         await StorageService.removeItem(WalletManager.WALLET_LIST_KEY);
     }
 
-    async getSecret(id: string): Promise<WalletSecret | null> {
-        return await StorageService.getItem(this._getSecretKey(id));
+    async getSecret(walletId: string): Promise<WalletSecret | null> {
+        try {
+            const raw = await StorageService.getItem(WalletManager.SECRET_PREFIX + walletId);
+            if (!raw) return null;
+
+            // Try to detect if encrypted (simple check for now, e.g. contains :)
+            // In production, we should flag this in wallet metadata
+            if (raw.includes(':')) {
+                const password = PasswordService.getCachedPassword();
+                if (!password) {
+                    console.error("Cannot decrypt secret: No cached password");
+                    return null;
+                }
+                try {
+                    const decrypted = await WalletService.aesDecrypt(raw, password);
+                    return JSON.parse(decrypted);
+                } catch (e) {
+                    console.error("Decryption failed", e);
+                    return null;
+                }
+            }
+
+            return JSON.parse(raw);
+        } catch (e) {
+            console.error("Failed to load secret:", e);
+            return null;
+        }
+    }
+
+    async saveSecret(walletId: string, secret: WalletSecret) {
+        try {
+            const content = JSON.stringify(secret);
+            const password = PasswordService.getCachedPassword();
+
+            if (password) {
+                const encrypted = await WalletService.aesEncrypt(content, password);
+                await StorageService.setItem(WalletManager.SECRET_PREFIX + walletId, encrypted);
+            } else {
+                console.warn("Saving secret WITHOUT encryption (no password set)");
+                await StorageService.setItem(WalletManager.SECRET_PREFIX + walletId, content);
+            }
+        } catch (e) {
+            console.error("Failed to save secret:", e);
+            throw e;
+        }
     }
 
     private async _saveWalletsList(): Promise<void> {
@@ -181,7 +225,7 @@ export class WalletManager {
     }
 
     private _getSecretKey(id: string): string {
-        return `${WalletManager.SECRET_PREFIX}${id}`;
+        return WalletManager.SECRET_PREFIX + id;
     }
 
     private _generateId(): string {

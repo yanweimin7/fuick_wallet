@@ -7511,7 +7511,14 @@ var AnimatedSlide = class extends import_react60.default.Component {
 var import_react61 = __toESM(require_react_production_min());
 var AlertDialog = class extends import_react61.default.Component {
   render() {
-    return import_react61.default.createElement("AlertDialog", { ...this.props });
+    const { title, content, actions, ...otherProps } = this.props;
+    return import_react61.default.createElement(
+      "AlertDialog",
+      { ...otherProps },
+      title && import_react61.default.createElement(FlutterProps, { propsKey: "title" }, title),
+      content && import_react61.default.createElement(FlutterProps, { propsKey: "content" }, content),
+      actions && import_react61.default.createElement(FlutterProps, { propsKey: "actions" }, actions)
+    );
   }
 };
 

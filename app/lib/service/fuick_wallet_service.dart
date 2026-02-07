@@ -7,6 +7,8 @@ import 'package:http/http.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:solana/solana.dart' as solana;
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 
 // Top-level function for compute
 Future<String> _createMnemonicTask(String? mnemonic) async {
@@ -65,6 +67,55 @@ class FuickWalletService extends BaseFuickService {
   FuickWalletService() {
     registerAsyncMethod('ping', (args) async {
       return "pong";
+    });
+
+    registerAsyncMethod('computeHash', (args) async {
+      if (args is Map && args['content'] != null) {
+        final content = args['content'] as String;
+        final bytes = utf8.encode(content);
+        final digest = sha256.convert(bytes);
+        return digest.toString();
+      }
+      return "";
+    });
+
+    registerAsyncMethod('aesEncrypt', (args) async {
+      if (args is Map) {
+        final content = args['content'] as String;
+        final password = args['password'] as String;
+
+        // Derive key from password using SHA256 (32 bytes for AES-256)
+        final keyBytes = sha256.convert(utf8.encode(password)).bytes;
+        final key = encrypt.Key(Uint8List.fromList(keyBytes));
+        final iv = encrypt.IV.fromLength(16); // Random IV
+
+        final encrypter = encrypt.Encrypter(encrypt.AES(key));
+        final encrypted = encrypter.encrypt(content, iv: iv);
+
+        // Return IV + Encrypted as Base64
+        return iv.base64 + ":" + encrypted.base64;
+      }
+      return "";
+    });
+
+    registerAsyncMethod('aesDecrypt', (args) async {
+      if (args is Map) {
+        final encryptedData = args['encryptedData'] as String;
+        final password = args['password'] as String;
+
+        final parts = encryptedData.split(':');
+        if (parts.length != 2) throw Exception("Invalid encrypted format");
+
+        final iv = encrypt.IV.fromBase64(parts[0]);
+        final encrypted = encrypt.Encrypted.fromBase64(parts[1]);
+
+        final keyBytes = sha256.convert(utf8.encode(password)).bytes;
+        final key = encrypt.Key(Uint8List.fromList(keyBytes));
+
+        final encrypter = encrypt.Encrypter(encrypt.AES(key));
+        return encrypter.decrypt(encrypted, iv: iv);
+      }
+      return "";
     });
 
     registerAsyncMethod('createWallet', (args) async {

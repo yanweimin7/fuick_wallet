@@ -1848,8 +1848,8 @@ var require_qrcode = __commonJS({
 });
 
 // src/app.ts
-var import_react16 = __toESM(require_react());
-var import_fuickjs17 = __toESM(require_fuickjs());
+var import_react17 = __toESM(require_react());
+var import_fuickjs18 = __toESM(require_fuickjs());
 
 // src/pages/OnboardingPage.tsx
 var import_react = __toESM(require_react());
@@ -1953,6 +1953,15 @@ var WalletService = class {
   }
   static transfer(rpcUrl, privateKey, to, amount, chainType = "evm") {
     return dartCallNativeAsync("Wallet.transfer", { rpcUrl, privateKey, to, amount, chainType });
+  }
+  static computeHash(content) {
+    return dartCallNativeAsync("Wallet.computeHash", { content });
+  }
+  static aesEncrypt(content, password) {
+    return dartCallNativeAsync("Wallet.aesEncrypt", { content, password });
+  }
+  static aesDecrypt(encryptedData, password) {
+    return dartCallNativeAsync("Wallet.aesDecrypt", { encryptedData, password });
   }
 };
 
@@ -2128,6 +2137,48 @@ async function setSelectedChain(chain) {
   await StorageService.setItem(SELECTED_KEY, { id: chain.id });
 }
 
+// src/services/PasswordService.ts
+var PasswordService = class {
+  // Cache plain password for session
+  static async isPasswordSet() {
+    if (this.cachedHash) return true;
+    const hash = await StorageService.getItem(this.PASSWORD_KEY);
+    if (hash && typeof hash === "string" && hash.length > 0) {
+      this.cachedHash = hash;
+      return true;
+    }
+    return false;
+  }
+  static async setPassword(password) {
+    const hash = await WalletService.computeHash(password);
+    await StorageService.setItem(this.PASSWORD_KEY, hash);
+    this.cachedHash = hash;
+    this.cachedPassword = password;
+  }
+  static async verifyPassword(password) {
+    const hash = await WalletService.computeHash(password);
+    if (this.cachedHash) {
+      if (this.cachedHash === hash) {
+        this.cachedPassword = password;
+        return true;
+      }
+      return false;
+    }
+    const stored = await StorageService.getItem(this.PASSWORD_KEY);
+    if (stored === hash) {
+      this.cachedPassword = password;
+      return true;
+    }
+    return false;
+  }
+  static getCachedPassword() {
+    return this.cachedPassword;
+  }
+};
+PasswordService.PASSWORD_KEY = "fuick_wallet_local_password_hash";
+PasswordService.cachedHash = null;
+PasswordService.cachedPassword = null;
+
 // src/services/WalletManager.ts
 var _WalletManager = class _WalletManager {
   constructor() {
@@ -2159,7 +2210,7 @@ var _WalletManager = class _WalletManager {
   getWallet(id) {
     return this.wallets.find((w) => w.id === id);
   }
-  async createWallet(name) {
+  async createWallet(name, type = "mnemonic" /* Mnemonic */) {
     const { mnemonic } = await WalletService.createWallet();
     if (!mnemonic) throw new Error("Failed to create wallet");
     return this._saveNewWallet(name, mnemonic, "mnemonic" /* Mnemonic */);
@@ -2223,7 +2274,7 @@ var _WalletManager = class _WalletManager {
       mnemonic: type === "mnemonic" /* Mnemonic */ ? mnemonicOrPrivateKey : void 0,
       privateKeys
     };
-    await StorageService.setItem(this._getSecretKey(id), secret);
+    await this.saveSecret(id, secret);
     this.wallets.push(info);
     await this._saveWalletsList();
     return info;
@@ -2242,14 +2293,51 @@ var _WalletManager = class _WalletManager {
     this.wallets = [];
     await StorageService.removeItem(_WalletManager.WALLET_LIST_KEY);
   }
-  async getSecret(id) {
-    return await StorageService.getItem(this._getSecretKey(id));
+  async getSecret(walletId) {
+    try {
+      const raw = await StorageService.getItem(_WalletManager.SECRET_PREFIX + walletId);
+      if (!raw) return null;
+      if (raw.includes(":")) {
+        const password = PasswordService.getCachedPassword();
+        if (!password) {
+          console.error("Cannot decrypt secret: No cached password");
+          return null;
+        }
+        try {
+          const decrypted = await WalletService.aesDecrypt(raw, password);
+          return JSON.parse(decrypted);
+        } catch (e) {
+          console.error("Decryption failed", e);
+          return null;
+        }
+      }
+      return JSON.parse(raw);
+    } catch (e) {
+      console.error("Failed to load secret:", e);
+      return null;
+    }
+  }
+  async saveSecret(walletId, secret) {
+    try {
+      const content = JSON.stringify(secret);
+      const password = PasswordService.getCachedPassword();
+      if (password) {
+        const encrypted = await WalletService.aesEncrypt(content, password);
+        await StorageService.setItem(_WalletManager.SECRET_PREFIX + walletId, encrypted);
+      } else {
+        console.warn("Saving secret WITHOUT encryption (no password set)");
+        await StorageService.setItem(_WalletManager.SECRET_PREFIX + walletId, content);
+      }
+    } catch (e) {
+      console.error("Failed to save secret:", e);
+      throw e;
+    }
   }
   async _saveWalletsList() {
     await StorageService.setItem(_WalletManager.WALLET_LIST_KEY, this.wallets);
   }
   _getSecretKey(id) {
-    return `${_WalletManager.SECRET_PREFIX}${id}`;
+    return _WalletManager.SECRET_PREFIX + id;
   }
   _generateId() {
     if (this.wallets.length === 0) {
@@ -2296,8 +2384,8 @@ function BootstrapPage() {
 }
 
 // src/pages/wallet/CreateWalletPage.tsx
-var import_react4 = __toESM(require_react());
-var import_fuickjs4 = __toESM(require_fuickjs());
+var import_react5 = __toESM(require_react());
+var import_fuickjs5 = __toESM(require_fuickjs());
 
 // src/theme.ts
 var Theme = {
@@ -2403,7 +2491,7 @@ var ThemeButton = ({ text, onTap, variant = "primary", icon, loading, fullWidth 
     loading ? /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.CircularProgressIndicator, { color: textColor, strokeWidth: 2 }) : /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.Row, { mainAxisSize: "min", crossAxisAlignment: "center" }, icon && /* @__PURE__ */ import_react3.default.createElement(import_react3.default.Fragment, null, /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.Icon, { name: icon, color: textColor, size: 20 }), /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.SizedBox, { width: 8 })), /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.Text, { text, color: textColor, fontWeight: "bold", fontSize: 16 }))
   ));
 };
-var ThemeInput = ({ label, value, onChanged, hint, maxLines = 1, secure = false }) => /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.Column, { crossAxisAlignment: "start" }, label && /* @__PURE__ */ import_react3.default.createElement(import_react3.default.Fragment, null, /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.Text, { text: label, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.SizedBox, { height: 8 })), /* @__PURE__ */ import_react3.default.createElement(
+var ThemeInput = ({ label, value, onChanged, hint, maxLines = 1, secure = false }) => /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.Column, { crossAxisAlignment: "start" }, label && /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.Text, { text: label, fontWeight: "bold", color: Theme.colors.textPrimary }), label && /* @__PURE__ */ import_react3.default.createElement(import_fuickjs3.SizedBox, { height: 8 }), /* @__PURE__ */ import_react3.default.createElement(
   import_fuickjs3.Container,
   {
     padding: { horizontal: 12, vertical: 4 },
@@ -2430,14 +2518,112 @@ var ThemeInput = ({ label, value, onChanged, hint, maxLines = 1, secure = false 
   )
 ));
 
+// src/components/PasswordDialogs.tsx
+var import_react4 = __toESM(require_react());
+var import_fuickjs4 = __toESM(require_fuickjs());
+function SetPasswordDialog() {
+  const navigator = (0, import_fuickjs4.useNavigator)();
+  const [password, setPassword] = (0, import_react4.useState)("");
+  const [confirm, setConfirm] = (0, import_react4.useState)("");
+  const [error, setError] = (0, import_react4.useState)("");
+  const handleSubmit = async () => {
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match");
+      return;
+    }
+    await PasswordService.setPassword(password);
+    navigator.pop(true);
+  };
+  return /* @__PURE__ */ import_react4.default.createElement(
+    import_fuickjs4.AlertDialog,
+    {
+      title: /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "Set Local Password", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }),
+      content: /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Column, { mainAxisSize: "min" }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "Please set a password to protect your wallet.", fontSize: 14, color: Theme.colors.textSecondary }), /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.SizedBox, { height: 16 }), /* @__PURE__ */ import_react4.default.createElement(
+        ThemeInput,
+        {
+          label: "Password",
+          value: password,
+          onChanged: setPassword,
+          hint: "Enter password",
+          secure: true
+        }
+      ), /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.SizedBox, { height: 12 }), /* @__PURE__ */ import_react4.default.createElement(
+        ThemeInput,
+        {
+          label: "Confirm Password",
+          value: confirm,
+          onChanged: setConfirm,
+          hint: "Confirm password",
+          secure: true
+        }
+      ), error ? /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Container, { margin: { top: 8 } }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: error, color: Theme.colors.error, fontSize: 12 })) : null),
+      actions: [
+        /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.InkWell, { onTap: () => navigator.pop(false) }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "Cancel", color: Theme.colors.textSecondary, fontWeight: "bold" }))),
+        /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.InkWell, { onTap: handleSubmit }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "Confirm", color: Theme.colors.primary, fontWeight: "bold" })))
+      ]
+    }
+  );
+}
+function VerifyPasswordDialog() {
+  const navigator = (0, import_fuickjs4.useNavigator)();
+  const [password, setPassword] = (0, import_react4.useState)("");
+  const [error, setError] = (0, import_react4.useState)("");
+  const handleSubmit = async () => {
+    const isValid = await PasswordService.verifyPassword(password);
+    if (isValid) {
+      navigator.pop(true);
+    } else {
+      setError("Incorrect password");
+    }
+  };
+  return /* @__PURE__ */ import_react4.default.createElement(
+    import_fuickjs4.AlertDialog,
+    {
+      title: /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "Verify Password", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }),
+      content: /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Column, { mainAxisSize: "min" }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "Enter your local password to continue.", fontSize: 14, color: Theme.colors.textSecondary }), /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.SizedBox, { height: 16 }), /* @__PURE__ */ import_react4.default.createElement(
+        ThemeInput,
+        {
+          label: "Password",
+          value: password,
+          onChanged: setPassword,
+          hint: "Enter password",
+          secure: true
+        }
+      ), error ? /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Container, { margin: { top: 8 } }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: error, color: Theme.colors.error, fontSize: 12 })) : null),
+      actions: [
+        /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.InkWell, { onTap: () => navigator.pop(false) }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "Cancel", color: Theme.colors.textSecondary, fontWeight: "bold" }))),
+        /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.InkWell, { onTap: handleSubmit }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "Verify", color: Theme.colors.primary, fontWeight: "bold" })))
+      ]
+    }
+  );
+}
+
 // src/pages/wallet/CreateWalletPage.tsx
 function CreateWalletPage(props) {
-  const navigator = (0, import_fuickjs4.useNavigator)();
-  const [error, setError] = (0, import_react4.useState)("");
-  (0, import_react4.useEffect)(() => {
+  const navigator = (0, import_fuickjs5.useNavigator)();
+  const [error, setError] = (0, import_react5.useState)("");
+  (0, import_react5.useEffect)(() => {
     WalletService.ping().then((res) => console.log("Wallet Service Ping:", res)).catch((e) => console.error("Wallet Service Ping Failed:", e));
     const createAndNavigate = async () => {
       try {
+        const isSet = await PasswordService.isPasswordSet();
+        if (!isSet) {
+          const set = await navigator.showDialog(/* @__PURE__ */ import_react5.default.createElement(SetPasswordDialog, null));
+          if (!set) {
+            navigator.pop();
+            return;
+          }
+        } else if (!PasswordService.getCachedPassword()) {
+          const verified = await navigator.showDialog(/* @__PURE__ */ import_react5.default.createElement(VerifyPasswordDialog, null));
+          if (!verified) {
+            navigator.pop();
+            return;
+          }
+        }
         const w = await WalletManager.getInstance().createWallet();
         if (w) {
           if (props.nextPath) {
@@ -2456,33 +2642,41 @@ function CreateWalletPage(props) {
     createAndNavigate();
   }, []);
   if (error) {
-    return /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Scaffold, { appBar: /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.AppBar, { title: "Error", backgroundColor: Theme.colors.surface, foregroundColor: Theme.colors.textPrimary }) }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Center, null, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Padding, { padding: Theme.spacing.l }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react4.default.createElement(
-      import_fuickjs4.Container,
+    return /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Scaffold, { appBar: /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.AppBar, { title: "Error", backgroundColor: Theme.colors.surface, foregroundColor: Theme.colors.textPrimary }) }, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Center, null, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Padding, { padding: Theme.spacing.l }, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react5.default.createElement(
+      import_fuickjs5.Container,
       {
         width: 64,
         height: 64,
         decoration: { color: Theme.colors.error + "1A", borderRadius: 32 },
         alignment: "center"
       },
-      /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "!", color: Theme.colors.error, fontSize: 32, fontWeight: "bold" })
-    ), /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.SizedBox, { height: Theme.spacing.m }), /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: error, color: Theme.colors.error, textAlign: "center" }), /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.SizedBox, { height: Theme.spacing.l }), /* @__PURE__ */ import_react4.default.createElement(ThemeButton, { text: "Retry", onTap: () => navigator.pop(), variant: "outline" })))));
+      /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Text, { text: "!", color: Theme.colors.error, fontSize: 32, fontWeight: "bold" })
+    ), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.SizedBox, { height: Theme.spacing.m }), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Text, { text: error, color: Theme.colors.error, textAlign: "center" }), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.SizedBox, { height: Theme.spacing.l }), /* @__PURE__ */ import_react5.default.createElement(ThemeButton, { text: "Retry", onTap: () => navigator.pop(), variant: "outline" })))));
   }
-  return /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Scaffold, { appBar: /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.AppBar, { title: "Creating Wallet", backgroundColor: Theme.colors.surface, foregroundColor: Theme.colors.textPrimary }) }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Center, null, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.CircularProgressIndicator, { color: Theme.colors.primary }), /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.SizedBox, { height: 24 }), /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "Creating your secure wallet...", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.SizedBox, { height: 8 }), /* @__PURE__ */ import_react4.default.createElement(import_fuickjs4.Text, { text: "This may take a few seconds.", fontSize: 14, color: Theme.colors.textSecondary }))));
+  return /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Scaffold, { appBar: /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.AppBar, { title: "Creating Wallet", backgroundColor: Theme.colors.surface, foregroundColor: Theme.colors.textPrimary }) }, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Center, null, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.CircularProgressIndicator, { color: Theme.colors.primary }), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.SizedBox, { height: 24 }), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Text, { text: "Creating your secure wallet...", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.SizedBox, { height: 8 }), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Text, { text: "This may take a few seconds.", fontSize: 14, color: Theme.colors.textSecondary }))));
 }
 
 // src/pages/wallet/ImportWalletPage.tsx
-var import_react5 = __toESM(require_react());
-var import_fuickjs5 = __toESM(require_fuickjs());
+var import_react6 = __toESM(require_react());
+var import_fuickjs6 = __toESM(require_fuickjs());
 function ImportWalletPage(props) {
-  const navigator = (0, import_fuickjs5.useNavigator)();
-  const [name, setName] = (0, import_react5.useState)("");
-  const [mnemonic, setMnemonic] = (0, import_react5.useState)("");
-  const [loading, setLoading] = (0, import_react5.useState)(false);
-  const [error, setError] = (0, import_react5.useState)("");
-  const handleImport = () => {
+  const navigator = (0, import_fuickjs6.useNavigator)();
+  const [name, setName] = (0, import_react6.useState)("");
+  const [mnemonic, setMnemonic] = (0, import_react6.useState)("");
+  const [loading, setLoading] = (0, import_react6.useState)(false);
+  const [error, setError] = (0, import_react6.useState)("");
+  const handleImport = async () => {
     if (!mnemonic) {
       setError("Please enter a mnemonic phrase");
       return;
+    }
+    const isSet = await PasswordService.isPasswordSet();
+    if (!isSet) {
+      const set = await navigator.showDialog(/* @__PURE__ */ import_react6.default.createElement(SetPasswordDialog, null));
+      if (!set) return;
+    } else if (!PasswordService.getCachedPassword()) {
+      const verified = await navigator.showDialog(/* @__PURE__ */ import_react6.default.createElement(VerifyPasswordDialog, null));
+      if (!verified) return;
     }
     setLoading(true);
     setError("");
@@ -2505,7 +2699,7 @@ function ImportWalletPage(props) {
       setError("Import failed: " + (e.message || "Unknown error"));
     });
   };
-  return /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Scaffold, { appBar: /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.AppBar, { title: "Import Wallet", backgroundColor: Theme.colors.surface }) }, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.SingleChildScrollView, null, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Padding, { padding: Theme.spacing.m }, /* @__PURE__ */ import_react5.default.createElement(Card, { padding: Theme.spacing.l }, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Text, { text: "Import Existing Wallet", fontSize: 20, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.SizedBox, { height: 8 }), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Text, { text: "Enter your secret recovery phrase to restore your wallet.", color: Theme.colors.textSecondary }), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.SizedBox, { height: 24 }), /* @__PURE__ */ import_react5.default.createElement(
+  return /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Scaffold, { appBar: /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.AppBar, { title: "Import Wallet", backgroundColor: Theme.colors.surface }) }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SingleChildScrollView, null, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Padding, { padding: Theme.spacing.m }, /* @__PURE__ */ import_react6.default.createElement(Card, { padding: Theme.spacing.l }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Text, { text: "Import Existing Wallet", fontSize: 20, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { height: 8 }), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Text, { text: "Enter your secret recovery phrase to restore your wallet.", color: Theme.colors.textSecondary }), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { height: 24 }), /* @__PURE__ */ import_react6.default.createElement(
     ThemeInput,
     {
       label: "Wallet Name (Optional)",
@@ -2513,7 +2707,7 @@ function ImportWalletPage(props) {
       onChanged: (val) => setName(val),
       hint: "e.g. My Savings"
     }
-  ), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.SizedBox, { height: 20 }), /* @__PURE__ */ import_react5.default.createElement(
+  ), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { height: 20 }), /* @__PURE__ */ import_react6.default.createElement(
     ThemeInput,
     {
       label: "Mnemonic Phrase",
@@ -2522,7 +2716,7 @@ function ImportWalletPage(props) {
       hint: "Separate words with spaces",
       maxLines: 3
     }
-  ), /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.SizedBox, { height: 20 }), error ? /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.Text, { text: error, color: Theme.colors.error }) : null, /* @__PURE__ */ import_react5.default.createElement(import_fuickjs5.SizedBox, { height: 20 }), /* @__PURE__ */ import_react5.default.createElement(
+  ), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { height: 20 }), error ? /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Text, { text: error, color: Theme.colors.error }) : null, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { height: 20 }), /* @__PURE__ */ import_react6.default.createElement(
     ThemeButton,
     {
       text: loading ? "Importing..." : "Import Wallet",
@@ -2535,12 +2729,12 @@ function ImportWalletPage(props) {
 }
 
 // src/pages/wallet/MainTabsPage.tsx
-var import_react9 = __toESM(require_react());
-var import_fuickjs9 = __toESM(require_fuickjs());
+var import_react10 = __toESM(require_react());
+var import_fuickjs10 = __toESM(require_fuickjs());
 
 // src/pages/wallet/HomePage.tsx
-var import_react6 = __toESM(require_react());
-var import_fuickjs6 = __toESM(require_fuickjs());
+var import_react7 = __toESM(require_react());
+var import_fuickjs7 = __toESM(require_fuickjs());
 var BANNERS = [
   "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=800&q=80",
   // Bitcoin
@@ -2556,26 +2750,26 @@ var ACTIONS = [
   { name: "Buy", icon: "credit_card", color: "#9C27B0" }
 ];
 function HomePage() {
-  return /* @__PURE__ */ import_react6.default.createElement(
-    import_fuickjs6.Scaffold,
+  return /* @__PURE__ */ import_react7.default.createElement(
+    import_fuickjs7.Scaffold,
     {
-      appBar: /* @__PURE__ */ import_react6.default.createElement(
-        import_fuickjs6.AppBar,
+      appBar: /* @__PURE__ */ import_react7.default.createElement(
+        import_fuickjs7.AppBar,
         {
           title: "Discovery",
           backgroundColor: Theme.colors.surface,
           elevation: 0,
           actions: [
-            /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Icon, { name: "notifications", color: Theme.colors.textPrimary, size: 24 }),
-            /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { width: 16 }),
-            /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Icon, { name: "qr_code_scanner", color: Theme.colors.textPrimary, size: 24 }),
-            /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { width: 16 })
+            /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Icon, { name: "notifications", color: Theme.colors.textPrimary, size: 24 }),
+            /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { width: 16 }),
+            /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Icon, { name: "qr_code_scanner", color: Theme.colors.textPrimary, size: 24 }),
+            /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { width: 16 })
           ]
         }
       )
     },
-    /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SingleChildScrollView, null, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Column, null, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Padding, { padding: 16 }, /* @__PURE__ */ import_react6.default.createElement(
-      import_fuickjs6.Container,
+    /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SingleChildScrollView, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Column, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { padding: 16 }, /* @__PURE__ */ import_react7.default.createElement(
+      import_fuickjs7.Container,
       {
         height: 200,
         decoration: {
@@ -2584,16 +2778,16 @@ function HomePage() {
           color: Theme.colors.surface
         }
       },
-      /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Stack, null, /* @__PURE__ */ import_react6.default.createElement(
-        import_fuickjs6.Container,
+      /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Stack, null, /* @__PURE__ */ import_react7.default.createElement(
+        import_fuickjs7.Container,
         {
           decoration: {
             borderRadius: Theme.borderRadius.l
             // clipBehavior: 'antiAlias', // Note: Check if supported
           }
         },
-        /* @__PURE__ */ import_react6.default.createElement(
-          import_fuickjs6.Image,
+        /* @__PURE__ */ import_react7.default.createElement(
+          import_fuickjs7.Image,
           {
             url: BANNERS[0],
             fit: "cover",
@@ -2601,15 +2795,15 @@ function HomePage() {
             height: 200
           }
         )
-      ), /* @__PURE__ */ import_react6.default.createElement(
-        import_fuickjs6.Positioned,
+      ), /* @__PURE__ */ import_react7.default.createElement(
+        import_fuickjs7.Positioned,
         {
           bottom: 0,
           left: 0,
           right: 0
         },
-        /* @__PURE__ */ import_react6.default.createElement(
-          import_fuickjs6.Container,
+        /* @__PURE__ */ import_react7.default.createElement(
+          import_fuickjs7.Container,
           {
             padding: 16,
             decoration: {
@@ -2617,11 +2811,11 @@ function HomePage() {
               borderRadius: { bottomLeft: Theme.borderRadius.l, bottomRight: Theme.borderRadius.l }
             }
           },
-          /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Text, { text: "Explore Web3 Possibilities", color: "white", fontWeight: "bold", fontSize: 18 })
+          /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Text, { text: "Explore Web3 Possibilities", color: "white", fontWeight: "bold", fontSize: 18 })
         )
       ))
-    )), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Padding, { padding: { horizontal: 16 } }, /* @__PURE__ */ import_react6.default.createElement(Card, { padding: 20 }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Row, { mainAxisAlignment: "spaceBetween" }, ACTIONS.map((action, index) => /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Column, { key: index, mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.InkWell, null, /* @__PURE__ */ import_react6.default.createElement(
-      import_fuickjs6.Container,
+    )), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { padding: { horizontal: 16 } }, /* @__PURE__ */ import_react7.default.createElement(Card, { padding: 20 }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Row, { mainAxisAlignment: "spaceBetween" }, ACTIONS.map((action, index) => /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Column, { key: index, mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.InkWell, null, /* @__PURE__ */ import_react7.default.createElement(
+      import_fuickjs7.Container,
       {
         width: 56,
         height: 56,
@@ -2632,14 +2826,14 @@ function HomePage() {
         },
         alignment: "center"
       },
-      /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Icon, { name: action.icon, color: action.color, size: 28 })
-    )), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { height: 8 }), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Text, { text: action.name, fontSize: 14, color: Theme.colors.textPrimary, fontWeight: "w500" })))))), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { height: 24 }), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Padding, { padding: { horizontal: 16 } }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Text, { text: "Trending Assets", fontSize: 18, fontWeight: "bold", color: Theme.colors.textPrimary })), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { height: 12 }), [1, 2, 3].map((i) => /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Padding, { key: i, padding: { horizontal: 16, vertical: 6 } }, /* @__PURE__ */ import_react6.default.createElement(Card, { padding: 16 }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Row, { crossAxisAlignment: "center" }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Container, { width: 40, height: 40, decoration: { color: Theme.colors.primaryLight, borderRadius: 20 }, alignment: "center" }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Text, { text: `#${i}`, color: "white", fontWeight: "bold" })), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { width: 16 }), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Expanded, null, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Text, { text: `Token ${i}`, fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Text, { text: "+5.24%", color: Theme.colors.success, fontSize: 14 }))), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.Text, { text: "$1,234.56", fontWeight: "bold", fontSize: 16 }))))), /* @__PURE__ */ import_react6.default.createElement(import_fuickjs6.SizedBox, { height: 30 }))))
+      /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Icon, { name: action.icon, color: action.color, size: 28 })
+    )), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { height: 8 }), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Text, { text: action.name, fontSize: 14, color: Theme.colors.textPrimary, fontWeight: "w500" })))))), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { height: 24 }), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { padding: { horizontal: 16 } }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Text, { text: "Trending Assets", fontSize: 18, fontWeight: "bold", color: Theme.colors.textPrimary })), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { height: 12 }), [1, 2, 3].map((i) => /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { key: i, padding: { horizontal: 16, vertical: 6 } }, /* @__PURE__ */ import_react7.default.createElement(Card, { padding: 16 }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Row, { crossAxisAlignment: "center" }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Container, { width: 40, height: 40, decoration: { color: Theme.colors.primaryLight, borderRadius: 20 }, alignment: "center" }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Text, { text: `#${i}`, color: "white", fontWeight: "bold" })), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { width: 16 }), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Expanded, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Text, { text: `Token ${i}`, fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Text, { text: "+5.24%", color: Theme.colors.success, fontSize: 14 }))), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Text, { text: "$1,234.56", fontWeight: "bold", fontSize: 16 }))))), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { height: 30 }))))
   );
 }
 
 // src/pages/wallet/MarketPage.tsx
-var import_react7 = __toESM(require_react());
-var import_fuickjs7 = __toESM(require_fuickjs());
+var import_react8 = __toESM(require_react());
+var import_fuickjs8 = __toESM(require_fuickjs());
 var TABS = ["\u5168\u90E8", "\u81EA\u9009", "\u73B0\u8D27", "\u5408\u7EA6"];
 var generateCryptos = (count) => {
   const cryptos = [];
@@ -2680,56 +2874,56 @@ var CATEGORIES = [
 function CryptoItem({ crypto }) {
   const isUp = crypto.change >= 0;
   const color = isUp ? Theme.colors.success : Theme.colors.error;
-  return /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Column, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.InkWell, { onTap: () => console.log(`Click crypto: ${crypto.symbol}`) }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Container, { color: Theme.colors.surface }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { padding: { left: 16, right: 16, top: 12, bottom: 12 } }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Row, { mainAxisAlignment: "spaceBetween" }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Row, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Text, { text: crypto.name, fontSize: 16, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { width: 6 }), /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.Container,
+  return /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.InkWell, { onTap: () => console.log(`Click crypto: ${crypto.symbol}`) }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { color: Theme.colors.surface }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Padding, { padding: { left: 16, right: 16, top: 12, bottom: 12 } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, { mainAxisAlignment: "spaceBetween" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: crypto.name, fontSize: 16, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 6 }), /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.Container,
     {
       color: Theme.colors.background,
       borderRadius: 4,
       padding: { left: 4, right: 4, top: 1, bottom: 1 }
     },
-    /* @__PURE__ */ import_react7.default.createElement(
-      import_fuickjs7.Text,
+    /* @__PURE__ */ import_react8.default.createElement(
+      import_fuickjs8.Text,
       {
         text: "10X",
         fontSize: 10,
         color: Theme.colors.textSecondary
       }
     )
-  )), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { height: 4 }), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Text, { text: crypto.symbol, fontSize: 12, color: Theme.colors.textSecondary })), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Row, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Column, { crossAxisAlignment: "end" }, /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.Text,
+  )), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { height: 4 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: crypto.symbol, fontSize: 12, color: Theme.colors.textSecondary })), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "end" }, /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.Text,
     {
       text: crypto.price.toFixed(2),
       fontSize: 17,
       fontWeight: "bold",
       color
     }
-  ), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { height: 2 }), /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.Text,
+  ), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { height: 2 }), /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.Text,
     {
       text: (isUp ? "+" : "") + crypto.change.toFixed(2) + "%",
       fontSize: 12,
       color
     }
-  ))))))), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { padding: { left: 16 } }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Divider, { height: 1, color: Theme.colors.divider })));
+  ))))))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Padding, { padding: { left: 16 } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Divider, { height: 1, color: Theme.colors.divider })));
 }
 function MarketPage() {
-  const [marketData, setMarketData] = (0, import_react7.useState)({
+  const [marketData, setMarketData] = (0, import_react8.useState)({
     tick: 0,
     bannerIndex: 0,
     cryptos: ALL_CRYPTOS
   });
-  const [activeTabIndex, setActiveTabIndex] = (0, import_react7.useState)(0);
-  const listRef = (0, import_react7.useRef)(null);
-  const pageViewRef = (0, import_react7.useRef)(null);
+  const [activeTabIndex, setActiveTabIndex] = (0, import_react8.useState)(0);
+  const listRef = (0, import_react8.useRef)(null);
+  const pageViewRef = (0, import_react8.useRef)(null);
   const { tick, cryptos: cryptosWithUpdate } = marketData;
-  const filteredCryptos = (0, import_react7.useMemo)(() => {
+  const filteredCryptos = (0, import_react8.useMemo)(() => {
     if (activeTabIndex === 0) return ALL_CRYPTOS;
     return ALL_CRYPTOS.filter((_, i) => i % (activeTabIndex + 1) === 0);
   }, [activeTabIndex]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     setMarketData((prev) => ({ ...prev, cryptos: filteredCryptos }));
   }, [filteredCryptos]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     const timer = setInterval(() => {
       setMarketData((prev) => {
         const nextCryptos = prev.cryptos.map((s) => ({
@@ -2744,7 +2938,7 @@ function MarketPage() {
         if (listRef.current) {
           const updates = nextCryptos.map((crypto, index) => ({
             index,
-            dsl: /* @__PURE__ */ import_react7.default.createElement(CryptoItem, { key: crypto.symbol, crypto, index })
+            dsl: /* @__PURE__ */ import_react8.default.createElement(CryptoItem, { key: crypto.symbol, crypto, index })
           }));
           listRef.current.updateItems(updates);
         }
@@ -2757,60 +2951,60 @@ function MarketPage() {
     }, 3e3);
     return () => clearInterval(timer);
   }, []);
-  const itemBuilder = (0, import_react7.useCallback)(
+  const itemBuilder = (0, import_react8.useCallback)(
     (index) => {
       const crypto = cryptosWithUpdate[index];
       if (!crypto) return null;
-      return /* @__PURE__ */ import_react7.default.createElement(CryptoItem, { key: crypto.symbol, crypto, index });
+      return /* @__PURE__ */ import_react8.default.createElement(CryptoItem, { key: crypto.symbol, crypto, index });
     },
     [cryptosWithUpdate]
   );
-  const bannerItems = (0, import_react7.useMemo)(
-    () => BANNERS2.map((url, i) => /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Image, { key: i, url, fit: "cover", width: Infinity, height: 150, borderRadius: Theme.borderRadius.m })),
+  const bannerItems = (0, import_react8.useMemo)(
+    () => BANNERS2.map((url, i) => /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Image, { key: i, url, fit: "cover", width: Infinity, height: 150, borderRadius: Theme.borderRadius.m })),
     []
   );
-  const categoriesGrid = (0, import_react7.useMemo)(
-    () => CATEGORIES.map((cat, i) => /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Container, { key: i, decoration: {
+  const categoriesGrid = (0, import_react8.useMemo)(
+    () => CATEGORIES.map((cat, i) => /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { key: i, decoration: {
       color: Theme.colors.surface,
       borderRadius: Theme.borderRadius.m,
       boxShadow: Theme.shadows.small
-    } }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Column, { mainAxisAlignment: "center" }, /* @__PURE__ */ import_react7.default.createElement(
-      import_fuickjs7.Container,
+    } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { mainAxisAlignment: "center" }, /* @__PURE__ */ import_react8.default.createElement(
+      import_fuickjs8.Container,
       {
         width: 40,
         height: 40,
         borderRadius: 20,
         color: cat.color + "15"
       },
-      /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Center, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Icon, { name: cat.icon, color: cat.color, size: 24 }))
-    ), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { height: 8 }), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Text, { text: cat.name, fontSize: 12, color: Theme.colors.textPrimary })))),
+      /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Center, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Icon, { name: cat.icon, color: cat.color, size: 24 }))
+    ), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { height: 8 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: cat.name, fontSize: 12, color: Theme.colors.textPrimary })))),
     []
   );
-  const tabBarTabs = (0, import_react7.useMemo)(
-    () => TABS.map((t) => /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Tab, { key: t, text: t })),
+  const tabBarTabs = (0, import_react8.useMemo)(
+    () => TABS.map((t) => /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Tab, { key: t, text: t })),
     []
   );
-  return /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.DefaultTabController, { length: TABS.length, initialIndex: 0 }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Scaffold, { backgroundColor: Theme.colors.background }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.CustomScrollView, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SliverAppBar, { pinned: true }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Container, { color: Theme.colors.primary, isBoundary: true }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SafeArea, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { padding: { left: 16, right: 16, bottom: 8 } }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Column, { mainAxisAlignment: "center", crossAxisAlignment: "start" }, /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.Text,
+  return /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.DefaultTabController, { length: TABS.length, initialIndex: 0 }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Scaffold, { backgroundColor: Theme.colors.background }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.CustomScrollView, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SliverAppBar, { pinned: true }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { color: Theme.colors.primary, isBoundary: true }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SafeArea, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Padding, { padding: { left: 16, right: 16, bottom: 8 } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { mainAxisAlignment: "center", crossAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.Text,
     {
       text: "\u884C\u60C5",
       fontSize: 18,
       color: Theme.colors.surface,
       fontWeight: "bold"
     }
-  ), /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.Text,
+  ), /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.Text,
     {
       text: `\u5B9E\u65F6\u884C\u60C5 \xB7 \u66F4\u65B0 ${tick}`,
       fontSize: 11,
       color: Theme.colors.surface
     }
-  )))))), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SliverToBoxAdapter, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { padding: { left: 16, right: 16, top: 12, bottom: 0 } }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Container, { height: 44, decoration: {
+  )))))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SliverToBoxAdapter, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Padding, { padding: { left: 16, right: 16, top: 12, bottom: 0 } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { height: 44, decoration: {
     color: Theme.colors.surface,
     borderRadius: 22,
     boxShadow: Theme.shadows.small
-  } }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { padding: { left: 16, right: 16 } }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Row, { crossAxisAlignment: "center" }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Icon, { name: "search", size: 20, color: Theme.colors.textHint }), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SizedBox, { width: 8 }), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Flexible, null, /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.TextField,
+  } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Padding, { padding: { left: 16, right: 16 } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, { crossAxisAlignment: "center" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Icon, { name: "search", size: 20, color: Theme.colors.textHint }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 8 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Flexible, null, /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.TextField,
     {
       hintText: "\u641C\u7D22\u5E01\u79CD",
       onChanged: (v) => console.log("Search:", v),
@@ -2819,18 +3013,18 @@ function MarketPage() {
         border: { width: 0, color: "transparent" }
       }
     }
-  ))))))), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SliverToBoxAdapter, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { padding: { left: 16, right: 16, top: 16 } }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Container, { height: 150, decoration: {
+  ))))))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SliverToBoxAdapter, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Padding, { padding: { left: 16, right: 16, top: 16 } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { height: 150, decoration: {
     borderRadius: Theme.borderRadius.m,
     boxShadow: Theme.shadows.medium
-  } }, /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.PageView,
+  } }, /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.PageView,
     {
       ref: pageViewRef,
       onPageChanged: (index) => setMarketData((prev) => ({ ...prev, bannerIndex: index }))
     },
     bannerItems
-  )))), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SliverToBoxAdapter, null, /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.GridView,
+  )))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SliverToBoxAdapter, null, /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.GridView,
     {
       padding: { left: 12, right: 12, bottom: 8 },
       crossAxisCount: 4,
@@ -2841,16 +3035,16 @@ function MarketPage() {
       physics: "never"
     },
     categoriesGrid
-  )), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SliverToBoxAdapter, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Padding, { padding: { left: 16, right: 16, top: 20, bottom: 0 } }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Row, { mainAxisAlignment: "spaceBetween" }, /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.Text,
+  )), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SliverToBoxAdapter, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Padding, { padding: { left: 16, right: 16, top: 20, bottom: 0 } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, { mainAxisAlignment: "spaceBetween" }, /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.Text,
     {
       text: `${TABS[activeTabIndex]}\u699C\u5355`,
       fontSize: 18,
       fontWeight: "bold",
       color: Theme.colors.textPrimary
     }
-  )))), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SliverPersistentHeader, { pinned: true, minExtent: 49, maxExtent: 49 }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Column, null, /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.TabBar,
+  )))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SliverPersistentHeader, { pinned: true, minExtent: 49, maxExtent: 49 }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, null, /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.TabBar,
     {
       tabs: tabBarTabs,
       onTap: (index) => setActiveTabIndex(index),
@@ -2859,15 +3053,15 @@ function MarketPage() {
       indicatorColor: Theme.colors.primary,
       indicatorWeight: 2
     }
-  ), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Divider, { height: 1, color: Theme.colors.divider })))), /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.SliverList,
+  ), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Divider, { height: 1, color: Theme.colors.divider })))), /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.SliverList,
     {
       ref: listRef,
       itemCount: cryptosWithUpdate.length,
       itemBuilder
     }
-  ), /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.SliverToBoxAdapter, null, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Container, { height: 60 }, /* @__PURE__ */ import_react7.default.createElement(import_fuickjs7.Center, null, /* @__PURE__ */ import_react7.default.createElement(
-    import_fuickjs7.Text,
+  ), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SliverToBoxAdapter, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { height: 60 }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Center, null, /* @__PURE__ */ import_react8.default.createElement(
+    import_fuickjs8.Text,
     {
       text: `\u2014\u2014 \u5230\u5E95\u4E86\uFF0C\u5171 ${cryptosWithUpdate.length} \u4E2A\u5E01\u79CD \u2014\u2014`,
       color: Theme.colors.textHint,
@@ -2877,16 +3071,16 @@ function MarketPage() {
 }
 
 // src/pages/wallet/WalletHomePage.tsx
-var import_react8 = __toESM(require_react());
-var import_fuickjs8 = __toESM(require_fuickjs());
+var import_react9 = __toESM(require_react());
+var import_fuickjs9 = __toESM(require_fuickjs());
 function WalletHomePage() {
-  const navigator = (0, import_fuickjs8.useNavigator)();
-  const [wallet, setWallet] = (0, import_react8.useState)(null);
-  const [balance, setBalance] = (0, import_react8.useState)("0.00");
-  const [chain, setChain] = (0, import_react8.useState)(null);
-  const [hideBalance, setHideBalance] = (0, import_react8.useState)(false);
-  const [tokenBalances, setTokenBalances] = (0, import_react8.useState)({});
-  (0, import_react8.useEffect)(() => {
+  const navigator = (0, import_fuickjs9.useNavigator)();
+  const [wallet, setWallet] = (0, import_react9.useState)(null);
+  const [balance, setBalance] = (0, import_react9.useState)("0.00");
+  const [chain, setChain] = (0, import_react9.useState)(null);
+  const [hideBalance, setHideBalance] = (0, import_react9.useState)(false);
+  const [tokenBalances, setTokenBalances] = (0, import_react9.useState)({});
+  (0, import_react9.useEffect)(() => {
     loadWallet();
     (async () => {
       const c = await getSelectedChain();
@@ -2901,7 +3095,7 @@ function WalletHomePage() {
       setWallet(null);
     }
   };
-  (0, import_react8.useEffect)(() => {
+  (0, import_react9.useEffect)(() => {
     if (wallet && chain) {
       fetchBalance();
     }
@@ -2968,8 +3162,8 @@ function WalletHomePage() {
     if (!addr) return "";
     return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
   };
-  const ActionButton = ({ icon, label, onTap }) => /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.InkWell, { onTap }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react8.default.createElement(
-    import_fuickjs8.Container,
+  const ActionButton = ({ icon, label, onTap }) => /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.InkWell, { onTap }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react9.default.createElement(
+    import_fuickjs9.Container,
     {
       width: 50,
       height: 50,
@@ -2980,34 +3174,34 @@ function WalletHomePage() {
         boxShadow: Theme.shadows.medium
       }
     },
-    /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Icon, { name: icon, color: "white", size: 24 })
-  ), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { height: 8 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: label, color: Theme.colors.textPrimary, fontSize: 14, fontWeight: "w500" })));
-  return /* @__PURE__ */ import_react8.default.createElement(
-    import_fuickjs8.Scaffold,
+    /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Icon, { name: icon, color: "white", size: 24 })
+  ), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { height: 8 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: label, color: Theme.colors.textPrimary, fontSize: 14, fontWeight: "w500" })));
+  return /* @__PURE__ */ import_react9.default.createElement(
+    import_fuickjs9.Scaffold,
     {
-      appBar: /* @__PURE__ */ import_react8.default.createElement(
-        import_fuickjs8.AppBar,
+      appBar: /* @__PURE__ */ import_react9.default.createElement(
+        import_fuickjs9.AppBar,
         {
           title: "My Wallet",
           backgroundColor: Theme.colors.background,
           elevation: 0,
           centerTitle: false,
           actions: [
-            /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.InkWell, { onTap: handleSwitchChain }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { padding: { horizontal: 12, vertical: 6 }, decoration: { color: Theme.colors.surface, borderRadius: 16 } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: chain?.name || "Network", color: Theme.colors.primary, fontWeight: "bold" }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Icon, { name: "expand_more", color: Theme.colors.primary, size: 20 })))),
-            /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 8 }),
-            /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.InkWell, { onTap: handleSwitchWallet }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { padding: { horizontal: 12, vertical: 6 }, decoration: { color: Theme.colors.surface, borderRadius: 16 } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: wallet?.name || "No Wallet", color: Theme.colors.primary, fontWeight: "bold" }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Icon, { name: "expand_more", color: Theme.colors.primary, size: 20 })))),
-            /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 8 }),
-            /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.InkWell, { onTap: async () => {
+            /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.InkWell, { onTap: handleSwitchChain }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Container, { padding: { horizontal: 12, vertical: 6 }, decoration: { color: Theme.colors.surface, borderRadius: 16 } }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Row, null, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: chain?.name || "Network", color: Theme.colors.primary, fontWeight: "bold" }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Icon, { name: "expand_more", color: Theme.colors.primary, size: 20 })))),
+            /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { width: 8 }),
+            /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.InkWell, { onTap: handleSwitchWallet }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Container, { padding: { horizontal: 12, vertical: 6 }, decoration: { color: Theme.colors.surface, borderRadius: 16 } }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Row, null, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: wallet?.name || "No Wallet", color: Theme.colors.primary, fontWeight: "bold" }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Icon, { name: "expand_more", color: Theme.colors.primary, size: 20 })))),
+            /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { width: 8 }),
+            /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.InkWell, { onTap: async () => {
               await navigator.push("/wallet/detail", { walletId: wallet?.id });
               loadWallet();
-            } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { padding: 8 }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Icon, { name: "settings", color: Theme.colors.textSecondary, size: 24 }))),
-            /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 8 })
+            } }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Container, { padding: 8 }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Icon, { name: "settings", color: Theme.colors.textSecondary, size: 24 }))),
+            /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { width: 8 })
           ]
         }
       )
     },
-    /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Padding, { padding: 20 }, /* @__PURE__ */ import_react8.default.createElement(
-      import_fuickjs8.Container,
+    /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Column, null, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Padding, { padding: 20 }, /* @__PURE__ */ import_react9.default.createElement(
+      import_fuickjs9.Container,
       {
         width: Infinity,
         padding: 24,
@@ -3018,24 +3212,24 @@ function WalletHomePage() {
           boxShadow: Theme.shadows.large
         }
       },
-      /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, { mainAxisAlignment: "spaceBetween" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: "Total Balance", color: "#FFFFFFCC", fontSize: 14 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.InkWell, { onTap: () => setHideBalance(!hideBalance) }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Icon, { name: hideBalance ? "visibility_off" : "visibility", color: "#FFFFFFCC", size: 20 }))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { height: 8 }), /* @__PURE__ */ import_react8.default.createElement(
-        import_fuickjs8.Text,
+      /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Row, { mainAxisAlignment: "spaceBetween" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: "Total Balance", color: "#FFFFFFCC", fontSize: 14 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.InkWell, { onTap: () => setHideBalance(!hideBalance) }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Icon, { name: hideBalance ? "visibility_off" : "visibility", color: "#FFFFFFCC", size: 20 }))), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { height: 8 }), /* @__PURE__ */ import_react9.default.createElement(
+        import_fuickjs9.Text,
         {
           text: hideBalance ? "****" : `${balance} ${chain?.symbol || "ETH"}`,
           color: "white",
           fontSize: 32,
           fontWeight: "bold"
         }
-      ), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { height: 20 }), /* @__PURE__ */ import_react8.default.createElement(
-        import_fuickjs8.Container,
+      ), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { height: 20 }), /* @__PURE__ */ import_react9.default.createElement(
+        import_fuickjs9.Container,
         {
           padding: { horizontal: 12, vertical: 6 },
           decoration: { color: "#FFFFFF33", borderRadius: 20 }
         },
-        /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, { mainAxisSize: "min" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: formatAddress(wallet?.address || ""), color: "white", fontSize: 12 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 4 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Icon, { name: "content_copy", color: "white", size: 12 }))
+        /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Row, { mainAxisSize: "min" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: formatAddress(wallet?.address || ""), color: "white", fontSize: 12 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { width: 4 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Icon, { name: "content_copy", color: "white", size: 12 }))
       ))
-    )), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Padding, { padding: { horizontal: 20 } }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, { mainAxisAlignment: "spaceAround" }, /* @__PURE__ */ import_react8.default.createElement(ActionButton, { icon: "arrow_upward", label: "Send" }), /* @__PURE__ */ import_react8.default.createElement(ActionButton, { icon: "arrow_downward", label: "Receive", onTap: () => navigator.push("/wallet/receive", { wallet }) }), /* @__PURE__ */ import_react8.default.createElement(ActionButton, { icon: "swap_vert", label: "Swap" }), /* @__PURE__ */ import_react8.default.createElement(ActionButton, { icon: "history", label: "History" }))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { height: 30 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Expanded, null, /* @__PURE__ */ import_react8.default.createElement(
-      import_fuickjs8.Container,
+    )), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Padding, { padding: { horizontal: 20 } }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Row, { mainAxisAlignment: "spaceAround" }, /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "arrow_upward", label: "Send" }), /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "arrow_downward", label: "Receive", onTap: () => navigator.push("/wallet/receive", { wallet }) }), /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "swap_vert", label: "Swap" }), /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "history", label: "History" }))), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { height: 30 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Expanded, null, /* @__PURE__ */ import_react9.default.createElement(
+      import_fuickjs9.Container,
       {
         decoration: {
           color: Theme.colors.surface,
@@ -3043,15 +3237,15 @@ function WalletHomePage() {
         },
         padding: { top: 20, left: 20, right: 20 }
       },
-      /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { mainAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: "Assets", fontSize: 20, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { height: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SingleChildScrollView, null, /* @__PURE__ */ import_react8.default.createElement(Card, { padding: 16, margin: 12 }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { width: 40, height: 40, decoration: { color: Theme.colors.primaryLight, borderRadius: 20 }, alignment: "center" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: (chain?.symbol || "E")[0], color: "white", fontWeight: "bold" })), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Expanded, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: chain?.symbol || "ETH", fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: chain?.name || "Ethereum", color: Theme.colors.textSecondary, fontSize: 14 }))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "end" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: hideBalance ? "****" : balance, fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: "$0.00", color: Theme.colors.textSecondary, fontSize: 14 })))), chain?.tokens?.map((t) => /* @__PURE__ */ import_react8.default.createElement(Card, { key: t.symbol, padding: 16, margin: 12 }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { width: 40, height: 40, decoration: { color: Theme.colors.secondary, borderRadius: 20 }, alignment: "center" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: t.symbol[0], color: "white", fontWeight: "bold" })), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Expanded, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: t.symbol, fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: t.name, color: Theme.colors.textSecondary, fontSize: 14 }))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "end" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: hideBalance ? "****" : tokenBalances[t.symbol] || "...", fontWeight: "bold", fontSize: 16 })))))))
+      /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Column, { mainAxisAlignment: "start" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: "Assets", fontSize: 20, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { height: 16 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SingleChildScrollView, null, /* @__PURE__ */ import_react9.default.createElement(Card, { padding: 16, margin: 12 }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Row, null, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Container, { width: 40, height: 40, decoration: { color: Theme.colors.primaryLight, borderRadius: 20 }, alignment: "center" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: (chain?.symbol || "E")[0], color: "white", fontWeight: "bold" })), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { width: 16 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Expanded, null, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: chain?.symbol || "ETH", fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: chain?.name || "Ethereum", color: Theme.colors.textSecondary, fontSize: 14 }))), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Column, { crossAxisAlignment: "end" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: hideBalance ? "****" : balance, fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: "$0.00", color: Theme.colors.textSecondary, fontSize: 14 })))), chain?.tokens?.map((t) => /* @__PURE__ */ import_react9.default.createElement(Card, { key: t.symbol, padding: 16, margin: 12 }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Row, null, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Container, { width: 40, height: 40, decoration: { color: Theme.colors.secondary, borderRadius: 20 }, alignment: "center" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: t.symbol[0], color: "white", fontWeight: "bold" })), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { width: 16 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Expanded, null, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: t.symbol, fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: t.name, color: Theme.colors.textSecondary, fontSize: 14 }))), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Column, { crossAxisAlignment: "end" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: hideBalance ? "****" : tokenBalances[t.symbol] || "...", fontWeight: "bold", fontSize: 16 })))))))
     ))))
   );
 }
 
 // src/pages/wallet/MainTabsPage.tsx
 function MainTabsPage() {
-  const [currentIndex, setCurrentIndex] = (0, import_react9.useState)(0);
-  const pageViewRef = (0, import_react9.useRef)(null);
+  const [currentIndex, setCurrentIndex] = (0, import_react10.useState)(0);
+  const pageViewRef = (0, import_react10.useRef)(null);
   const handleTabTap = (index) => {
     setCurrentIndex(index);
     pageViewRef.current?.jumpToPage(index);
@@ -3059,11 +3253,11 @@ function MainTabsPage() {
   const handlePageChanged = (index) => {
     setCurrentIndex(index);
   };
-  return /* @__PURE__ */ import_react9.default.createElement(
-    import_fuickjs9.Scaffold,
+  return /* @__PURE__ */ import_react10.default.createElement(
+    import_fuickjs10.Scaffold,
     {
-      bottomNavigationBar: /* @__PURE__ */ import_react9.default.createElement(
-        import_fuickjs9.BottomNavigationBar,
+      bottomNavigationBar: /* @__PURE__ */ import_react10.default.createElement(
+        import_fuickjs10.BottomNavigationBar,
         {
           currentIndex,
           onTap: handleTabTap,
@@ -3071,27 +3265,27 @@ function MainTabsPage() {
           unselectedItemColor: Theme.colors.textSecondary,
           backgroundColor: Theme.colors.surface,
           items: [
-            /* @__PURE__ */ import_react9.default.createElement(
-              import_fuickjs9.BottomNavigationBarItem,
+            /* @__PURE__ */ import_react10.default.createElement(
+              import_fuickjs10.BottomNavigationBarItem,
               {
                 key: "home",
-                icon: /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Icon, { name: "home" }),
+                icon: /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Icon, { name: "home" }),
                 label: "\u9996\u9875"
               }
             ),
-            /* @__PURE__ */ import_react9.default.createElement(
-              import_fuickjs9.BottomNavigationBarItem,
+            /* @__PURE__ */ import_react10.default.createElement(
+              import_fuickjs10.BottomNavigationBarItem,
               {
                 key: "market",
-                icon: /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Icon, { name: "show_chart" }),
+                icon: /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Icon, { name: "show_chart" }),
                 label: "\u884C\u60C5"
               }
             ),
-            /* @__PURE__ */ import_react9.default.createElement(
-              import_fuickjs9.BottomNavigationBarItem,
+            /* @__PURE__ */ import_react10.default.createElement(
+              import_fuickjs10.BottomNavigationBarItem,
               {
                 key: "assets",
-                icon: /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Icon, { name: "account_balance_wallet" }),
+                icon: /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Icon, { name: "account_balance_wallet" }),
                 label: "\u8D44\u4EA7"
               }
             )
@@ -3099,30 +3293,30 @@ function MainTabsPage() {
         }
       )
     },
-    /* @__PURE__ */ import_react9.default.createElement(
-      import_fuickjs9.PageView,
+    /* @__PURE__ */ import_react10.default.createElement(
+      import_fuickjs10.PageView,
       {
         physics: "never",
         ref: pageViewRef,
         onPageChanged: handlePageChanged,
         initialPage: 0
       },
-      /* @__PURE__ */ import_react9.default.createElement(HomePage, null),
-      /* @__PURE__ */ import_react9.default.createElement(MarketPage, null),
-      /* @__PURE__ */ import_react9.default.createElement(WalletHomePage, null)
+      /* @__PURE__ */ import_react10.default.createElement(HomePage, null),
+      /* @__PURE__ */ import_react10.default.createElement(MarketPage, null),
+      /* @__PURE__ */ import_react10.default.createElement(WalletHomePage, null)
     )
   );
 }
 
 // src/pages/wallet/WalletListPage.tsx
-var import_react12 = __toESM(require_react());
-var import_fuickjs12 = __toESM(require_fuickjs());
+var import_react13 = __toESM(require_react());
+var import_fuickjs13 = __toESM(require_fuickjs());
 
 // src/pages/wallet/WalletDeleteDialog.tsx
-var import_react10 = __toESM(require_react());
-var import_fuickjs10 = __toESM(require_fuickjs());
+var import_react11 = __toESM(require_react());
+var import_fuickjs11 = __toESM(require_fuickjs());
 function WalletDeleteDialog(props) {
-  const navigator = (0, import_fuickjs10.useNavigator)();
+  const navigator = (0, import_fuickjs11.useNavigator)();
   const walletName = props.wallet ? props.wallet.name : "Wallet";
   const handleCancel = () => {
     navigator.pop(false);
@@ -3130,38 +3324,38 @@ function WalletDeleteDialog(props) {
   const handleDelete = () => {
     navigator.pop(true);
   };
-  return /* @__PURE__ */ import_react10.default.createElement(
-    import_fuickjs10.AlertDialog,
+  return /* @__PURE__ */ import_react11.default.createElement(
+    import_fuickjs11.AlertDialog,
     {
-      title: /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Text, { text: "Delete Wallet?", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }),
-      content: /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Column, { mainAxisSize: "min", crossAxisAlignment: "start" }, /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Text, { text: `Are you sure you want to delete "${walletName}"?`, fontSize: 16, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Container, { height: 8 }), /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Text, { text: "This action cannot be undone! Your private key will be lost permanently.", color: Theme.colors.error, fontSize: 14 })),
+      title: /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Text, { text: "Delete Wallet?", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }),
+      content: /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Column, { mainAxisSize: "min", crossAxisAlignment: "start" }, /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Text, { text: `Are you sure you want to delete "${walletName}"?`, fontSize: 16, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Container, { height: 8 }), /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Text, { text: "This action cannot be undone! Your private key will be lost permanently.", color: Theme.colors.error, fontSize: 14 })),
       actions: [
-        /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.InkWell, { onTap: handleCancel }, /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Text, { text: "Cancel", color: Theme.colors.textSecondary, fontWeight: "bold" }))),
-        /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.InkWell, { onTap: handleDelete }, /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react10.default.createElement(import_fuickjs10.Text, { text: "Delete", color: Theme.colors.error, fontWeight: "bold" })))
+        /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.InkWell, { onTap: handleCancel }, /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Text, { text: "Cancel", color: Theme.colors.textSecondary, fontWeight: "bold" }))),
+        /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.InkWell, { onTap: handleDelete }, /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Text, { text: "Delete", color: Theme.colors.error, fontWeight: "bold" })))
       ]
     }
   );
 }
 
 // src/pages/wallet/WalletClearDialog.tsx
-var import_react11 = __toESM(require_react());
-var import_fuickjs11 = __toESM(require_fuickjs());
+var import_react12 = __toESM(require_react());
+var import_fuickjs12 = __toESM(require_fuickjs());
 function WalletClearDialog() {
-  const navigator = (0, import_fuickjs11.useNavigator)();
+  const navigator = (0, import_fuickjs12.useNavigator)();
   const handleCancel = () => {
     navigator.pop(false);
   };
   const handleClear = () => {
     navigator.pop(true);
   };
-  return /* @__PURE__ */ import_react11.default.createElement(
-    import_fuickjs11.AlertDialog,
+  return /* @__PURE__ */ import_react12.default.createElement(
+    import_fuickjs12.AlertDialog,
     {
-      title: /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Text, { text: "Clear All Wallets?", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }),
-      content: /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Column, { mainAxisSize: "min", crossAxisAlignment: "start" }, /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Text, { text: "Are you sure you want to delete ALL wallets?", fontSize: 16, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Container, { height: 8 }), /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Text, { text: "This action cannot be undone! All private keys will be lost permanently.", color: Theme.colors.error, fontSize: 14 })),
+      title: /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Text, { text: "Clear All Wallets?", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }),
+      content: /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Column, { mainAxisSize: "min", crossAxisAlignment: "start" }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Text, { text: "Are you sure you want to delete ALL wallets?", fontSize: 16, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { height: 8 }), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Text, { text: "This action cannot be undone! All private keys will be lost permanently.", color: Theme.colors.error, fontSize: 14 })),
       actions: [
-        /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.InkWell, { onTap: handleCancel }, /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Text, { text: "Cancel", color: Theme.colors.textSecondary, fontWeight: "bold" }))),
-        /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.InkWell, { onTap: handleClear }, /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react11.default.createElement(import_fuickjs11.Text, { text: "Delete All", color: Theme.colors.error, fontWeight: "bold" })))
+        /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.InkWell, { onTap: handleCancel }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Text, { text: "Cancel", color: Theme.colors.textSecondary, fontWeight: "bold" }))),
+        /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.InkWell, { onTap: handleClear }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Text, { text: "Delete All", color: Theme.colors.error, fontWeight: "bold" })))
       ]
     }
   );
@@ -3169,12 +3363,12 @@ function WalletClearDialog() {
 
 // src/pages/wallet/WalletListPage.tsx
 function WalletListPage(props) {
-  const navigator = (0, import_fuickjs12.useNavigator)();
+  const navigator = (0, import_fuickjs13.useNavigator)();
   const navigatorAny = navigator;
-  const [wallets, setWallets] = (0, import_react12.useState)([]);
-  const [chainId, setChainId] = (0, import_react12.useState)("");
+  const [wallets, setWallets] = (0, import_react13.useState)([]);
+  const [chainId, setChainId] = (0, import_react13.useState)("");
   const isModal = props.onClose || props.presentation === "bottomSheet";
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     loadWallets();
     (async () => {
       const c = await getSelectedChain();
@@ -3216,38 +3410,38 @@ function WalletListPage(props) {
     }
   };
   const handleClearAll = async () => {
-    const confirmed = await navigatorAny.showDialog(/* @__PURE__ */ import_react12.default.createElement(WalletClearDialog, null));
+    const confirmed = await navigatorAny.showDialog(/* @__PURE__ */ import_react13.default.createElement(WalletClearDialog, null));
     if (confirmed) {
       await WalletManager.getInstance().clearAllWallets();
       loadWallets();
     }
   };
   const handleDeleteWallet = async (wallet) => {
-    const confirmed = await navigatorAny.showDialog(/* @__PURE__ */ import_react12.default.createElement(WalletDeleteDialog, { wallet }));
+    const confirmed = await navigatorAny.showDialog(/* @__PURE__ */ import_react13.default.createElement(WalletDeleteDialog, { wallet }));
     if (confirmed) {
       await WalletManager.getInstance().deleteWallet(wallet.id);
       loadWallets();
     }
   };
-  const content = /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Stack, { fit: "expand" }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Positioned, { top: 0, left: 0, right: 0, bottom: 0 }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { color: Theme.colors.background })), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Positioned, { top: 0, left: 0, right: 0, bottom: 0 }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Column, null, isModal ? /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { padding: 16, alignment: "center", decoration: { color: Theme.colors.surface } }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { width: 40, height: 4, decoration: { color: Theme.colors.divider, borderRadius: 2 } }), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { height: 12 }), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Text, { text: "Select Wallet", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary })) : /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { height: 1, color: Theme.colors.divider }), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Expanded, null, /* @__PURE__ */ import_react12.default.createElement(
-    import_fuickjs12.ListView,
+  const content = /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Stack, { fit: "expand" }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Positioned, { top: 0, left: 0, right: 0, bottom: 0 }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Container, { color: Theme.colors.background })), /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Positioned, { top: 0, left: 0, right: 0, bottom: 0 }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Column, null, isModal ? /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Container, { padding: 16, alignment: "center", decoration: { color: Theme.colors.surface } }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Container, { width: 40, height: 4, decoration: { color: Theme.colors.divider, borderRadius: 2 } }), /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Container, { height: 12 }), /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Text, { text: "Select Wallet", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary })) : /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Container, { height: 1, color: Theme.colors.divider }), /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Expanded, null, /* @__PURE__ */ import_react13.default.createElement(
+    import_fuickjs13.ListView,
     {
       padding: { top: 16, left: 16, right: 16, bottom: 100 },
       itemCount: wallets.length,
       itemBuilder: (index) => {
         const w = wallets[index];
-        return /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Padding, { padding: { bottom: 12 } }, /* @__PURE__ */ import_react12.default.createElement(Card, { padding: 16, onTap: () => handleSelect(w) }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Row, { mainAxisAlignment: "spaceBetween", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Expanded, null, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Text, { text: w.name, fontSize: 16, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { height: 4 }), /* @__PURE__ */ import_react12.default.createElement(
-          import_fuickjs12.Text,
+        return /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Padding, { padding: { bottom: 12 } }, /* @__PURE__ */ import_react13.default.createElement(Card, { padding: 16, onTap: () => handleSelect(w) }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Row, { mainAxisAlignment: "spaceBetween", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Expanded, null, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Text, { text: w.name, fontSize: 16, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Container, { height: 4 }), /* @__PURE__ */ import_react13.default.createElement(
+          import_fuickjs13.Text,
           {
             text: `${w.address.substring(0, 10)}...${w.address.substring(w.address.length - 8)}`,
             fontSize: 12,
             color: Theme.colors.textSecondary
           }
-        ))), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.InkWell, { onTap: () => handleDeleteWallet(w) }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Padding, { padding: 8 }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Icon, { name: "delete_outline", color: Theme.colors.error, size: 20 }))))));
+        ))), /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.InkWell, { onTap: () => handleDeleteWallet(w) }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Padding, { padding: 8 }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Icon, { name: "delete_outline", color: Theme.colors.error, size: 20 }))))));
       }
     }
-  )))), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Positioned, { bottom: 0, left: 0, right: 0 }, /* @__PURE__ */ import_react12.default.createElement(
-    import_fuickjs12.Container,
+  )))), /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Positioned, { bottom: 0, left: 0, right: 0 }, /* @__PURE__ */ import_react13.default.createElement(
+    import_fuickjs13.Container,
     {
       padding: 20,
       decoration: {
@@ -3255,29 +3449,29 @@ function WalletListPage(props) {
         boxShadow: Theme.shadows.medium
       }
     },
-    /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Row, null, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Expanded, null, /* @__PURE__ */ import_react12.default.createElement(ThemeButton, { text: "Create", onTap: handleCreate, icon: "add" })), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { width: 16 }), /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Expanded, null, /* @__PURE__ */ import_react12.default.createElement(ThemeButton, { text: "Import", onTap: handleImport, variant: "secondary", icon: "file_download" }))),
-    wallets.length > 0 && /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Container, { margin: { top: 12 }, alignment: "center" }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.InkWell, { onTap: handleClearAll }, /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Text, { text: "Clear All Wallets", color: Theme.colors.error, fontSize: 14 })))
+    /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Row, null, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Expanded, null, /* @__PURE__ */ import_react13.default.createElement(ThemeButton, { text: "Create", onTap: handleCreate, icon: "add" })), /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Container, { width: 16 }), /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Expanded, null, /* @__PURE__ */ import_react13.default.createElement(ThemeButton, { text: "Import", onTap: handleImport, variant: "secondary", icon: "file_download" }))),
+    wallets.length > 0 && /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Container, { margin: { top: 12 }, alignment: "center" }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.InkWell, { onTap: handleClearAll }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Text, { text: "Clear All Wallets", color: Theme.colors.error, fontSize: 14 })))
   )));
   if (isModal) {
-    return /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.Scaffold, null, content);
+    return /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Scaffold, null, content);
   }
-  return /* @__PURE__ */ import_react12.default.createElement(
-    import_fuickjs12.Scaffold,
+  return /* @__PURE__ */ import_react13.default.createElement(
+    import_fuickjs13.Scaffold,
     {
-      appBar: /* @__PURE__ */ import_react12.default.createElement(import_fuickjs12.AppBar, { title: "My Wallets", backgroundColor: Theme.colors.surface, elevation: 0 })
+      appBar: /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.AppBar, { title: "My Wallets", backgroundColor: Theme.colors.surface, elevation: 0 })
     },
     content
   );
 }
 
 // src/pages/wallet/ChainSelectPage.tsx
-var import_react13 = __toESM(require_react());
-var import_fuickjs13 = __toESM(require_fuickjs());
+var import_react14 = __toESM(require_react());
+var import_fuickjs14 = __toESM(require_fuickjs());
 function ChainSelectPage() {
-  const navigator = (0, import_fuickjs13.useNavigator)();
-  const [selected, setSelected] = (0, import_react13.useState)(null);
+  const navigator = (0, import_fuickjs14.useNavigator)();
+  const [selected, setSelected] = (0, import_react14.useState)(null);
   const chains = ChainRegistry.list();
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     (async () => {
       const c = await getSelectedChain();
       setSelected(c);
@@ -3287,13 +3481,13 @@ function ChainSelectPage() {
     await setSelectedChain(chain);
     navigator.pop(chain);
   };
-  return /* @__PURE__ */ import_react13.default.createElement(
-    import_fuickjs13.Scaffold,
+  return /* @__PURE__ */ import_react14.default.createElement(
+    import_fuickjs14.Scaffold,
     {
-      appBar: /* @__PURE__ */ import_react13.default.createElement(
-        import_fuickjs13.AppBar,
+      appBar: /* @__PURE__ */ import_react14.default.createElement(
+        import_fuickjs14.AppBar,
         {
-          title: /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Text, { text: "Select Network", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }),
+          title: /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "Select Network", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }),
           centerTitle: true,
           elevation: 0,
           backgroundColor: Theme.colors.surface,
@@ -3301,21 +3495,21 @@ function ChainSelectPage() {
         }
       )
     },
-    /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Padding, { padding: Theme.spacing.m }, /* @__PURE__ */ import_react13.default.createElement(
-      import_fuickjs13.ListView,
+    /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Padding, { padding: Theme.spacing.m }, /* @__PURE__ */ import_react14.default.createElement(
+      import_fuickjs14.ListView,
       {
-        children: chains.map((c) => /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Padding, { padding: { bottom: Theme.spacing.s }, key: c.id }, /* @__PURE__ */ import_react13.default.createElement(
+        children: chains.map((c) => /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Padding, { padding: { bottom: Theme.spacing.s }, key: c.id }, /* @__PURE__ */ import_react14.default.createElement(
           Card,
           {
             padding: 0,
             onTap: () => onChoose(c)
           },
-          /* @__PURE__ */ import_react13.default.createElement(
-            import_fuickjs13.ListTile,
+          /* @__PURE__ */ import_react14.default.createElement(
+            import_fuickjs14.ListTile,
             {
-              title: /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Text, { text: c.name, fontWeight: "bold", color: Theme.colors.textPrimary }),
-              subtitle: /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Text, { text: `${c.symbol || ""} \xB7 ChainId ${c.chainId}`, color: Theme.colors.textSecondary, fontSize: 12 }),
-              trailing: selected?.id === c.id ? /* @__PURE__ */ import_react13.default.createElement(import_fuickjs13.Icon, { name: "check_circle", color: Theme.colors.primary, size: 24 }) : void 0,
+              title: /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: c.name, fontWeight: "bold", color: Theme.colors.textPrimary }),
+              subtitle: /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: `${c.symbol || ""} \xB7 ChainId ${c.chainId}`, color: Theme.colors.textSecondary, fontSize: 12 }),
+              trailing: selected?.id === c.id ? /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Icon, { name: "check_circle", color: Theme.colors.primary, size: 24 }) : void 0,
               contentPadding: { horizontal: 16, vertical: 8 }
             }
           )
@@ -3326,15 +3520,15 @@ function ChainSelectPage() {
 }
 
 // src/pages/wallet/WalletDetailPage.tsx
-var import_react14 = __toESM(require_react());
-var import_fuickjs14 = __toESM(require_fuickjs());
+var import_react15 = __toESM(require_react());
+var import_fuickjs15 = __toESM(require_fuickjs());
 function WalletDetailPage({ walletId }) {
-  const navigator = (0, import_fuickjs14.useNavigator)();
-  const [wallet, setWallet] = (0, import_react14.useState)(null);
-  const [secret, setSecret] = (0, import_react14.useState)(null);
-  const [showMnemonic, setShowMnemonic] = (0, import_react14.useState)(false);
-  const [showPrivateKey, setShowPrivateKey] = (0, import_react14.useState)(false);
-  (0, import_react14.useEffect)(() => {
+  const navigator = (0, import_fuickjs15.useNavigator)();
+  const [wallet, setWallet] = (0, import_react15.useState)(null);
+  const [secret, setSecret] = (0, import_react15.useState)(null);
+  const [showMnemonic, setShowMnemonic] = (0, import_react15.useState)(false);
+  const [showPrivateKey, setShowPrivateKey] = (0, import_react15.useState)(false);
+  (0, import_react15.useEffect)(() => {
     const wm = WalletManager.getInstance();
     const id = walletId || wm.getWallets()[0]?.id;
     if (!id) return;
@@ -3342,8 +3536,16 @@ function WalletDetailPage({ walletId }) {
     setWallet(info || null);
   }, [walletId]);
   const confirmReveal = async (type) => {
+    const isSet = await PasswordService.isPasswordSet();
+    if (isSet) {
+      const verified = await navigator.showDialog(/* @__PURE__ */ import_react15.default.createElement(VerifyPasswordDialog, null));
+      if (!verified) return;
+    } else {
+      const set = await navigator.showDialog(/* @__PURE__ */ import_react15.default.createElement(SetPasswordDialog, null));
+      if (!set) return;
+    }
     const ok = await navigator.showDialog(
-      import_react14.default.createElement(RiskRevealDialog, { type })
+      import_react15.default.createElement(RiskRevealDialog, { type })
     );
     if (!ok) return;
     if (!wallet) return;
@@ -3355,18 +3557,18 @@ function WalletDetailPage({ walletId }) {
   const handleDelete = async () => {
     if (!wallet) return;
     const confirmed = await navigator.showDialog(
-      import_react14.default.createElement(WalletDeleteDialog, { wallet })
+      import_react15.default.createElement(WalletDeleteDialog, { wallet })
     );
     if (confirmed) {
       await WalletManager.getInstance().deleteWallet(wallet.id);
       navigator.pop(true);
     }
   };
-  return /* @__PURE__ */ import_react14.default.createElement(
-    import_fuickjs14.Scaffold,
+  return /* @__PURE__ */ import_react15.default.createElement(
+    import_fuickjs15.Scaffold,
     {
-      appBar: /* @__PURE__ */ import_react14.default.createElement(
-        import_fuickjs14.AppBar,
+      appBar: /* @__PURE__ */ import_react15.default.createElement(
+        import_fuickjs15.AppBar,
         {
           title: "Wallet Details",
           centerTitle: true,
@@ -3375,8 +3577,8 @@ function WalletDetailPage({ walletId }) {
         }
       )
     },
-    /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SingleChildScrollView, null, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Padding, { padding: 20 }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, { crossAxisAlignment: "start" }, wallet ? /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react14.default.createElement(Card, { padding: 20 }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Row, { crossAxisAlignment: "center" }, /* @__PURE__ */ import_react14.default.createElement(
-      import_fuickjs14.Container,
+    /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SingleChildScrollView, null, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Padding, { padding: 20 }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start" }, wallet ? /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react15.default.createElement(Card, { padding: 20 }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Row, { crossAxisAlignment: "center" }, /* @__PURE__ */ import_react15.default.createElement(
+      import_fuickjs15.Container,
       {
         width: 48,
         height: 48,
@@ -3384,37 +3586,37 @@ function WalletDetailPage({ walletId }) {
         alignment: "center",
         margin: { right: 16 }
       },
-      /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Icon, { name: "account_balance_wallet", color: Theme.colors.primary, size: 28 })
-    ), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Expanded, null, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: wallet.name, fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 4 }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: wallet.address, color: Theme.colors.textSecondary, fontSize: 14, maxLines: 1, overflow: "ellipsis" }))))), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 24 }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "Multi-chain Addresses", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 12 }), /* @__PURE__ */ import_react14.default.createElement(Card, { padding: 0 }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, null, ChainRegistry.list().map((chain, index) => /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, { key: chain.id }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Padding, { padding: 16 }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: chain.name, fontSize: 14, color: Theme.colors.textSecondary, fontWeight: "bold" }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 4 }), /* @__PURE__ */ import_react14.default.createElement(
-      import_fuickjs14.Text,
+      /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Icon, { name: "account_balance_wallet", color: Theme.colors.primary, size: 28 })
+    ), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Expanded, null, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: wallet.name, fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 4 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: wallet.address, color: Theme.colors.textSecondary, fontSize: 14, maxLines: 1, overflow: "ellipsis" }))))), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 24 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Multi-chain Addresses", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 12 }), /* @__PURE__ */ import_react15.default.createElement(Card, { padding: 0 }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, null, ChainRegistry.list().map((chain, index) => /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { key: chain.id }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Padding, { padding: 16 }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: chain.name, fontSize: 14, color: Theme.colors.textSecondary, fontWeight: "bold" }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 4 }), /* @__PURE__ */ import_react15.default.createElement(
+      import_fuickjs15.Text,
       {
         text: wallet?.addresses?.[chain.id] || wallet?.address || "Not Generated",
         fontSize: 14,
         color: Theme.colors.textPrimary,
         maxLines: 2
       }
-    ))), index < ChainRegistry.list().length - 1 && /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Container, { height: 1, color: Theme.colors.divider }))))), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 24 }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "Security", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 12 }), /* @__PURE__ */ import_react14.default.createElement(Card, { padding: 16 }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Row, { mainAxisAlignment: "spaceBetween", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Expanded, null, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "Mnemonic Phrase", fontWeight: "bold", fontSize: 16, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 8 }), /* @__PURE__ */ import_react14.default.createElement(
-      import_fuickjs14.Text,
+    ))), index < ChainRegistry.list().length - 1 && /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Container, { height: 1, color: Theme.colors.divider }))))), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 24 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Security", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 12 }), /* @__PURE__ */ import_react15.default.createElement(Card, { padding: 16 }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Row, { mainAxisAlignment: "spaceBetween", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Expanded, null, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Mnemonic Phrase", fontWeight: "bold", fontSize: 16, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 8 }), /* @__PURE__ */ import_react15.default.createElement(
+      import_fuickjs15.Text,
       {
         text: showMnemonic ? secret?.mnemonic || "None" : "******** ******** ******** ********",
         color: Theme.colors.textSecondary,
         fontSize: 14
       }
-    ))), /* @__PURE__ */ import_react14.default.createElement(
+    ))), /* @__PURE__ */ import_react15.default.createElement(
       ThemeButton,
       {
         text: showMnemonic ? "Hide" : "Show",
         onTap: () => showMnemonic ? setShowMnemonic(false) : confirmReveal("mnemonic"),
         variant: "text"
       }
-    ))), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 12 }), /* @__PURE__ */ import_react14.default.createElement(Card, { padding: 16 }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Row, { mainAxisAlignment: "spaceBetween", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Expanded, null, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "Private Key", fontWeight: "bold", fontSize: 16, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 8 }), showPrivateKey ? /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, null, Object.entries(secret?.privateKeys || {}).map(([k, v]) => /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, { key: k }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: `${k.toUpperCase()}:`, fontSize: 12, color: Theme.colors.textSecondary, fontWeight: "bold" }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: v, color: Theme.colors.textPrimary, fontSize: 12 }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 4 }))), (!secret?.privateKeys || Object.keys(secret?.privateKeys).length === 0) && /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "None", color: Theme.colors.textSecondary })) : /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "0x********************************", color: Theme.colors.textSecondary, fontSize: 14 }))), /* @__PURE__ */ import_react14.default.createElement(
+    ))), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 12 }), /* @__PURE__ */ import_react15.default.createElement(Card, { padding: 16 }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Row, { mainAxisAlignment: "spaceBetween", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Expanded, null, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Private Key", fontWeight: "bold", fontSize: 16, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 8 }), showPrivateKey ? /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, null, Object.entries(secret?.privateKeys || {}).map(([k, v]) => /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { key: k }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: `${k.toUpperCase()}:`, fontSize: 12, color: Theme.colors.textSecondary, fontWeight: "bold" }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: v, color: Theme.colors.textPrimary, fontSize: 12 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 4 }))), (!secret?.privateKeys || Object.keys(secret?.privateKeys).length === 0) && /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "None", color: Theme.colors.textSecondary })) : /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "0x********************************", color: Theme.colors.textSecondary, fontSize: 14 }))), /* @__PURE__ */ import_react15.default.createElement(
       ThemeButton,
       {
         text: showPrivateKey ? "Hide" : "Show",
         onTap: () => showPrivateKey ? setShowPrivateKey(false) : confirmReveal("privateKey"),
         variant: "text"
       }
-    ))), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 40 }), /* @__PURE__ */ import_react14.default.createElement(
+    ))), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 40 }), /* @__PURE__ */ import_react15.default.createElement(
       ThemeButton,
       {
         text: "Delete Wallet",
@@ -3423,43 +3625,43 @@ function WalletDetailPage({ walletId }) {
         fullWidth: true,
         icon: "delete"
       }
-    ), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.SizedBox, { height: 20 })) : /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Center, null, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "Wallet Not Found", color: Theme.colors.textSecondary }))))))
+    ), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 20 })) : /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Center, null, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Wallet Not Found", color: Theme.colors.textSecondary }))))))
   );
 }
 function RiskRevealDialog({ type }) {
-  const navigator = (0, import_fuickjs14.useNavigator)();
+  const navigator = (0, import_fuickjs15.useNavigator)();
   const onCancel = () => navigator.pop(false);
   const onOk = () => navigator.pop(true);
-  return /* @__PURE__ */ import_react14.default.createElement(
-    import_fuickjs14.AlertDialog,
+  return /* @__PURE__ */ import_react15.default.createElement(
+    import_fuickjs15.AlertDialog,
     {
-      title: /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "Risk Warning", fontWeight: "bold", color: Theme.colors.textPrimary }),
-      content: /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Column, { crossAxisAlignment: "start", mainAxisSize: "min" }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: type === "mnemonic" ? "Revealing mnemonic phrase exposes full control. Ensure you are in a safe environment." : "Revealing private key exposes funds control. Ensure you are in a safe environment.", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Container, { height: 12 }), /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "Do not screenshot or share. We do not store this information.", color: Theme.colors.error })),
+      title: /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Risk Warning", fontWeight: "bold", color: Theme.colors.textPrimary }),
+      content: /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start", mainAxisSize: "min" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: type === "mnemonic" ? "Revealing mnemonic phrase exposes full control. Ensure you are in a safe environment." : "Revealing private key exposes funds control. Ensure you are in a safe environment.", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Container, { height: 12 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Do not screenshot or share. We do not store this information.", color: Theme.colors.error })),
       actions: [
-        /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.InkWell, { onTap: onCancel }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "Cancel", color: Theme.colors.textSecondary }))),
-        /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.InkWell, { onTap: onOk }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react14.default.createElement(import_fuickjs14.Text, { text: "Confirm Reveal", color: Theme.colors.error, fontWeight: "bold" })))
+        /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.InkWell, { onTap: onCancel }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Cancel", color: Theme.colors.textSecondary }))),
+        /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.InkWell, { onTap: onOk }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Confirm Reveal", color: Theme.colors.error, fontWeight: "bold" })))
       ]
     }
   );
 }
 
 // src/pages/wallet/ReceivePage.tsx
-var import_react15 = __toESM(require_react());
-var import_fuickjs15 = __toESM(require_fuickjs());
+var import_react16 = __toESM(require_react());
 var import_fuickjs16 = __toESM(require_fuickjs());
+var import_fuickjs17 = __toESM(require_fuickjs());
 var import_qrcode = __toESM(require_qrcode());
 function ReceivePage(props) {
-  const [chain, setChain] = (0, import_react15.useState)(null);
+  const [chain, setChain] = (0, import_react16.useState)(null);
   const wallet = props.wallet;
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     (async () => {
       const c = await getSelectedChain();
       setChain(c);
     })();
   }, []);
   const address = wallet?.addresses?.[chain?.id || ""] || wallet?.address;
-  const [error, setError] = (0, import_react15.useState)("");
-  const painter = (0, import_react15.useMemo)(() => {
+  const [error, setError] = (0, import_react16.useState)("");
+  const painter = (0, import_react16.useMemo)(() => {
     if (!address) return null;
     try {
       setError("");
@@ -3470,7 +3672,7 @@ function ReceivePage(props) {
       const containerSize = 220;
       const pixelSize = qrSize / size;
       const offset = (containerSize - qrSize) / 2;
-      return new import_fuickjs16.CustomPainter((p) => {
+      return new import_fuickjs17.CustomPainter((p) => {
         for (let y = 0; y < size; y++) {
           for (let x = 0; x < size; x++) {
             if (data[y * size + x]) {
@@ -3492,8 +3694,8 @@ function ReceivePage(props) {
       return null;
     }
   }, [address]);
-  return /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Scaffold, { appBar: /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.AppBar, { title: "Receive", backgroundColor: Theme.colors.surface, foregroundColor: Theme.colors.textPrimary }) }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Center, null, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: chain?.name || "Loading...", fontWeight: "bold", fontSize: 20, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 30 }), painter ? /* @__PURE__ */ import_react15.default.createElement(
-    import_fuickjs15.Container,
+  return /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Scaffold, { appBar: /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.AppBar, { title: "Receive", backgroundColor: Theme.colors.surface, foregroundColor: Theme.colors.textPrimary }) }, /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Center, null, /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Text, { text: chain?.name || "Loading...", fontWeight: "bold", fontSize: 20, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.SizedBox, { height: 30 }), painter ? /* @__PURE__ */ import_react16.default.createElement(
+    import_fuickjs16.Container,
     {
       width: 240,
       height: 240,
@@ -3504,9 +3706,9 @@ function ReceivePage(props) {
         boxShadow: Theme.shadows.medium
       }
     },
-    /* @__PURE__ */ import_react15.default.createElement(import_fuickjs16.CustomPaint, { painter, size: { width: 220, height: 220 } })
-  ) : /* @__PURE__ */ import_react15.default.createElement(
-    import_fuickjs15.Container,
+    /* @__PURE__ */ import_react16.default.createElement(import_fuickjs17.CustomPaint, { painter, size: { width: 220, height: 220 } })
+  ) : /* @__PURE__ */ import_react16.default.createElement(
+    import_fuickjs16.Container,
     {
       width: 240,
       height: 240,
@@ -3517,9 +3719,9 @@ function ReceivePage(props) {
       },
       alignment: "center"
     },
-    /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: error ? "QR Generation Failed" : address ? "Generating..." : "Address not ready", color: error ? Theme.colors.error : Theme.colors.textSecondary, fontWeight: "bold" }), error && /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Padding, { padding: { top: 10 } }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: error, fontSize: 12, color: Theme.colors.error, maxLines: 10, textAlign: "center" })))
-  ), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 30 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Padding, { padding: { horizontal: Theme.spacing.xl } }, /* @__PURE__ */ import_react15.default.createElement(
-    import_fuickjs15.Container,
+    /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Text, { text: error ? "QR Generation Failed" : address ? "Generating..." : "Address not ready", color: error ? Theme.colors.error : Theme.colors.textSecondary, fontWeight: "bold" }), error && /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Padding, { padding: { top: 10 } }, /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Text, { text: error, fontSize: 12, color: Theme.colors.error, maxLines: 10, textAlign: "center" })))
+  ), /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.SizedBox, { height: 30 }), /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Padding, { padding: { horizontal: Theme.spacing.xl } }, /* @__PURE__ */ import_react16.default.createElement(
+    import_fuickjs16.Container,
     {
       padding: Theme.spacing.m,
       decoration: {
@@ -3528,30 +3730,30 @@ function ReceivePage(props) {
         border: { width: 1, color: Theme.colors.divider }
       }
     },
-    /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: address || "", textAlign: "center", color: Theme.colors.textPrimary, fontSize: 14 })
-  )), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 20 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Scan QR code to receive assets", color: Theme.colors.textSecondary, fontSize: 14 })))));
+    /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Text, { text: address || "", textAlign: "center", color: Theme.colors.textPrimary, fontSize: 14 })
+  )), /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.SizedBox, { height: 20 }), /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Text, { text: "Scan QR code to receive assets", color: Theme.colors.textSecondary, fontSize: 14 })))));
 }
 
 // src/app.ts
-var CustomErrorUI = (error) => import_react16.default.createElement(
-  import_fuickjs17.Container,
+var CustomErrorUI = (error) => import_react17.default.createElement(
+  import_fuickjs18.Container,
   { color: "#E0F7FA" },
-  import_react16.default.createElement(
-    import_fuickjs17.Column,
+  import_react17.default.createElement(
+    import_fuickjs18.Column,
     {
       mainAxisAlignment: "center",
       crossAxisAlignment: "center",
       padding: 30
     },
-    import_react16.default.createElement(import_fuickjs17.Text, {
+    import_react17.default.createElement(import_fuickjs18.Text, {
       text: "Oops! Something went wrong",
       fontSize: 22,
       color: "#006064",
       fontWeight: "bold",
       margin: { bottom: 16 }
     }),
-    import_react16.default.createElement(
-      import_fuickjs17.Container,
+    import_react17.default.createElement(
+      import_fuickjs18.Container,
       {
         padding: 12,
         decoration: {
@@ -3561,7 +3763,7 @@ var CustomErrorUI = (error) => import_react16.default.createElement(
         },
         margin: { bottom: 20 }
       },
-      import_react16.default.createElement(import_fuickjs17.Text, {
+      import_react17.default.createElement(import_fuickjs18.Text, {
         text: error?.message || "Unknown Error",
         fontSize: 14,
         color: "#00838F",
@@ -3569,7 +3771,7 @@ var CustomErrorUI = (error) => import_react16.default.createElement(
         overflow: "ellipsis"
       })
     ),
-    import_react16.default.createElement(import_fuickjs17.Button, {
+    import_react17.default.createElement(import_fuickjs18.Button, {
       text: "Retry",
       onTap: () => console.log("Retry...")
     })
@@ -3577,18 +3779,18 @@ var CustomErrorUI = (error) => import_react16.default.createElement(
 );
 function initApp() {
   try {
-    import_fuickjs17.Runtime.bindGlobals();
-    (0, import_fuickjs17.setGlobalErrorFallback)(CustomErrorUI);
-    import_fuickjs17.Router.register("/", (args) => import_react16.default.createElement(BootstrapPage, args));
-    import_fuickjs17.Router.register("/wallet/onboarding", (args) => import_react16.default.createElement(OnboardingPage, args));
-    import_fuickjs17.Router.register("/wallet/create", (args) => import_react16.default.createElement(CreateWalletPage, args));
-    import_fuickjs17.Router.register("/wallet/import", (args) => import_react16.default.createElement(ImportWalletPage, args));
-    import_fuickjs17.Router.register("/wallet/home", (args) => import_react16.default.createElement(MainTabsPage, args));
-    import_fuickjs17.Router.register("/wallet/list", (args) => import_react16.default.createElement(WalletListPage, args));
-    import_fuickjs17.Router.register("/_generic_dialog", (args) => import_react16.default.createElement(import_fuickjs17.GenericPage, args));
-    import_fuickjs17.Router.register("/wallet/detail", (args) => import_react16.default.createElement(WalletDetailPage, args));
-    import_fuickjs17.Router.register("/wallet/receive", (args) => import_react16.default.createElement(ReceivePage, args));
-    import_fuickjs17.Router.register("/wallet/chain_select", (args) => import_react16.default.createElement(ChainSelectPage, args));
+    import_fuickjs18.Runtime.bindGlobals();
+    (0, import_fuickjs18.setGlobalErrorFallback)(CustomErrorUI);
+    import_fuickjs18.Router.register("/", (args) => import_react17.default.createElement(BootstrapPage, args));
+    import_fuickjs18.Router.register("/wallet/onboarding", (args) => import_react17.default.createElement(OnboardingPage, args));
+    import_fuickjs18.Router.register("/wallet/create", (args) => import_react17.default.createElement(CreateWalletPage, args));
+    import_fuickjs18.Router.register("/wallet/import", (args) => import_react17.default.createElement(ImportWalletPage, args));
+    import_fuickjs18.Router.register("/wallet/home", (args) => import_react17.default.createElement(MainTabsPage, args));
+    import_fuickjs18.Router.register("/wallet/list", (args) => import_react17.default.createElement(WalletListPage, args));
+    import_fuickjs18.Router.register("/_generic_dialog", (args) => import_react17.default.createElement(import_fuickjs18.GenericPage, args));
+    import_fuickjs18.Router.register("/wallet/detail", (args) => import_react17.default.createElement(WalletDetailPage, args));
+    import_fuickjs18.Router.register("/wallet/receive", (args) => import_react17.default.createElement(ReceivePage, args));
+    import_fuickjs18.Router.register("/wallet/chain_select", (args) => import_react17.default.createElement(ChainSelectPage, args));
     console.log("Wallet App Initialized");
   } catch (e) {
     console.error("Failed to init app", e);
