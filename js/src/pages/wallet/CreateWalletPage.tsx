@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { AppBar, Button, Center, Column, Scaffold, useNavigator, Container, Text, CircularProgressIndicator, Padding } from "fuickjs";
+import { AppBar, Center, Column, Scaffold, useNavigator, Container, Text, CircularProgressIndicator, Padding, SizedBox } from "fuickjs";
 import { WalletService } from "../../services/WalletService";
 import { WalletManager } from "../../services/WalletManager";
+import { Theme } from "../../theme";
+import { ThemeButton, Card } from "../../components/common";
 
 export default function CreateWalletPage(props: { nextPath?: string }) {
   const navigator = useNavigator();
@@ -20,7 +22,7 @@ export default function CreateWalletPage(props: { nextPath?: string }) {
             // @ts-ignore
             (navigator as any).pushReplace(props.nextPath, w);
           } else {
-            navigator.pop(false, w);
+            navigator.pop(w);
           }
         } else {
           setError("Wallet creation returned null");
@@ -36,27 +38,41 @@ export default function CreateWalletPage(props: { nextPath?: string }) {
 
   if (error) {
     return (
-      <Scaffold appBar={<AppBar title="Error" />}>
+      <Scaffold appBar={<AppBar title="Error" backgroundColor={Theme.colors.surface} foregroundColor={Theme.colors.textPrimary} />}>
         <Center>
-          <Text text={error} color="red" />
-          <Container height={20} />
-          <Button text="Retry" onTap={() => navigator.pop()} />
+          <Padding padding={Theme.spacing.l}>
+            <Column mainAxisAlignment="center" crossAxisAlignment="center">
+              <Container
+                width={64}
+                height={64}
+                decoration={{ color: Theme.colors.error + '1A', borderRadius: 32 }}
+                alignment="center"
+              >
+                <Text text="!" color={Theme.colors.error} fontSize={32} fontWeight="bold" />
+              </Container>
+              <SizedBox height={Theme.spacing.m} />
+              <Text text={error} color={Theme.colors.error} textAlign="center" />
+              <SizedBox height={Theme.spacing.l} />
+              <ThemeButton text="Retry" onTap={() => navigator.pop()} variant="outline" />
+            </Column>
+          </Padding>
         </Center>
       </Scaffold>
     );
   }
 
   return (
-    <Scaffold appBar={<AppBar title="Creating Wallet" />}>
+    <Scaffold appBar={<AppBar title="Creating Wallet" backgroundColor={Theme.colors.surface} foregroundColor={Theme.colors.textPrimary} />}>
       <Center>
         <Column mainAxisAlignment="center" crossAxisAlignment="center">
-          <CircularProgressIndicator />
-          <Container height={24} />
-          <Text text="Creating your secure wallet..." fontWeight="bold" fontSize={16} />
-          <Container height={8} />
-          <Text text="This may take a few seconds." fontSize={12} color="#666666" />
+          <CircularProgressIndicator color={Theme.colors.primary} />
+          <SizedBox height={24} />
+          <Text text="Creating your secure wallet..." fontWeight="bold" fontSize={18} color={Theme.colors.textPrimary} />
+          <SizedBox height={8} />
+          <Text text="This may take a few seconds." fontSize={14} color={Theme.colors.textSecondary} />
         </Column>
       </Center>
     </Scaffold>
   );
 }
+

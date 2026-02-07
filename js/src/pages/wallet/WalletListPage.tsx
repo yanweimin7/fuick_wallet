@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Scaffold, AppBar, ListView, Icon, useNavigator, Text, Container, InkWell, Column, Row, Padding, Expanded, Center, Button, Stack, Positioned, GestureDetector } from 'fuickjs';
+import { Scaffold, AppBar, ListView, Icon, useNavigator, Text, Container, InkWell, Column, Row, Padding, Expanded, Center, Stack, Positioned } from 'fuickjs';
 import { WalletManager, WalletInfo } from '../../services/WalletManager';
 import WalletDeleteDialog from './WalletDeleteDialog';
 import WalletClearDialog from './WalletClearDialog';
 import { getSelectedChain } from '../../services/ChainRegistry';
+import { Theme } from '../../theme';
+import { Card, ThemeButton } from '../../components/common';
 
 export default function WalletListPage(props: { onClose?: (wallet?: WalletInfo) => void, presentation?: string }) {
   const navigator = useNavigator();
@@ -29,7 +31,7 @@ export default function WalletListPage(props: { onClose?: (wallet?: WalletInfo) 
     if (props.onClose) {
       props.onClose(wallet);
     } else {
-      navigator.pop(false, wallet);
+      navigator.pop(wallet);
     }
   };
 
@@ -39,7 +41,7 @@ export default function WalletListPage(props: { onClose?: (wallet?: WalletInfo) 
       if (props.onClose) {
         props.onClose(result as WalletInfo);
       } else {
-        navigator.pop(false, result);
+        navigator.pop(result);
       }
     } else {
       loadWallets();
@@ -52,7 +54,7 @@ export default function WalletListPage(props: { onClose?: (wallet?: WalletInfo) 
       if (props.onClose) {
         props.onClose(result as WalletInfo);
       } else {
-        navigator.pop(false, result);
+        navigator.pop(result);
       }
     } else {
       loadWallets();
@@ -76,133 +78,93 @@ export default function WalletListPage(props: { onClose?: (wallet?: WalletInfo) 
   };
 
   const content = (
-    <Column>
-      {isModal ? (
-        <Container padding={16} alignment="center">
-          <Container width={40} height={4} decoration={{ color: '#ddd', borderRadius: 2 }} />
-          <Container height={10} />
-          <Text text="Select Wallet" fontWeight="bold" fontSize={16} />
-        </Container>
-      ) : (
-        <Container height={1} color="#eee" />
-      )}
-      <Expanded>
-        <ListView
-          itemCount={wallets.length}
-          itemBuilder={(index: number) => {
-            const w = wallets[index];
-            return (
-              <Column>
-                <Container padding={16}>
-                  <Row mainAxisAlignment="spaceBetween" crossAxisAlignment="center">
-                    <Expanded>
-                      <InkWell onTap={() => handleSelect(w)}>
-                        <Column crossAxisAlignment="start">
-                          <Text text={w.name} fontWeight="bold" fontSize={16} />
-                          <Container height={4} />
-                          <Text
-                            text={(() => {
-                              const addr = (w.addresses && chainId) ? (w.addresses[chainId] || w.address) : w.address;
-                              const head = addr.substring(0, 6);
-                              const tail = addr.substring(addr.length - 4);
-                              return head + "..." + tail;
-                            })()}
-                            fontSize={14}
-                            color="#666"
-                          />
-                        </Column>
-                      </InkWell>
-                    </Expanded>
-                    <Row>
-                      {w.type === 'mnemonic' ?
-                        <Container padding={{ horizontal: 8, vertical: 4 }} decoration={{ color: '#E3F2FD', borderRadius: 4 }}>
-                          <Text text="HD" fontSize={10} color="#1976D2" />
-                        </Container>
-                        :
-                        <Container padding={{ horizontal: 8, vertical: 4 }} decoration={{ color: '#FFF3E0', borderRadius: 4 }}>
-                          <Text text="PK" fontSize={10} color="#F57C00" />
-                        </Container>
-                      }
-                      <Container width={16} />
-                      <GestureDetector onTap={() => handleDeleteWallet(w)}>
-                        <Container padding={8}>
-                          <Icon name="delete" color="#aaa" size={20} />
-                        </Container>
-                      </GestureDetector>
-                    </Row>
-                  </Row>
-                </Container>
-                <Container height={1} color="#f0f0f0" />
-              </Column>
-            );
-          }}
-        />
-      </Expanded>
-      <Padding padding={20}>
+    <Stack fit="expand">
+      <Positioned top={0} left={0} right={0} bottom={0}>
+        <Container color={Theme.colors.background} />
+      </Positioned>
+      <Positioned top={0} left={0} right={0} bottom={0}>
         <Column>
-          <InkWell onTap={handleCreate}>
-            <Container
-              height={48}
-              decoration={{
-                color: "#2196F3",
-                borderRadius: 24,
+          {isModal ? (
+            <Container padding={16} alignment="center" decoration={{ color: Theme.colors.surface }}>
+              <Container width={40} height={4} decoration={{ color: Theme.colors.divider, borderRadius: 2 }} />
+              <Container height={12} />
+              <Text text="Select Wallet" fontWeight="bold" fontSize={18} color={Theme.colors.textPrimary} />
+            </Container>
+          ) : (
+            <Container height={1} color={Theme.colors.divider} />
+          )}
+          <Expanded>
+            <ListView
+              padding={{ top: 16, left: 16, right: 16, bottom: 100 }}
+              itemCount={wallets.length}
+              itemBuilder={(index: number) => {
+                const w = wallets[index];
+                return (
+                  <Padding padding={{ bottom: 12 }}>
+                    <Card padding={16} onTap={() => handleSelect(w)}>
+                      <Row mainAxisAlignment="spaceBetween" crossAxisAlignment="center">
+                        <Expanded>
+                          <Column crossAxisAlignment="start">
+                            <Text text={w.name} fontSize={16} fontWeight="bold" color={Theme.colors.textPrimary} />
+                            <Container height={4} />
+                            <Text
+                              text={`${w.address.substring(0, 10)}...${w.address.substring(w.address.length - 8)}`}
+                              fontSize={12}
+                              color={Theme.colors.textSecondary}
+                            />
+                          </Column>
+                        </Expanded>
+                        <InkWell onTap={() => handleDeleteWallet(w)}>
+                          <Padding padding={8}>
+                            <Icon name="delete_outline" color={Theme.colors.error} size={20} />
+                          </Padding>
+                        </InkWell>
+                      </Row>
+                    </Card>
+                  </Padding>
+                );
               }}
-              alignment="center"
-            >
-              <Row mainAxisAlignment="center">
-                <Icon name="add" color="white" />
-                <Container width={8} />
-                <Text text="Create New Wallet" color="white" fontWeight="bold" />
-              </Row>
-            </Container>
-          </InkWell>
-          <Container height={12} />
-          <InkWell onTap={handleImport}>
-            <Container
-              height={48}
-              decoration={{
-                color: "white",
-                borderRadius: 24,
-                border: { width: 1, color: "#2196F3" }
-              }}
-              alignment="center"
-            >
-              <Row mainAxisAlignment="center">
-                <Icon name="file_download" color="#2196F3" />
-                <Container width={8} />
-                <Text text="Import Wallet" color="#2196F3" fontWeight="bold" />
-              </Row>
-            </Container>
-          </InkWell>
-          <Container height={20} />
-          <InkWell onTap={handleClearAll}>
-            <Container
-              height={48}
-              alignment="center"
-            >
-              <Text text="Clear Local Wallets" color="red" />
-            </Container>
-          </InkWell>
+            />
+          </Expanded>
         </Column>
-      </Padding>
-    </Column>
+      </Positioned>
+      {/* Bottom Buttons */}
+      <Positioned bottom={0} left={0} right={0}>
+        <Container
+          padding={20}
+          decoration={{
+            color: Theme.colors.surface,
+            boxShadow: Theme.shadows.medium
+          }}
+        >
+          <Row>
+            <Expanded>
+              <ThemeButton text="Create" onTap={handleCreate} icon="add" />
+            </Expanded>
+            <Container width={16} />
+            <Expanded>
+              <ThemeButton text="Import" onTap={handleImport} variant="secondary" icon="file_download" />
+            </Expanded>
+          </Row>
+          {wallets.length > 0 && (
+            <Container margin={{ top: 12 }} alignment="center">
+              <InkWell onTap={handleClearAll}>
+                <Text text="Clear All Wallets" color={Theme.colors.error} fontSize={14} />
+              </InkWell>
+            </Container>
+          )}
+        </Container>
+      </Positioned>
+    </Stack>
   );
 
   if (isModal) {
-    return (
-      <Container decoration={{ color: "white", borderRadius: { topLeft: 16, topRight: 16 } }}>
-        {content}
-      </Container>
-    );
+    return <Scaffold>{content}</Scaffold>;
   }
 
   return (
     <Scaffold
-      appBar={
-        <AppBar
-          title="Wallets"
-        />
-      }
+      appBar={<AppBar title="My Wallets" backgroundColor={Theme.colors.surface} elevation={0} />}
     >
       {content}
     </Scaffold>

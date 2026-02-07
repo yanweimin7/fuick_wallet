@@ -4,6 +4,7 @@ import { WalletInfo } from "../../services/WalletManager";
 import HomePage from "./HomePage";
 import MarketPage from "./MarketPage";
 import WalletHomePage from "./WalletHomePage";
+import { Theme } from "../../theme";
 
 export default function MainTabsPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -24,6 +25,9 @@ export default function MainTabsPage() {
         <BottomNavigationBar
           currentIndex={currentIndex}
           onTap={handleTabTap}
+          selectedItemColor={Theme.colors.primary}
+          unselectedItemColor={Theme.colors.textSecondary}
+          backgroundColor={Theme.colors.surface}
           items={[
             <BottomNavigationBarItem
               key="home"
@@ -45,7 +49,6 @@ export default function MainTabsPage() {
       }
     >
       <PageView
-        physics={'never'}
         ref={pageViewRef}
         onPageChanged={handlePageChanged}
         initialPage={0}

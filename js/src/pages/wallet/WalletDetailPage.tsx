@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { AppBar, AlertDialog, Button, Column, Container, Icon, InkWell, Padding, Row, Scaffold, Text, useNavigator, SingleChildScrollView, Expanded } from 'fuickjs';
+import { AppBar, AlertDialog, Column, Container, Icon, InkWell, Padding, Row, Scaffold, Text, useNavigator, SingleChildScrollView, Expanded, Center, SizedBox } from 'fuickjs';
 import { ChainRegistry } from '../../services/ChainRegistry';
 import { WalletInfo, WalletManager, WalletSecret } from '../../services/WalletManager';
+import WalletDeleteDialog from './WalletDeleteDialog';
+import { Theme } from '../../theme';
+import { Card, ThemeButton } from '../../components/common';
 
 export default function WalletDetailPage({ walletId }: { walletId?: string }) {
   const navigator = useNavigator();
@@ -31,131 +34,163 @@ export default function WalletDetailPage({ walletId }: { walletId?: string }) {
     if (type === 'privateKey') setShowPrivateKey(true);
   };
 
+  const handleDelete = async () => {
+    if (!wallet) return;
+    // @ts-ignore
+    const confirmed = await navigator.showDialog(
+      React.createElement(WalletDeleteDialog, { wallet })
+    );
+    if (confirmed) {
+      await WalletManager.getInstance().deleteWallet(wallet.id);
+      navigator.pop(true);
+    }
+  };
+
   return (
     <Scaffold
       appBar={
         <AppBar
-          title={<Text text="钱包详情" fontWeight="bold" />}
+          title="Wallet Details"
           centerTitle={true}
+          backgroundColor={Theme.colors.surface}
           elevation={0}
         />
       }
     >
-      <SingleChildScrollView>
-        <Padding padding={{ horizontal: 20, vertical: 12 }}>
-          <Column crossAxisAlignment="start">
-            <Text text="基本信息" fontWeight="bold" fontSize={16} />
-            <Container height={8} />
-            {wallet ? (
-              <Column crossAxisAlignment="start">
-                <Row crossAxisAlignment="center">
-                  <Container
-                    width={36}
-                    height={36}
-                    decoration={{ color: '#E0F7FA', borderRadius: 18 }}
-                    alignment="center"
-                    margin={{ right: 8 }}
-                  >
-                    <Icon name="account_balance_wallet" color="#006064" />
-                  </Container>
-                  <Expanded><Column crossAxisAlignment="start">
-                    <Text text={wallet.name} fontWeight="bold" />
-                    <Text text={wallet.address} color="#666666" maxLines={1} overflow="ellipsis" />
-                  </Column></Expanded>
-                </Row>
+      <Container color={Theme.colors.background}>
+        <SingleChildScrollView>
+          <Padding padding={20}>
+            <Column crossAxisAlignment="start">
+              {wallet ? (
+                <Column crossAxisAlignment="start">
+                  {/* Basic Info */}
+                  <Card padding={20}>
+                    <Row crossAxisAlignment="center">
+                      <Container
+                        width={48}
+                        height={48}
+                        decoration={{ color: Theme.colors.primaryLight + '33', borderRadius: 24 }}
+                        alignment="center"
+                        margin={{ right: 16 }}
+                      >
+                        <Icon name="account_balance_wallet" color={Theme.colors.primary} size={28} />
+                      </Container>
+                      <Expanded>
+                        <Column crossAxisAlignment="start">
+                          <Text text={wallet.name} fontWeight="bold" fontSize={18} color={Theme.colors.textPrimary} />
+                          <SizedBox height={4} />
+                          <Text text={wallet.address} color={Theme.colors.textSecondary} fontSize={14} maxLines={1} overflow="ellipsis" />
+                        </Column>
+                      </Expanded>
+                    </Row>
+                  </Card>
 
-                <Container height={20} />
-                <Text text="多链地址" fontWeight="bold" fontSize={16} />
-                <Container height={8} />
-                <Container
-                  padding={12}
-                  decoration={{ color: '#FAFAFA', borderRadius: 8, border: { width: 1, color: '#EEEEEE' } }}
-                >
-                  <Column>
-                    {ChainRegistry.list().map((chain, index) => (
-                      <Column key={chain.id}>
-                        <Container padding={{ vertical: 8 }}>
-                          <Column crossAxisAlignment="start">
-                            <Text text={chain.name} fontSize={12} color="#666" fontWeight="bold" />
-                            <Container height={4} />
-                            <Text
-                              text={wallet?.addresses?.[chain.id] || wallet?.address || '未生成'}
-                              fontSize={13}
-                              color="#333"
-                              maxLines={2}
-                            />
-                          </Column>
-                        </Container>
-                        {index < ChainRegistry.list().length - 1 && (
-                          <Container height={1} color="#EEEEEE" />
-                        )}
-                      </Column>
-                    ))}
-                  </Column>
-                </Container>
+                  <SizedBox height={24} />
+                  <Text text="Multi-chain Addresses" fontWeight="bold" fontSize={18} color={Theme.colors.textPrimary} />
+                  <SizedBox height={12} />
 
-                <Container height={20} />
-                <Text text="安全信息" fontWeight="bold" fontSize={16} />
-                <Container height={8} />
+                  <Card padding={0}>
+                    <Column>
+                      {ChainRegistry.list().map((chain, index) => (
+                        <Column key={chain.id}>
+                          <Padding padding={16}>
+                            <Column crossAxisAlignment="start">
+                              <Text text={chain.name} fontSize={14} color={Theme.colors.textSecondary} fontWeight="bold" />
+                              <SizedBox height={4} />
+                              <Text
+                                text={wallet?.addresses?.[chain.id] || wallet?.address || 'Not Generated'}
+                                fontSize={14}
+                                color={Theme.colors.textPrimary}
+                                maxLines={2}
+                              />
+                            </Column>
+                          </Padding>
+                          {index < ChainRegistry.list().length - 1 && (
+                            <Container height={1} color={Theme.colors.divider} />
+                          )}
+                        </Column>
+                      ))}
+                    </Column>
+                  </Card>
 
-                <Container
-                  padding={12}
-                  decoration={{ color: '#FAFAFA', borderRadius: 8, border: { width: 1, color: '#EEEEEE' } }}
-                >
-                  <Row mainAxisAlignment="spaceBetween" crossAxisAlignment="center">
-                    <Expanded>
-                      <Column crossAxisAlignment="start">
-                        <Text text="助记词" fontWeight="bold" />
-                        <Container height={4} />
-                        <Text
-                          text={
-                            showMnemonic ? (secret?.mnemonic || '无') : '******** ******** ******** ********'
-                          }
-                          color="#333333"
-                        />
-                      </Column>
-                    </Expanded>
-                    <Button text={showMnemonic ? '隐藏' : '显示'} onTap={() => (showMnemonic ? setShowMnemonic(false) : confirmReveal('mnemonic'))} />
-                  </Row>
-                </Container>
+                  <SizedBox height={24} />
+                  <Text text="Security" fontWeight="bold" fontSize={18} color={Theme.colors.textPrimary} />
+                  <SizedBox height={12} />
 
-                <Container height={12} />
+                  {/* Mnemonic Section */}
+                  <Card padding={16}>
+                    <Row mainAxisAlignment="spaceBetween" crossAxisAlignment="center">
+                      <Expanded>
+                        <Column crossAxisAlignment="start">
+                          <Text text="Mnemonic Phrase" fontWeight="bold" fontSize={16} color={Theme.colors.textPrimary} />
+                          <SizedBox height={8} />
+                          <Text
+                            text={
+                              showMnemonic ? (secret?.mnemonic || 'None') : '******** ******** ******** ********'
+                            }
+                            color={Theme.colors.textSecondary}
+                            fontSize={14}
+                          />
+                        </Column>
+                      </Expanded>
+                      <ThemeButton
+                        text={showMnemonic ? 'Hide' : 'Show'}
+                        onTap={() => (showMnemonic ? setShowMnemonic(false) : confirmReveal('mnemonic'))}
+                        variant="text"
+                      />
+                    </Row>
+                  </Card>
 
-                <Container
-                  padding={12}
-                  decoration={{ color: '#FAFAFA', borderRadius: 8, border: { width: 1, color: '#EEEEEE' } }}
-                >
-                  <Row mainAxisAlignment="spaceBetween" crossAxisAlignment="center">
-                    <Expanded>
-                      <Column crossAxisAlignment="start">
-                        <Text text="私钥" fontWeight="bold" />
-                        <Container height={4} />
-                        {showPrivateKey ? (
-                          <Column>
-                            {Object.entries(secret?.privateKeys || {}).map(([k, v]) => (
-                              <Column key={k}>
-                                <Text text={`${k.toUpperCase()}:`} fontSize={12} color="#666" fontWeight="bold" />
-                                <Text text={v} color="#333333" fontSize={12} />
-                                <Container height={4} />
-                              </Column>
-                            ))}
-                            {(!secret?.privateKeys || Object.keys(secret?.privateKeys).length === 0) && <Text text="无" color="#333333" />}
-                          </Column>
-                        ) : (
-                          <Text text="0x********************************" color="#333333" />
-                        )}
-                      </Column>
-                    </Expanded>
-                    <Button text={showPrivateKey ? '隐藏' : '显示'} onTap={() => (showPrivateKey ? setShowPrivateKey(false) : confirmReveal('privateKey'))} />
-                  </Row>
-                </Container>
-              </Column>
-            ) : (
-              <Text text="未找到钱包" />
-            )}
-          </Column>
-        </Padding>
-      </SingleChildScrollView>
+                  <SizedBox height={12} />
+
+                  {/* Private Key Section */}
+                  <Card padding={16}>
+                    <Row mainAxisAlignment="spaceBetween" crossAxisAlignment="center">
+                      <Expanded>
+                        <Column crossAxisAlignment="start">
+                          <Text text="Private Key" fontWeight="bold" fontSize={16} color={Theme.colors.textPrimary} />
+                          <SizedBox height={8} />
+                          {showPrivateKey ? (
+                            <Column>
+                              {Object.entries(secret?.privateKeys || {}).map(([k, v]) => (
+                                <Column key={k}>
+                                  <Text text={`${k.toUpperCase()}:`} fontSize={12} color={Theme.colors.textSecondary} fontWeight="bold" />
+                                  <Text text={v} color={Theme.colors.textPrimary} fontSize={12} />
+                                  <SizedBox height={4} />
+                                </Column>
+                              ))}
+                              {(!secret?.privateKeys || Object.keys(secret?.privateKeys).length === 0) && <Text text="None" color={Theme.colors.textSecondary} />}
+                            </Column>
+                          ) : (
+                            <Text text="0x********************************" color={Theme.colors.textSecondary} fontSize={14} />
+                          )}
+                        </Column>
+                      </Expanded>
+                      <ThemeButton
+                        text={showPrivateKey ? 'Hide' : 'Show'}
+                        onTap={() => (showPrivateKey ? setShowPrivateKey(false) : confirmReveal('privateKey'))}
+                        variant="text"
+                      />
+                    </Row>
+                  </Card>
+
+                  <SizedBox height={40} />
+                  <ThemeButton
+                    text="Delete Wallet"
+                    variant="danger"
+                    onTap={handleDelete}
+                    fullWidth
+                    icon="delete"
+                  />
+                  <SizedBox height={20} />
+                </Column>
+              ) : (
+                <Center><Text text="Wallet Not Found" color={Theme.colors.textSecondary} /></Center>
+              )}
+            </Column>
+          </Padding>
+        </SingleChildScrollView>
+      </Container>
     </Scaffold>
   );
 }
@@ -166,26 +201,27 @@ function RiskRevealDialog({ type }: { type: 'mnemonic' | 'privateKey' }) {
   const onOk = () => navigator.pop(true);
   return (
     <AlertDialog
-      title={<Text text="风险提示" fontWeight="bold" />}
+      title={<Text text="Risk Warning" fontWeight="bold" color={Theme.colors.textPrimary} />}
       content={
         <Column crossAxisAlignment="start" mainAxisSize="min">
-          <Text text={type === 'mnemonic' ? '显示助记词将暴露恢复权限，请确保周围环境安全。' : '显示私钥将暴露资金控制权，请确保周围环境安全。'} />
-          <Container height={8} />
-          <Text text="请勿截图或随意分享。我们不会远程保存此信息。" color="red" />
+          <Text text={type === 'mnemonic' ? 'Revealing mnemonic phrase exposes full control. Ensure you are in a safe environment.' : 'Revealing private key exposes funds control. Ensure you are in a safe environment.'} color={Theme.colors.textPrimary} />
+          <Container height={12} />
+          <Text text="Do not screenshot or share. We do not store this information." color={Theme.colors.error} />
         </Column>
       }
       actions={[
         <InkWell onTap={onCancel}>
           <Container padding={{ horizontal: 16, vertical: 8 }}>
-            <Text text="取消" />
+            <Text text="Cancel" color={Theme.colors.textSecondary} />
           </Container>
         </InkWell>,
         <InkWell onTap={onOk}>
           <Container padding={{ horizontal: 16, vertical: 8 }}>
-            <Text text="确认显示" color="red" fontWeight="bold" />
+            <Text text="Confirm Reveal" color={Theme.colors.error} fontWeight="bold" />
           </Container>
         </InkWell>,
       ]}
     />
   );
 }
+

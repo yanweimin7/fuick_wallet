@@ -8,6 +8,10 @@ var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -103,7 +107,7 @@ var require_react_production_min = __commonJS({
     function O(a) {
       return "object" === typeof a && null !== a && a.$$typeof === l;
     }
-    function escape(a) {
+    function escape2(a) {
       var b = { "=": "=0", ":": "=2" };
       return "$" + a.replace(/[=:]/g, function(a2) {
         return b[a2];
@@ -111,7 +115,7 @@ var require_react_production_min = __commonJS({
     }
     var P = /\/+/g;
     function Q(a, b) {
-      return "object" === typeof a && null !== a && null != a.key ? escape("" + a.key) : b.toString(36);
+      return "object" === typeof a && null !== a && null != a.key ? escape2("" + a.key) : b.toString(36);
     }
     function R(a, b, e, d, c) {
       var k = typeof a;
@@ -295,117 +299,6 @@ var require_react_production_min = __commonJS({
       return U.current.useTransition();
     };
     exports.version = "18.3.1";
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/types.js
-var require_types = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/types.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/PageContext.js
-var require_PageContext = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/PageContext.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.PageContext = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    exports.PageContext = react_1.default.createContext({ pageId: 0 });
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/utils/ids.js
-var require_ids = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/utils/ids.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.refsId = refsId;
-    var idCounter = 0;
-    function refsId(seed) {
-      if (seed) {
-        return `ref_${seed}`;
-      }
-      return `ref_${Date.now()}_${idCounter++}`;
-    }
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/services/UIService.js
-var require_UIService = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/services/UIService.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.UIService = void 0;
-    var UIService = class {
-      static renderUI(pageId, renderData) {
-        dartCallNative("UI.renderUI", { pageId, renderData });
-      }
-      static patchUI(pageId, patches) {
-        dartCallNative("UI.patchUI", { pageId, patches });
-      }
-      static patchOps(pageId, ops) {
-        dartCallNative("UI.patchOps", { pageId, ops });
-      }
-      static componentCommand(pageId, refId, method, args, nodeType) {
-        dartCallNative("UI.componentCommand", {
-          pageId,
-          refId,
-          method,
-          args,
-          nodeType
-        });
-      }
-      static isWidgetRegistered(type) {
-        return dartCallNative("UI.isWidgetRegistered", [type]);
-      }
-    };
-    exports.UIService = UIService;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/BaseWidget.js
-var require_BaseWidget = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/BaseWidget.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseWidget = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var PageContext_1 = require_PageContext();
-    var ids_1 = require_ids();
-    var UIService_1 = require_UIService();
-    var BaseWidget = class extends react_1.default.Component {
-      constructor() {
-        super(...arguments);
-        this._internalRefId = (0, ids_1.refsId)();
-      }
-      get rawRefId() {
-        return this.props.refId || this.props.id?.toString() || this.props.key?.toString() || this._internalRefId;
-      }
-      get pageId() {
-        return this.context?.pageId || 0;
-      }
-      get scopedRefId() {
-        const raw = this.rawRefId;
-        if (raw.indexOf(":") !== -1) {
-          return raw;
-        }
-        return `${this.pageId}:${raw}`;
-      }
-      callNativeCommand(method, args = {}, nodeType) {
-        UIService_1.UIService.componentCommand(this.pageId, this.scopedRefId, method, args, nodeType || this.constructor.name);
-      }
-    };
-    exports.BaseWidget = BaseWidget;
-    BaseWidget.contextType = PageContext_1.PageContext;
   }
 });
 
@@ -5411,871 +5304,418 @@ var require_react_reconciler_production_min = __commonJS({
   }
 });
 
-// ../../fuickjs_framework/fuickjs/dist/hostConfig.js
-var require_hostConfig = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/hostConfig.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.createHostConfig = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    function deepEqual(objA, objB) {
-      if (objA === objB)
-        return true;
-      if (!objA || !objB || typeof objA !== "object" || typeof objB !== "object")
-        return false;
-      if (react_1.default.isValidElement(objA) || react_1.default.isValidElement(objB)) {
-        return false;
-      }
-      const recordA = objA;
-      const recordB = objB;
-      const keysA = Object.keys(recordA);
-      const keysB = Object.keys(recordB);
-      if (keysA.length !== keysB.length)
-        return false;
-      for (const key of keysA) {
-        if (!Object.prototype.hasOwnProperty.call(recordB, key))
-          return false;
-        const valA = recordA[key];
-        const valB = recordB[key];
-        if (valA && valB && typeof valA === "object" && typeof valB === "object") {
-          if (!deepEqual(valA, valB))
-            return false;
-        } else if (valA !== valB) {
-          return false;
+// src/framework_entry.ts
+var import_react74 = __toESM(require_react_production_min());
+
+// ../../fuickjs_framework/fuickjs/src/index.ts
+var src_exports = {};
+__export(src_exports, {
+  AlertDialog: () => AlertDialog,
+  AnimatedAlign: () => AnimatedAlign,
+  AnimatedContainer: () => AnimatedContainer,
+  AnimatedOpacity: () => AnimatedOpacity,
+  AnimatedPadding: () => AnimatedPadding,
+  AnimatedPositioned: () => AnimatedPositioned,
+  AnimatedRotation: () => AnimatedRotation,
+  AnimatedScale: () => AnimatedScale,
+  AnimatedSlide: () => AnimatedSlide,
+  AppBar: () => AppBar,
+  BaseWidget: () => BaseWidget,
+  BottomNavigationBar: () => BottomNavigationBar,
+  BottomNavigationBarItem: () => BottomNavigationBarItem,
+  Button: () => Button,
+  Card: () => Card,
+  Center: () => Center,
+  Checkbox: () => Checkbox,
+  CircularProgressIndicator: () => CircularProgressIndicator,
+  Column: () => Column,
+  ConstrainedBox: () => ConstrainedBox,
+  Container: () => Container,
+  CustomPaint: () => CustomPaint,
+  CustomPainter: () => CustomPainter,
+  CustomScrollView: () => CustomScrollView,
+  DefaultTabController: () => DefaultTabController,
+  Divider: () => Divider,
+  ErrorBoundary: () => ErrorBoundary,
+  ErrorHandler: () => ErrorHandler,
+  Expanded: () => Expanded,
+  FittedBox: () => FittedBox,
+  Flexible: () => Flexible,
+  FlutterProps: () => FlutterProps,
+  Fuick: () => Fuick,
+  GenericPage: () => GenericPage,
+  GestureDetector: () => GestureDetector,
+  GridView: () => GridView,
+  Icon: () => Icon,
+  Image: () => Image,
+  InkWell: () => InkWell,
+  IntrinsicHeight: () => IntrinsicHeight,
+  IntrinsicWidth: () => IntrinsicWidth,
+  KeepAlive: () => KeepAlive,
+  ListTile: () => ListTile,
+  ListView: () => ListView,
+  NativeEvent: () => NativeEvent,
+  Opacity: () => Opacity,
+  Padding: () => Padding,
+  PageContext: () => PageContext,
+  PageView: () => PageView,
+  Positioned: () => Positioned,
+  RotationTransition: () => RotationTransition,
+  Router: () => Router,
+  Row: () => Row,
+  Runtime: () => Runtime,
+  SafeArea: () => SafeArea,
+  Scaffold: () => Scaffold,
+  ScaleTransition: () => ScaleTransition,
+  ScrollableBaseWidget: () => ScrollableBaseWidget,
+  SingleChildScrollView: () => SingleChildScrollView,
+  SizedBox: () => SizedBox,
+  SlideTransition: () => SlideTransition,
+  SliverAppBar: () => SliverAppBar,
+  SliverGrid: () => SliverGrid,
+  SliverList: () => SliverList,
+  SliverPersistentHeader: () => SliverPersistentHeader,
+  SliverToBoxAdapter: () => SliverToBoxAdapter,
+  Stack: () => Stack,
+  Switch: () => Switch,
+  Tab: () => Tab,
+  TabBar: () => TabBar,
+  TabBarView: () => TabBarView,
+  Text: () => Text,
+  TextField: () => TextField,
+  VideoPlayer: () => VideoPlayer,
+  Visibility: () => Visibility,
+  VisibilityDetector: () => VisibilityDetector,
+  Wrap: () => Wrap,
+  bindGlobals: () => bindGlobals,
+  clearInterval: () => clearInterval,
+  clearTimeout: () => clearTimeout2,
+  createRenderer: () => createRenderer,
+  destroy: () => destroy,
+  dispatchEvent: () => dispatchEvent,
+  elementToDsl: () => elementToDsl,
+  ensureRenderer: () => ensureRenderer,
+  error: () => error,
+  fetch: () => fetch,
+  getContainer: () => getContainer,
+  getItemDSL: () => getItemDSL,
+  log: () => log,
+  match: () => match,
+  notifyLifecycle: () => notifyLifecycle,
+  refsId: () => refsId,
+  register: () => register,
+  render: () => render,
+  setGlobalErrorFallback: () => setGlobalErrorFallback,
+  setInterval: () => setInterval,
+  setTimeout: () => setTimeout2,
+  useInvisible: () => useInvisible,
+  useNavigator: () => useNavigator,
+  usePageId: () => usePageId,
+  useVisible: () => useVisible,
+  warn: () => warn
+});
+
+// ../../fuickjs_framework/fuickjs/src/polyfills.ts
+if (typeof TextEncoder === "undefined") {
+  class TextEncoderPolyfill {
+    encode(str) {
+      const arr = [];
+      for (let i = 0; i < str.length; i++) {
+        let code = str.charCodeAt(i);
+        if (code < 128) {
+          arr.push(code);
+        } else if (code < 2048) {
+          arr.push(192 | code >> 6);
+          arr.push(128 | code & 63);
+        } else if (code < 55296 || code >= 57344) {
+          arr.push(224 | code >> 12);
+          arr.push(128 | code >> 6 & 63);
+          arr.push(128 | code & 63);
+        } else {
+          i++;
+          code = 65536 + ((code & 1023) << 10 | str.charCodeAt(i) & 1023);
+          arr.push(240 | code >> 18);
+          arr.push(128 | code >> 12 & 63);
+          arr.push(128 | code >> 6 & 63);
+          arr.push(128 | code & 63);
         }
       }
-      return true;
+      return new Uint8Array(arr);
     }
-    function diffProps(oldProps, newProps) {
-      const updatePayload = [];
-      let hasChanges = false;
-      let hasDslChanges = false;
-      for (const key in oldProps) {
-        if (key === "children")
-          continue;
-        if (!(key in newProps)) {
-          updatePayload.push(key, null);
-          hasChanges = true;
+  }
+  globalThis.TextEncoder = TextEncoderPolyfill;
+}
+if (typeof TextDecoder === "undefined") {
+  class TextDecoderPolyfill {
+    decode(arr) {
+      let str = "";
+      for (let i = 0; i < arr.length; i++) {
+        str += String.fromCharCode(arr[i]);
+      }
+      try {
+        return decodeURIComponent(escape(str));
+      } catch (e) {
+        return str;
+      }
+    }
+  }
+  globalThis.TextDecoder = TextDecoderPolyfill;
+}
+if (typeof globalThis.process === "undefined") {
+  globalThis.process = {
+    env: { NODE_ENV: "production" },
+    version: "v16.0.0",
+    nextTick: (cb) => setTimeout(cb, 0)
+  };
+}
+
+// ../../fuickjs_framework/fuickjs/src/widgets/BaseWidget.tsx
+var import_react2 = __toESM(require_react_production_min());
+
+// ../../fuickjs_framework/fuickjs/src/PageContext.ts
+var import_react = __toESM(require_react_production_min());
+var PageContext = import_react.default.createContext({ pageId: 0 });
+
+// ../../fuickjs_framework/fuickjs/src/utils/ids.ts
+var idCounter = 0;
+function refsId(seed) {
+  if (seed) {
+    return `ref_${seed}`;
+  }
+  return `ref_${Date.now()}_${idCounter++}`;
+}
+
+// ../../fuickjs_framework/fuickjs/src/services/UIService.ts
+var UIService = class {
+  static renderUI(pageId, renderData) {
+    dartCallNative("UI.renderUI", { pageId, renderData });
+  }
+  static patchUI(pageId, patches) {
+    dartCallNative("UI.patchUI", { pageId, patches });
+  }
+  static patchOps(pageId, ops) {
+    dartCallNative("UI.patchOps", { pageId, ops });
+  }
+  static componentCommand(pageId, refId, method, args, nodeType) {
+    dartCallNative("UI.componentCommand", {
+      pageId,
+      refId,
+      method,
+      args,
+      nodeType
+    });
+  }
+  static isWidgetRegistered(type) {
+    return dartCallNative("UI.isWidgetRegistered", [type]);
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/BaseWidget.tsx
+var BaseWidget = class extends import_react2.default.Component {
+  constructor() {
+    super(...arguments);
+    this._internalRefId = refsId();
+  }
+  get rawRefId() {
+    return this.props.refId || this.props.id?.toString() || this.props.key?.toString() || this._internalRefId;
+  }
+  get pageId() {
+    return this.context?.pageId || 0;
+  }
+  get scopedRefId() {
+    const raw = this.rawRefId;
+    if (raw.indexOf(":") !== -1) {
+      return raw;
+    }
+    return `${this.pageId}:${raw}`;
+  }
+  callNativeCommand(method, args = {}, nodeType) {
+    UIService.componentCommand(
+      this.pageId,
+      this.scopedRefId,
+      method,
+      args,
+      nodeType || this.constructor.name
+    );
+  }
+};
+BaseWidget.contextType = PageContext;
+
+// ../../fuickjs_framework/fuickjs/src/widgets/ScrollableBaseWidget.tsx
+var import_react8 = __toESM(require_react_production_min());
+
+// ../../fuickjs_framework/fuickjs/src/page_render.ts
+var import_react7 = __toESM(require_react_production_min());
+
+// ../../fuickjs_framework/fuickjs/src/renderer.ts
+var import_react_reconciler = __toESM(require_react_reconciler_production_min());
+
+// ../../fuickjs_framework/fuickjs/src/hostConfig.ts
+var import_react3 = __toESM(require_react_production_min());
+function deepEqual(objA, objB) {
+  if (objA === objB) return true;
+  if (!objA || !objB || typeof objA !== "object" || typeof objB !== "object") return false;
+  if (import_react3.default.isValidElement(objA) || import_react3.default.isValidElement(objB)) {
+    return false;
+  }
+  const recordA = objA;
+  const recordB = objB;
+  const keysA = Object.keys(recordA);
+  const keysB = Object.keys(recordB);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    if (!Object.prototype.hasOwnProperty.call(recordB, key)) return false;
+    const valA = recordA[key];
+    const valB = recordB[key];
+    if (valA && valB && typeof valA === "object" && typeof valB === "object") {
+      if (!deepEqual(valA, valB)) return false;
+    } else if (valA !== valB) {
+      return false;
+    }
+  }
+  return true;
+}
+function diffProps(oldProps, newProps) {
+  const updatePayload = [];
+  let hasChanges = false;
+  let hasDslChanges = false;
+  for (const key in oldProps) {
+    if (key === "children") continue;
+    if (!(key in newProps)) {
+      updatePayload.push(key, null);
+      hasChanges = true;
+      hasDslChanges = true;
+    } else if (oldProps[key] !== newProps[key]) {
+      const oldVal = oldProps[key];
+      const newVal = newProps[key];
+      if (typeof oldVal === "function" && typeof newVal === "function") {
+        updatePayload.push(key, newVal);
+        hasChanges = true;
+        if (key === "itemBuilder") {
           hasDslChanges = true;
-        } else if (oldProps[key] !== newProps[key]) {
-          const oldVal = oldProps[key];
-          const newVal = newProps[key];
-          if (typeof oldVal === "function" && typeof newVal === "function") {
-            updatePayload.push(key, newVal);
-            hasChanges = true;
-            if (key === "itemBuilder") {
-              hasDslChanges = true;
-            }
-          } else if (react_1.default.isValidElement(oldVal) || react_1.default.isValidElement(newVal)) {
-            updatePayload.push(key, newVal);
-            hasChanges = true;
-            hasDslChanges = true;
-          } else if (oldVal && newVal && typeof oldVal === "object" && typeof newVal === "object") {
-            if (!deepEqual(oldVal, newVal)) {
-              updatePayload.push(key, newVal);
-              hasChanges = true;
-              if (!isDslEqual(oldVal, newVal)) {
-                hasDslChanges = true;
-              }
-            }
-          } else {
-            updatePayload.push(key, newVal);
-            hasChanges = true;
-            hasDslChanges = true;
-          }
         }
-      }
-      for (const key in newProps) {
-        if (key === "children")
-          continue;
-        if (!(key in oldProps)) {
-          updatePayload.push(key, newProps[key]);
+      } else if (import_react3.default.isValidElement(oldVal) || import_react3.default.isValidElement(newVal)) {
+        updatePayload.push(key, newVal);
+        hasChanges = true;
+        hasDslChanges = true;
+      } else if (oldVal && newVal && typeof oldVal === "object" && typeof newVal === "object") {
+        if (!deepEqual(oldVal, newVal)) {
+          updatePayload.push(key, newVal);
           hasChanges = true;
-          hasDslChanges = true;
+          if (!isDslEqual(oldVal, newVal)) {
+            hasDslChanges = true;
+          }
         }
+      } else {
+        updatePayload.push(key, newVal);
+        hasChanges = true;
+        hasDslChanges = true;
       }
-      return hasChanges ? { payload: updatePayload, hasDslChanges } : null;
     }
-    function isDslEqual(valA, valB) {
-      if (valA === valB)
-        return true;
-      if (typeof valA === "function" && typeof valB === "function")
-        return true;
-      if (!valA || !valB || typeof valA !== "object" || typeof valB !== "object")
-        return false;
-      if (react_1.default.isValidElement(valA) || react_1.default.isValidElement(valB)) {
-        return false;
-      }
-      if (Array.isArray(valA) !== Array.isArray(valB))
-        return false;
-      if (Array.isArray(valA) && Array.isArray(valB)) {
-        if (valA.length !== valB.length)
-          return false;
-        for (let i = 0; i < valA.length; i++) {
-          if (!isDslEqual(valA[i], valB[i]))
-            return false;
-        }
-        return true;
-      }
-      const recordA = valA;
-      const recordB = valB;
-      const keysA = Object.keys(recordA);
-      const keysB = Object.keys(recordB);
-      if (keysA.length !== keysB.length)
-        return false;
-      for (const key of keysA) {
-        if (!Object.prototype.hasOwnProperty.call(recordB, key))
-          return false;
-        if (!isDslEqual(recordA[key], recordB[key]))
-          return false;
-      }
-      return true;
+  }
+  for (const key in newProps) {
+    if (key === "children") continue;
+    if (!(key in oldProps)) {
+      updatePayload.push(key, newProps[key]);
+      hasChanges = true;
+      hasDslChanges = true;
     }
-    var createHostConfig = () => {
-      return {
-        now: Date.now,
-        supportsMutation: true,
-        supportsMicrotasks: true,
-        scheduleMicrotask: (callback) => {
-          if (typeof queueMicrotask === "function") {
-            queueMicrotask(() => {
-              callback();
-            });
-          } else {
-            Promise.resolve().then(() => {
-              callback();
-            });
-          }
-        },
-        scheduleTimeout: (handler, timeout) => {
-          return setTimeout(handler, timeout);
-        },
-        cancelTimeout: (handle) => {
-          clearTimeout(handle);
-        },
-        noTimeout: -1,
-        isPrimaryRenderer: true,
-        getCurrentEventPriority: () => 16,
-        // DefaultEventPriority
-        getInstanceFromNode: () => null,
-        beforeActiveInstanceBlur: () => {
-        },
-        afterActiveInstanceBlur: () => {
-        },
-        prepareScopeUpdate: () => {
-        },
-        getInstanceFromScope: () => null,
-        getPublicInstance: (inst) => inst,
-        getRootHostContext: (_root) => null,
-        getChildHostContext: (_parentHostContext, _type, _root) => null,
-        shouldSetTextContent: (_type, _props) => false,
-        createInstance: (type, props, container) => {
-          return container.createInstance(type, props);
-        },
-        createTextInstance: (text, container) => {
-          return container.createTextInstance(text);
-        },
-        appendInitialChild: (parent, child) => {
-          child.parent = parent;
-          parent.children.push(child);
-          if (parent.container) {
-            parent.container.markChanged(parent);
-          }
-        },
-        finalizeInitialChildren: (_instance, _type, _props, _rootContainer, _hostContext) => false,
-        appendChildToContainer: (container, child) => {
-          container.appendChildToContainer(child);
-        },
-        appendChild: (parent, child) => {
-          if (parent.container) {
-            parent.container.appendChild(parent, child);
-          } else {
-            child.parent = parent;
-            parent.children.push(child);
-          }
-        },
-        insertBefore: (parent, child, beforeChild) => {
-          if (parent.container) {
-            parent.container.insertBefore(parent, child, beforeChild);
-          } else {
-            child.parent = parent;
-            const i = parent.children.indexOf(beforeChild);
-            if (i >= 0) {
-              parent.children.splice(i, 0, child);
-            } else {
-              parent.children.push(child);
-            }
-          }
-        },
-        removeChild: (parent, child) => {
-          if (parent.container) {
-            parent.container.removeChild(parent, child);
-          } else {
-            const i = parent.children.indexOf(child);
-            if (i >= 0)
-              parent.children.splice(i, 1);
-            child.destroy();
-          }
-        },
-        removeChildFromContainer: (container, child) => {
-          container.removeChildFromContainer(child);
-        },
-        insertInContainerBefore: (container, child, _beforeChild) => {
-          container.appendChildToContainer(child);
-        },
-        resetTextContent: (_instance) => {
-        },
-        detachDeletedInstance: (instance) => {
-          instance.destroy();
-        },
-        clearContainer: (container) => {
-          container.root = null;
-        },
-        prepareUpdate: (_instance, _type, oldProps, newProps, _root, _hostContext) => {
-          return diffProps(oldProps, newProps);
-        },
-        updateFiberProps: (instance, _type, newProps) => {
-          instance.applyProps(newProps);
-        },
-        commitUpdate: (instance, updatePayload, _type, _oldProps, newProps, _internalInstanceHandle) => {
-          instance.applyProps(newProps);
-          if (updatePayload && updatePayload.hasDslChanges && instance.container) {
-            const container = instance.container;
-            if (instance === container.root) {
-              const changedKeys = updatePayload.payload ? updatePayload.payload.filter((_, i) => i % 2 === 0) : [];
-              console.log(`[HostConfig] markChanged ROOT node=${instance.id} type=${instance.type} due to DSL changes in props:`, changedKeys);
-            }
-            if (typeof container.recordUpdate === "function") {
-              container.recordUpdate(instance, updatePayload.payload);
-            } else if (typeof container.markChanged === "function") {
-              container.markChanged(instance);
-            } else {
-              container.markChanged(instance);
-            }
-          }
-        },
-        commitTextUpdate: (textInstance, _oldText, newText) => {
-          textInstance.props.text = String(newText);
-          if (textInstance.container) {
-            textInstance.container.commitTextUpdate(textInstance, newText);
-          }
-        },
-        resetAfterCommit: (container) => {
-          container.commit();
-        },
-        prepareForCommit: (_container) => {
-        },
-        supportsHydration: false
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      };
-    };
-    exports.createHostConfig = createHostConfig;
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/node.js
-var require_node = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/node.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Node = exports.TEXT_TYPE = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    exports.TEXT_TYPE = "Text";
-    var nextNodeId = 1;
-    var Node = class {
-      constructor(type, props, container) {
-        this.children = [];
-        this.eventKeys = /* @__PURE__ */ new Set();
-        this.id = props && typeof props.id === "number" ? props.id : nextNodeId++;
-        this.type = type;
-        this.props = {};
-        this.container = container;
-        this.container?.registerNode(this);
-        this.applyProps(props);
-      }
-      applyProps(newProps) {
-        const oldRefId = this.props?.refId;
-        if (oldRefId && typeof oldRefId === "string") {
-          this.container?.unregisterNode(this);
-        }
-        this.clearCallbacks();
-        this.props = {};
-        if (newProps) {
-          const propKeys = Object.keys(newProps);
-          for (const key of propKeys) {
-            if (key === "children")
-              continue;
-            const value = newProps[key];
-            this.props[key] = value;
-          }
-          this.registerCallbacksRecursive(newProps);
-        }
-        this.container?.registerNode(this);
-      }
-      registerCallbacksRecursive(obj, initialPath = "") {
-        const stack = [{ obj, path: initialPath }];
-        while (stack.length > 0) {
-          const { obj: currentObj, path: currentPath } = stack.pop();
-          if (!currentObj || typeof currentObj !== "object")
-            continue;
-          if (react_1.default.isValidElement(currentObj))
-            continue;
-          if (Array.isArray(currentObj)) {
-            for (let i = currentObj.length - 1; i >= 0; i--) {
-              stack.push({
-                obj: currentObj[i],
-                path: currentPath ? `${currentPath}[${i}]` : `[${i}]`
-              });
-            }
-            continue;
-          }
-          const objRecord = currentObj;
-          for (const key in objRecord) {
-            if (currentPath === "" && (key === "children" || key === "key" || key === "ref" || key === "isBoundary"))
-              continue;
-            if (key === "itemBuilder")
-              continue;
-            const value = objRecord[key];
-            const fullKey = currentPath ? `${currentPath}.${key}` : key;
-            if (typeof value === "function") {
-              this.saveCallback(fullKey, value);
-            } else if (value && typeof value === "object") {
-              stack.push({ obj: value, path: fullKey });
-            }
-          }
-        }
-      }
-      saveCallback(key, fn) {
-        this.eventKeys.add(key);
-        this.container?.registerCallback(this.id, key, fn);
-      }
-      clearCallbacks() {
-        if (this.container) {
-          for (const key of this.eventKeys) {
-            this.container.unregisterCallback(this.id, key);
-          }
-        }
-        this.eventKeys.clear();
-      }
-      getCallback(key) {
-        return this.container?.getCallback(this.id, key);
-      }
-      toDsl() {
-        const type = this.type;
-        if (!type)
-          return null;
-        const props = this.container ? this.container.processProps(this.id, this.props, type) : {};
-        const refId = this.props?.refId;
-        const children = [];
-        for (const child of this.children) {
-          if (child.type === "FlutterProps" || child.type === "flutter-props") {
-            const propsKey = child.props?.propsKey;
-            if (propsKey) {
-              const propChildren = child.children.map((c) => c.toDsl()).filter((c) => c !== null);
-              if (propChildren.length > 0) {
-                const newValue = propChildren.length === 1 ? propChildren[0] : propChildren;
-                if (props[propsKey]) {
-                  if (Array.isArray(props[propsKey])) {
-                    props[propsKey].push(newValue);
-                  } else {
-                    props[propsKey] = [props[propsKey], newValue];
-                  }
-                } else {
-                  props[propsKey] = newValue;
-                }
-              }
-            }
-          } else {
-            const dslChild = child.toDsl();
-            if (dslChild) {
-              children.push(dslChild);
-            }
-          }
-        }
-        const result = {
-          id: this.id,
-          type: String(type),
-          props,
-          children
-        };
-        if (refId) {
-          const rawRefId = String(refId);
-          const pageId = this.container?.pageId || 0;
-          result.refId = rawRefId.indexOf(":") !== -1 ? rawRefId : `${pageId}:${rawRefId}`;
-        }
-        if (this.props?.isBoundary) {
-          result.isBoundary = true;
-        }
-        return result;
-      }
-      destroy() {
-        const stack = [this];
-        while (stack.length > 0) {
-          const node = stack.pop();
-          node.clearCallbacks();
-          node.container?.unregisterNode(node);
-          for (let i = node.children.length - 1; i >= 0; i--) {
-            stack.push(node.children[i]);
-          }
-          node.children = [];
-        }
-      }
-    };
-    exports.Node = Node;
+  return hasChanges ? { payload: updatePayload, hasDslChanges } : null;
+}
+function isDslEqual(valA, valB) {
+  if (valA === valB) return true;
+  if (typeof valA === "function" && typeof valB === "function") return true;
+  if (!valA || !valB || typeof valA !== "object" || typeof valB !== "object") return false;
+  if (import_react3.default.isValidElement(valA) || import_react3.default.isValidElement(valB)) {
+    return false;
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/strategies/IncrementalStrategy.js
-var require_IncrementalStrategy = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/strategies/IncrementalStrategy.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.IncrementalStrategy = void 0;
-    var UIService_1 = require_UIService();
-    var IncrementalStrategy = class {
-      constructor(container) {
-        this.mutationQueue = [];
-        this.container = container;
-      }
-      recordUpdate(node, updatePayload) {
-        const props = {};
-        for (let i = 0; i < updatePayload.length; i += 2) {
-          const key = updatePayload[i];
-          const val = updatePayload[i + 1];
-          if (key === "children")
-            continue;
-          props[key] = val;
-        }
-        const processed = this.container.processProps(node.id, props, node.type);
-        this.mutationQueue.push({ type: 1, id: node.id, props: processed });
-        this.enqueueBoundaryRefresh(node);
-      }
-      recordInsert(parent, child, index) {
-        if (child.type === "FlutterProps" || child.type === "flutter-props") {
-          this.recordHostUpdateFromFlutterProps(child);
-          return;
-        }
-        if (parent.type === "FlutterProps" || parent.type === "flutter-props") {
-          this.recordHostUpdateFromFlutterProps(parent);
-          return;
-        }
-        const childDsl = child.toDsl();
-        this.mutationQueue.push({
-          type: 2,
-          parentId: parent.id,
-          childId: child.id,
-          index,
-          childDsl
+  if (Array.isArray(valA) !== Array.isArray(valB)) return false;
+  if (Array.isArray(valA) && Array.isArray(valB)) {
+    if (valA.length !== valB.length) return false;
+    for (let i = 0; i < valA.length; i++) {
+      if (!isDslEqual(valA[i], valB[i])) return false;
+    }
+    return true;
+  }
+  const recordA = valA;
+  const recordB = valB;
+  const keysA = Object.keys(recordA);
+  const keysB = Object.keys(recordB);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    if (!Object.prototype.hasOwnProperty.call(recordB, key)) return false;
+    if (!isDslEqual(recordA[key], recordB[key])) return false;
+  }
+  return true;
+}
+var createHostConfig = () => {
+  return {
+    now: Date.now,
+    supportsMutation: true,
+    supportsMicrotasks: true,
+    scheduleMicrotask: (callback) => {
+      if (typeof queueMicrotask === "function") {
+        queueMicrotask(() => {
+          callback();
         });
-        this.enqueueBoundaryRefresh(parent);
-      }
-      recordRemoval(parent, child) {
-        if (child.type === "FlutterProps" || child.type === "flutter-props") {
-          this.recordHostUpdateFromFlutterProps(child);
-          return;
-        }
-        if (parent.type === "FlutterProps" || parent.type === "flutter-props") {
-          this.recordHostUpdateFromFlutterProps(parent);
-          return;
-        }
-        this.mutationQueue.push({ type: 3, parentId: parent.id, childId: child.id });
-        this.enqueueBoundaryRefresh(parent);
-      }
-      clear() {
-        this.mutationQueue = [];
-      }
-      commit() {
-        if (this.mutationQueue.length === 0)
-          return;
-        const commitStart = Date.now();
-        const pageId = this.container.pageId;
-        const optimizedOps = [];
-        const lastUpdateIndexById = /* @__PURE__ */ new Map();
-        for (const op of this.mutationQueue) {
-          if (op.type === 1) {
-            const key = String(op.id);
-            const prevIndex = lastUpdateIndexById.get(key);
-            if (prevIndex !== void 0) {
-              optimizedOps[prevIndex] = null;
-            }
-            lastUpdateIndexById.set(key, optimizedOps.length);
-            optimizedOps.push(op);
-          } else {
-            optimizedOps.push(op);
-          }
-        }
-        const flattenedOps = [];
-        for (const op of optimizedOps) {
-          if (op) {
-            if (op.type === 1) {
-              flattenedOps.push(1, op.id, op.props);
-            } else if (op.type === 2) {
-              flattenedOps.push(2, op.parentId, op.childId, op.index, op.childDsl);
-            } else if (op.type === 3) {
-              flattenedOps.push(3, op.parentId, op.childId);
-            }
-          }
-        }
-        UIService_1.UIService.patchOps(Number(pageId), flattenedOps);
-        console.log(`[JS Performance] commit(patchOps) page=${pageId} `);
-        this.mutationQueue = [];
-      }
-      getBoundaryNode(node) {
-        if (!node)
-          return null;
-        let current = node;
-        while (current.parent && !current.props?.isBoundary) {
-          current = current.parent;
-        }
-        return current;
-      }
-      enqueueBoundaryRefresh(node) {
-        const boundary = this.getBoundaryNode(node);
-        if (boundary && boundary !== node) {
-          this.mutationQueue.push({ type: 1, id: boundary.id, props: {} });
-        }
-      }
-      recordHostUpdateFromFlutterProps(flutterPropsNode) {
-        const host = flutterPropsNode.parent;
-        if (!host)
-          return;
-        const propsKey = flutterPropsNode.props?.propsKey;
-        if (!propsKey)
-          return;
-        const allValues = [];
-        let hasMultiple = false;
-        for (const child of host.children) {
-          if (child.type === "FlutterProps" || child.type === "flutter-props") {
-            const key = child.props?.propsKey;
-            if (key === propsKey) {
-              const childrenDsl = child.children.map((c) => c.toDsl()).filter((c) => c !== null);
-              if (childrenDsl.length > 0) {
-                allValues.push(...childrenDsl);
-              }
-              if (child !== flutterPropsNode && child.props?.propsKey === propsKey) {
-                hasMultiple = true;
-              }
-            }
-          }
-        }
-        let finalValue;
-        if (allValues.length === 0) {
-          finalValue = null;
-        } else if (allValues.length === 1 && !hasMultiple) {
-          const accumulatedValues = [];
-          for (const child of host.children) {
-            if ((child.type === "FlutterProps" || child.type === "flutter-props") && child.props?.propsKey === propsKey) {
-              const childrenDsl = child.children.map((c) => c.toDsl()).filter((c) => c !== null);
-              if (childrenDsl.length > 0) {
-                const val = childrenDsl.length === 1 ? childrenDsl[0] : childrenDsl;
-                accumulatedValues.push(val);
-              }
-            }
-          }
-          if (accumulatedValues.length === 0) {
-            finalValue = null;
-          } else if (accumulatedValues.length === 1) {
-            finalValue = accumulatedValues[0];
-          } else {
-            finalValue = accumulatedValues;
-          }
-        } else {
-          finalValue = allValues;
-        }
-        this.mutationQueue.push({
-          type: 1,
-          id: host.id,
-          props: { [propsKey]: finalValue }
-        });
-        this.enqueueBoundaryRefresh(host);
-      }
-    };
-    exports.IncrementalStrategy = IncrementalStrategy;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/strategies/DiffStrategy.js
-var require_DiffStrategy = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/strategies/DiffStrategy.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.DiffStrategy = void 0;
-    var UIService_1 = require_UIService();
-    var DiffStrategy = class {
-      constructor(container) {
-        this.changedNodes = /* @__PURE__ */ new Set();
-        this.rendered = false;
-        this.container = container;
-      }
-      markChanged(node) {
-        if (!node)
-          return;
-        let current = node;
-        while (current.parent && !current.props?.isBoundary) {
-          current = current.parent;
-        }
-        this.changedNodes.add(current);
-        if (current === this.container.root) {
-          console.log(`[JS Performance] Root node (id=${current.id}, type=${current.type}) marked as changed!`);
-        }
-      }
-      clear() {
-        this.changedNodes.clear();
-      }
-      commit() {
-        if (this.changedNodes.size === 0) {
-          return;
-        }
-        if (!this.container.root) {
-          return;
-        }
-        const commitStart = Date.now();
-        const pageId = this.container.pageId;
-        const rootChanged = this.container.root && this.changedNodes.has(this.container.root);
-        if (rootChanged) {
-          console.log(`[JS Performance] rootChanged is true for page ${pageId}. Root node:`, this.container.root?.type, this.container.root?.id);
-        }
-        if (!this.rendered || rootChanged) {
-          const dslStart = Date.now();
-          const dsl = this.container.root?.toDsl();
-          const dslEnd = Date.now();
-          if (dsl && dsl.type) {
-            UIService_1.UIService.renderUI(Number(pageId), dsl);
-            this.rendered = true;
-            console.log(`[JS Performance] commit(full) page=${pageId} total=${Date.now() - commitStart}ms (dsl=${dslEnd - dslStart}ms)`);
-          }
-        } else {
-          const patches = [];
-          const processedNodes = /* @__PURE__ */ new Set();
-          const normalizedChangedNodes = /* @__PURE__ */ new Set();
-          for (const node of this.changedNodes) {
-            if ((node.type === "FlutterProps" || node.type === "flutter-props") && node.parent) {
-              normalizedChangedNodes.add(node.parent);
-            } else {
-              normalizedChangedNodes.add(node);
-            }
-          }
-          const topLevelNodes = /* @__PURE__ */ new Set();
-          for (const node of normalizedChangedNodes) {
-            let isRedundant = false;
-            let current = node.parent;
-            while (current) {
-              if (normalizedChangedNodes.has(current)) {
-                isRedundant = true;
-                break;
-              }
-              current = current.parent;
-            }
-            if (!isRedundant) {
-              topLevelNodes.add(node);
-            }
-          }
-          const dslStart = Date.now();
-          for (const node of topLevelNodes) {
-            if (processedNodes.has(node.id))
-              continue;
-            const dsl = node.toDsl();
-            if (dsl) {
-              patches.push(dsl);
-              processedNodes.add(node.id);
-            }
-          }
-          const dslEnd = Date.now();
-          if (patches.length > 0) {
-            UIService_1.UIService.patchUI(Number(pageId), patches);
-            const changedNodeTypes = Array.from(topLevelNodes).map((n) => n.type).join(", ");
-            console.log(`[JS Performance] commit(patchUI) page=${pageId} nodes=${topLevelNodes.size} types=[${changedNodeTypes}] total=${Date.now() - commitStart}ms (dsl=${dslEnd - dslStart}ms)`);
-          }
-        }
-        this.clear();
-      }
-    };
-    exports.DiffStrategy = DiffStrategy;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/PageContainer.js
-var require_PageContainer = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/PageContainer.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.PageContainer = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var node_1 = require_node();
-    var IncrementalStrategy_1 = require_IncrementalStrategy();
-    var DiffStrategy_1 = require_DiffStrategy();
-    var PageContainer = class {
-      constructor(pageId) {
-        this.root = null;
-        this.incrementalMode = true;
-        this.eventCallbacks = /* @__PURE__ */ new Map();
-        this.onVisibleCallbacks = /* @__PURE__ */ new Set();
-        this.onInvisibleCallbacks = /* @__PURE__ */ new Set();
-        this.nodes = /* @__PURE__ */ new Map();
-        this.nodesByRefId = /* @__PURE__ */ new Map();
-        this.virtualNodeIdCounter = 1e6;
-        this.isVisible = false;
-        this.pageId = pageId;
-        this.incrementalStrategy = new IncrementalStrategy_1.IncrementalStrategy(this);
-        this.diffStrategy = new DiffStrategy_1.DiffStrategy(this);
-      }
-      registerNode(node) {
-        this.nodes.set(node.id, node);
-        if (node.props?.refId) {
-          this.nodesByRefId.set(String(node.props.refId), node);
-        }
-      }
-      unregisterNode(node) {
-        this.nodes.delete(node.id);
-        if (node.props?.refId) {
-          this.nodesByRefId.delete(String(node.props.refId));
-        }
-      }
-      getNodeByRefId(refId) {
-        return this.nodesByRefId.get(refId);
-      }
-      registerCallback(nodeId, eventKey, fn) {
-        this.eventCallbacks.set(`${nodeId}:${eventKey}`, fn);
-      }
-      unregisterCallback(nodeId, eventKey) {
-        this.eventCallbacks.delete(`${nodeId}:${eventKey}`);
-      }
-      getCallback(nodeId, eventKey) {
-        return this.eventCallbacks.get(`${nodeId}:${eventKey}`);
-      }
-      registerVisibleCallback(fn) {
-        this.onVisibleCallbacks.add(fn);
-        if (this.isVisible) {
-          try {
-            fn();
-          } catch (e) {
-            console.error(`Error in onVisible callback (immediate) for page ${this.pageId}:`, e);
-          }
-        }
-      }
-      unregisterVisibleCallback(fn) {
-        this.onVisibleCallbacks.delete(fn);
-      }
-      registerInvisibleCallback(fn) {
-        this.onInvisibleCallbacks.add(fn);
-      }
-      unregisterInvisibleCallback(fn) {
-        this.onInvisibleCallbacks.delete(fn);
-      }
-      notifyVisible() {
-        this.isVisible = true;
-        this.onVisibleCallbacks.forEach((fn) => {
-          try {
-            fn();
-          } catch (e) {
-            console.error(`Error in onVisible callback for page ${this.pageId}:`, e);
-          }
+      } else {
+        Promise.resolve().then(() => {
+          callback();
         });
       }
-      notifyInvisible() {
-        this.isVisible = false;
-        this.onInvisibleCallbacks.forEach((fn) => {
-          try {
-            fn();
-          } catch (e) {
-            console.error(`Error in onInvisible callback for page ${this.pageId}:`, e);
-          }
-        });
+    },
+    scheduleTimeout: (handler, timeout) => {
+      return setTimeout(handler, timeout);
+    },
+    cancelTimeout: (handle) => {
+      clearTimeout(handle);
+    },
+    noTimeout: -1,
+    isPrimaryRenderer: true,
+    getCurrentEventPriority: () => 16,
+    // DefaultEventPriority
+    getInstanceFromNode: () => null,
+    beforeActiveInstanceBlur: () => {
+    },
+    afterActiveInstanceBlur: () => {
+    },
+    prepareScopeUpdate: () => {
+    },
+    getInstanceFromScope: () => null,
+    getPublicInstance: (inst) => inst,
+    getRootHostContext: (_root) => null,
+    getChildHostContext: (_parentHostContext, _type, _root) => null,
+    shouldSetTextContent: (_type, _props) => false,
+    createInstance: (type, props, container) => {
+      return container.createInstance(type, props);
+    },
+    createTextInstance: (text, container) => {
+      return container.createTextInstance(text);
+    },
+    appendInitialChild: (parent, child) => {
+      child.parent = parent;
+      parent.children.push(child);
+      if (parent.container) {
+        parent.container.markChanged(parent);
       }
-      setIncrementalMode(enabled) {
-        this.incrementalMode = enabled;
-      }
-      recordUpdate(node, updatePayload) {
-        if (this.incrementalMode) {
-          this.incrementalStrategy.recordUpdate(node, updatePayload);
-        } else {
-          this.diffStrategy.markChanged(node);
-        }
-      }
-      recordInsert(parent, child, index) {
-        if (this.incrementalMode) {
-          this.incrementalStrategy.recordInsert(parent, child, index);
-        } else {
-          this.diffStrategy.markChanged(parent);
-        }
-      }
-      recordRemoval(parent, child) {
-        if (this.incrementalMode) {
-          this.incrementalStrategy.recordRemoval(parent, child);
-        } else {
-          this.diffStrategy.markChanged(parent);
-        }
-      }
-      markChanged(node) {
-        this.diffStrategy.markChanged(node);
-      }
-      createInstance(type, props) {
-        const node = new node_1.Node(type, props, this);
-        this.markChanged(node);
-        return node;
-      }
-      createTextInstance(text) {
-        const node = new node_1.Node(node_1.TEXT_TYPE, { text }, this);
-        this.markChanged(node);
-        return node;
-      }
-      appendChild(parent, child) {
-        if (child.parent) {
-          const oldIndex = child.parent.children.indexOf(child);
-          if (oldIndex >= 0) {
-            child.parent.children.splice(oldIndex, 1);
-            if (this.incrementalMode) {
-              this.recordRemoval(child.parent, child);
-            } else {
-              this.markChanged(child.parent);
-            }
-          }
-        } else {
-          const oldIndex = parent.children.indexOf(child);
-          if (oldIndex >= 0) {
-            parent.children.splice(oldIndex, 1);
-          }
-        }
+    },
+    finalizeInitialChildren: (_instance, _type, _props, _rootContainer, _hostContext) => false,
+    appendChildToContainer: (container, child) => {
+      container.appendChildToContainer(child);
+    },
+    appendChild: (parent, child) => {
+      if (parent.container) {
+        parent.container.appendChild(parent, child);
+      } else {
         child.parent = parent;
         parent.children.push(child);
-        if (this.incrementalMode) {
-          this.recordInsert(parent, child, parent.children.length - 1);
-        } else {
-          this.markChanged(parent);
-        }
       }
-      insertBefore(parent, child, beforeChild) {
-        if (child.parent) {
-          const oldIndex = child.parent.children.indexOf(child);
-          if (oldIndex >= 0) {
-            child.parent.children.splice(oldIndex, 1);
-            if (child.parent !== parent) {
-              if (this.incrementalMode) {
-                this.recordRemoval(child.parent, child);
-              } else {
-                this.markChanged(child.parent);
-              }
-            } else {
-              if (this.incrementalMode) {
-                this.recordRemoval(parent, child);
-              }
-            }
-          }
-        } else {
-          const oldIndex = parent.children.indexOf(child);
-          if (oldIndex >= 0) {
-            parent.children.splice(oldIndex, 1);
-          }
-        }
+    },
+    insertBefore: (parent, child, beforeChild) => {
+      if (parent.container) {
+        parent.container.insertBefore(parent, child, beforeChild);
+      } else {
         child.parent = parent;
         const i = parent.children.indexOf(beforeChild);
         if (i >= 0) {
@@ -6283,3025 +5723,2476 @@ var require_PageContainer = __commonJS({
         } else {
           parent.children.push(child);
         }
-        if (this.incrementalMode) {
-          const newIndex = i >= 0 ? i : parent.children.length - 1;
-          this.recordInsert(parent, child, newIndex);
-        } else {
-          this.markChanged(parent);
-        }
       }
-      removeChild(parent, child) {
+    },
+    removeChild: (parent, child) => {
+      if (parent.container) {
+        parent.container.removeChild(parent, child);
+      } else {
         const i = parent.children.indexOf(child);
-        if (i >= 0)
-          parent.children.splice(i, 1);
-        child.destroy();
-        if (this.incrementalMode) {
-          this.recordRemoval(parent, child);
-        } else {
-          this.markChanged(parent);
-        }
-      }
-      appendChildToContainer(child) {
-        this.root = child;
-        this.markChanged(child);
-      }
-      removeChildFromContainer(child) {
-        if (this.root === child) {
-          this.root = null;
-        }
+        if (i >= 0) parent.children.splice(i, 1);
         child.destroy();
       }
-      commitTextUpdate(node, text) {
-        node.props.text = String(text);
-        this.markChanged(node);
-      }
-      commit() {
-        try {
-          if (!this.diffStrategy.rendered) {
-            this.diffStrategy.commit();
-          } else if (this.incrementalMode) {
-            this.incrementalStrategy.commit();
-          } else {
-            this.diffStrategy.commit();
-          }
-        } catch (e) {
-          console.error(`[PageContainer] Error during commit for page ${this.pageId}:`, e);
-        } finally {
-          this.clear();
+    },
+    removeChildFromContainer: (container, child) => {
+      container.removeChildFromContainer(child);
+    },
+    insertInContainerBefore: (container, child, _beforeChild) => {
+      container.appendChildToContainer(child);
+    },
+    resetTextContent: (_instance) => {
+    },
+    detachDeletedInstance: (instance) => {
+      instance.destroy();
+    },
+    clearContainer: (container) => {
+      container.root = null;
+    },
+    prepareUpdate: (_instance, _type, oldProps, newProps, _root, _hostContext) => {
+      return diffProps(oldProps, newProps);
+    },
+    updateFiberProps: (instance, _type, newProps) => {
+      instance.applyProps(newProps);
+    },
+    commitUpdate: (instance, updatePayload, _type, _oldProps, newProps, _internalInstanceHandle) => {
+      instance.applyProps(newProps);
+      if (updatePayload && updatePayload.hasDslChanges && instance.container) {
+        const container = instance.container;
+        if (instance === container.root) {
+          const changedKeys = updatePayload.payload ? updatePayload.payload.filter((_, i) => i % 2 === 0) : [];
+          console.log(
+            `[HostConfig] markChanged ROOT node=${instance.id} type=${instance.type} due to DSL changes in props:`,
+            changedKeys
+          );
         }
-      }
-      getItemDSL(refId, index) {
-        const node = this.getNodeByRefId(refId);
-        if (!node) {
-          return null;
-        }
-        const itemBuilder = node.props?.itemBuilder;
-        if (typeof itemBuilder !== "function") {
-          return null;
-        }
-        try {
-          const element = itemBuilder(index);
-          const dsl = this.elementToDsl(element);
-          return dsl;
-        } catch (e) {
-          console.error(`[PageContainer] Error in itemBuilder for refId ${refId} at index ${index}:`, e);
-          return null;
-        }
-      }
-      elementToDsl(element, depth = 0) {
-        if (!element)
-          return null;
-        let currentElement = element;
-        while (true) {
-          if (!currentElement)
-            return null;
-          if (typeof currentElement === "string" || typeof currentElement === "number") {
-            return { type: "Text", props: { text: String(currentElement) } };
-          }
-          if (Array.isArray(currentElement)) {
-            return currentElement.map((e) => this.elementToDsl(e, depth + 1)).filter((e) => e !== null);
-          }
-          const elAny = currentElement;
-          if (elAny.type) {
-            let type = elAny.type;
-            const originalProps = elAny.props || {};
-            while (typeof type === "object" && type !== null && type.type) {
-              type = type.type;
-            }
-            if (typeof type === "function") {
-              if (type.prototype && type.prototype.isReactComponent) {
-                const instance = new type(originalProps);
-                instance.context = { pageId: this.pageId };
-                if (elAny.ref) {
-                  if (typeof elAny.ref === "function") {
-                    elAny.ref(instance);
-                  } else if (typeof elAny.ref === "object" && elAny.ref !== null) {
-                    elAny.ref.current = instance;
-                  }
-                }
-                currentElement = instance.render();
-                continue;
-              }
-              currentElement = type(originalProps);
-              continue;
-            }
-            const { children, ...props } = originalProps;
-            const nodeId = typeof props.id === "number" ? props.id : ++this.virtualNodeIdCounter;
-            if (!props.id || typeof props.id !== "number")
-              props.id = nodeId;
-            const processedProps = this.processProps(nodeId, props, String(type), [], depth + 1);
-            const dslChildren = [];
-            const childrenToProcess = Array.isArray(children) ? children : children ? [children] : [];
-            for (const child of childrenToProcess) {
-              const childDsl = this.elementToDsl(child, depth + 1);
-              if (childDsl) {
-                if (Array.isArray(childDsl)) {
-                  for (const item of childDsl) {
-                    this.processDslChild(processedProps, dslChildren, item);
-                  }
-                } else {
-                  this.processDslChild(processedProps, dslChildren, childDsl);
-                }
-              }
-            }
-            const result = {
-              id: nodeId,
-              type: String(type),
-              props: processedProps,
-              children: dslChildren
-            };
-            if (props.refId) {
-              const rawRefId = String(props.refId);
-              result.refId = rawRefId.indexOf(":") !== -1 ? rawRefId : `${this.pageId}:${rawRefId}`;
-            }
-            if (props.isBoundary) {
-              result.isBoundary = true;
-            }
-            return result;
-          }
-          return null;
-        }
-      }
-      processDslChild(processedProps, dslChildren, childDsl) {
-        const child = childDsl;
-        if (child.type === "FlutterProps" || child.type === "flutter-props") {
-          const propsKey = child.props?.propsKey;
-          if (propsKey) {
-            const propChildren = child.children || [];
-            if (propChildren.length > 0) {
-              const newValue = propChildren.length === 1 ? propChildren[0] : propChildren;
-              if (processedProps[propsKey]) {
-                if (Array.isArray(processedProps[propsKey])) {
-                  processedProps[propsKey].push(newValue);
-                } else {
-                  processedProps[propsKey] = [processedProps[propsKey], newValue];
-                }
-              } else {
-                processedProps[propsKey] = newValue;
-              }
-            }
-          }
+        if (typeof container.recordUpdate === "function") {
+          container.recordUpdate(instance, updatePayload.payload);
+        } else if (typeof container.markChanged === "function") {
+          container.markChanged(instance);
         } else {
-          dslChildren.push(child);
+          container.markChanged(instance);
         }
       }
-      /**
-       * 递归处理组件属性，将 React/JS 特有的属性转换为 Flutter 可识别的 DSL 格式
-       *
-       * 处理逻辑包括：
-       * 1. 识别并转换函数回调为 Flutter 事件对象 (isFuickEvent)
-       * 2. 递归处理嵌套的对象和数组
-       * 3. 过滤掉 React 内部使用的私有属性
-       * 4. 处理嵌套的 React 元素 (Element to DSL)
-       *
-       * @param nodeId 当前属性所属节点的 ID，用于事件回调定位
-       * @param props 原始属性对象
-       * @param nodeType 节点类型 (如 'ListView', 'Text')，用于特殊逻辑处理
-       * @param path 当前处理的属性路径 (如 'decoration.color')，用于生成唯一的事件 key
-       * @returns 处理后的 DSL 属性对象
-       */
-      processProps(nodeId, props, nodeType, path = [], depth = 0) {
-        if (!props || typeof props !== "object")
-          return props;
-        if (react_1.default.isValidElement(props))
-          return this.elementToDsl(props, depth + 1);
-        if (Array.isArray(props)) {
-          return props.map((item, index) => {
-            const newPath = [...path, index];
-            return this.processProps(nodeId, item, nodeType, newPath, depth + 1);
+    },
+    commitTextUpdate: (textInstance, _oldText, newText) => {
+      textInstance.props.text = String(newText);
+      if (textInstance.container) {
+        textInstance.container.commitTextUpdate(textInstance, newText);
+      }
+    },
+    resetAfterCommit: (container) => {
+      container.commit();
+    },
+    prepareForCommit: (_container) => {
+    },
+    supportsHydration: false
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  };
+};
+
+// ../../fuickjs_framework/fuickjs/src/PageContainer.ts
+var import_react5 = __toESM(require_react_production_min());
+
+// ../../fuickjs_framework/fuickjs/src/node.ts
+var import_react4 = __toESM(require_react_production_min());
+var TEXT_TYPE = "Text";
+var nextNodeId = 1;
+var Node = class {
+  constructor(type, props, container) {
+    this.children = [];
+    this.eventKeys = /* @__PURE__ */ new Set();
+    this.id = props && typeof props.id === "number" ? props.id : nextNodeId++;
+    this.type = type;
+    this.props = {};
+    this.container = container;
+    this.container?.registerNode(this);
+    this.applyProps(props);
+  }
+  applyProps(newProps) {
+    const oldRefId = this.props?.refId;
+    if (oldRefId && typeof oldRefId === "string") {
+      this.container?.unregisterNode(this);
+    }
+    this.clearCallbacks();
+    this.props = {};
+    if (newProps) {
+      const propKeys = Object.keys(newProps);
+      for (const key of propKeys) {
+        if (key === "children") continue;
+        const value = newProps[key];
+        this.props[key] = value;
+      }
+      this.registerCallbacksRecursive(newProps);
+    }
+    this.container?.registerNode(this);
+  }
+  registerCallbacksRecursive(obj, initialPath = "") {
+    const stack = [{ obj, path: initialPath }];
+    while (stack.length > 0) {
+      const { obj: currentObj, path: currentPath } = stack.pop();
+      if (!currentObj || typeof currentObj !== "object") continue;
+      if (import_react4.default.isValidElement(currentObj)) continue;
+      if (Array.isArray(currentObj)) {
+        for (let i = currentObj.length - 1; i >= 0; i--) {
+          stack.push({
+            obj: currentObj[i],
+            path: currentPath ? `${currentPath}[${i}]` : `[${i}]`
           });
         }
-        const processedProps = {};
-        const propsObj = props;
-        for (const key in propsObj) {
-          if (path.length === 0 && (key === "children" || key === "key" || key === "ref" || key === "isBoundary"))
-            continue;
-          if (key === "itemBuilder") {
-            continue;
-          }
-          const value = propsObj[key];
-          if (typeof value === "function") {
-            const fullKey = this.buildPath(path, key);
-            this.registerCallback(nodeId, fullKey, value);
-            processedProps[key] = {
-              id: Number(nodeId),
-              // 节点 ID
-              nodeId: Number(nodeId),
-              // 节点 ID (兼容性保留)
-              eventKey: String(fullKey),
-              // 唯一的事件标识符 (包含路径)
-              pageId: Number(this.pageId),
-              // 页面 ID
-              isFuickEvent: true
-              // 标识这是一个需要 JS 回调的事件
-            };
-          } else if (value && typeof value === "object") {
-            const newPath = [...path, key];
-            processedProps[key] = this.processProps(nodeId, value, nodeType, newPath, depth + 1);
-          } else {
-            processedProps[key] = value;
-          }
+        continue;
+      }
+      const objRecord = currentObj;
+      for (const key in objRecord) {
+        if (currentPath === "" && (key === "children" || key === "key" || key === "ref" || key === "isBoundary"))
+          continue;
+        if (key === "itemBuilder") continue;
+        const value = objRecord[key];
+        const fullKey = currentPath ? `${currentPath}.${key}` : key;
+        if (typeof value === "function") {
+          this.saveCallback(fullKey, value);
+        } else if (value && typeof value === "object") {
+          stack.push({ obj: value, path: fullKey });
         }
-        return processedProps;
-      }
-      buildPath(path, key) {
-        if (path.length === 0)
-          return key;
-        let result = "";
-        for (const segment of path) {
-          if (typeof segment === "number") {
-            result += `[${segment}]`;
-          } else {
-            result += result ? `.${segment}` : segment;
-          }
-        }
-        return result + (result ? `.${key}` : key);
-      }
-      clear() {
-        this.diffStrategy.clear();
-        this.incrementalStrategy.clear();
-      }
-    };
-    exports.PageContainer = PageContainer;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/ErrorHandler.js
-var require_ErrorHandler = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/ErrorHandler.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ErrorHandler = void 0;
-    var currentHandler = null;
-    var isNotifying = false;
-    function notify(error, source, detail) {
-      if (!currentHandler || isNotifying) {
-        return;
-      }
-      try {
-        isNotifying = true;
-        currentHandler(error, source, detail);
-      } catch (handlerError) {
-        try {
-          console.error("[ErrorHandler] Handler error:", handlerError);
-        } catch {
-        }
-      } finally {
-        isNotifying = false;
       }
     }
-    exports.ErrorHandler = {
-      set(handler) {
-        currentHandler = handler || null;
-      },
-      notify
-    };
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/renderer.js
-var require_renderer = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/renderer.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.dispatchEvent = dispatchEvent;
-    exports.createRenderer = createRenderer;
-    var react_reconciler_1 = __importDefault(require_react_reconciler_production_min());
-    var hostConfig_1 = require_hostConfig();
-    var PageContainer_1 = require_PageContainer();
-    var ErrorHandler_1 = require_ErrorHandler();
-    var containers = {};
-    var roots = {};
-    function dispatchEvent(eventObj, payload) {
-      try {
-        const evt = eventObj;
-        const pageId = evt?.pageId;
-        const nodeId = Number(evt?.nodeId || evt?.id);
-        const eventKey = evt?.eventKey;
-        const container = containers[pageId];
-        if (container) {
-          const fn = container.getCallback(nodeId, eventKey);
-          if (typeof fn === "function") {
-            fn(payload);
-          } else {
-            console.warn(`[Renderer] Callback not found for nodeId=${nodeId}, eventKey=${eventKey}`);
-          }
-        } else {
-          console.warn(`[Renderer] Container not found for pageId=${pageId}`);
-        }
-      } catch (e) {
-        console.error(`[Renderer] Error in dispatchEvent:`, e);
-        ErrorHandler_1.ErrorHandler.notify(e, "event", { eventObj, payload });
+  saveCallback(key, fn) {
+    this.eventKeys.add(key);
+    this.container?.registerCallback(this.id, key, fn);
+  }
+  clearCallbacks() {
+    if (this.container) {
+      for (const key of this.eventKeys) {
+        this.container.unregisterCallback(this.id, key);
       }
     }
-    function createRenderer() {
-      const reconciler = (0, react_reconciler_1.default)((0, hostConfig_1.createHostConfig)());
-      const handleRecoverableError = (error, errorInfo) => {
-        ErrorHandler_1.ErrorHandler.notify(error, "render", errorInfo);
-      };
-      function ensureRoot(pageId) {
-        if (roots[pageId])
-          return roots[pageId];
-        const container = new PageContainer_1.PageContainer(pageId);
-        const root = reconciler.createContainer(container, 1, null, false, null, "", handleRecoverableError, null);
-        containers[pageId] = container;
-        roots[pageId] = root;
-        return root;
-      }
-      return {
-        update(element, pageId) {
-          const root = ensureRoot(pageId);
-          const performUpdate = () => {
-            try {
-              reconciler.updateContainer(element, root, null, () => {
-              });
-            } catch (e) {
-              const msg = e.message || String(e);
-              if (msg.includes("327") || msg.includes("working")) {
-                globalThis.setTimeout(performUpdate, 16);
+    this.eventKeys.clear();
+  }
+  getCallback(key) {
+    return this.container?.getCallback(this.id, key);
+  }
+  toDsl() {
+    const type = this.type;
+    if (!type) return null;
+    const props = this.container ? this.container.processProps(this.id, this.props, type) : {};
+    const refId = this.props?.refId;
+    const children = [];
+    for (const child of this.children) {
+      if (child.type === "FlutterProps" || child.type === "flutter-props") {
+        const propsKey = child.props?.propsKey;
+        if (propsKey) {
+          const propChildren = child.children.map((c) => c.toDsl()).filter((c) => c !== null);
+          if (propChildren.length > 0) {
+            const newValue = propChildren.length === 1 ? propChildren[0] : propChildren;
+            if (props[propsKey]) {
+              if (Array.isArray(props[propsKey])) {
+                props[propsKey].push(newValue);
               } else {
-                console.error(`[Renderer] Error updating page ${pageId}:`, e);
-                ErrorHandler_1.ErrorHandler.notify(e, "render", { pageId });
+                props[propsKey] = [props[propsKey], newValue];
               }
-            }
-          };
-          performUpdate();
-        },
-        destroy(pageId) {
-          const root = roots[pageId];
-          if (root) {
-            const performDestroy = () => {
-              try {
-                reconciler.updateContainer(null, root, null, () => {
-                  console.log(`[Renderer] Page ${pageId} unmounted successfully`);
-                });
-                delete roots[pageId];
-                delete containers[pageId];
-              } catch (e) {
-                const msg = e.message || String(e);
-                if (msg.includes("327") || msg.includes("working")) {
-                  globalThis.setTimeout(performDestroy, 16);
-                } else {
-                  console.error(`[Renderer] Error destroying page ${pageId}:`, e);
-                  ErrorHandler_1.ErrorHandler.notify(e, "render", { pageId });
-                  delete roots[pageId];
-                  delete containers[pageId];
-                }
-              }
-            };
-            performDestroy();
-          }
-        },
-        dispatchEvent,
-        getItemDSL(pageId, refId, index) {
-          const container = containers[pageId];
-          if (container) {
-            return container.getItemDSL(refId, index);
-          }
-          return null;
-        },
-        elementToDsl(pageId, element) {
-          let container = containers[pageId];
-          if (!container) {
-            container = new PageContainer_1.PageContainer(pageId);
-          }
-          return container.elementToDsl(element);
-        },
-        notifyLifecycle(pageId, type) {
-          const container = containers[pageId];
-          if (container) {
-            if (type === "visible") {
-              container.notifyVisible();
-            } else if (type === "invisible") {
-              container.notifyInvisible();
+            } else {
+              props[propsKey] = newValue;
             }
           }
-        },
-        getContainer(pageId) {
-          return containers[pageId];
         }
-      };
-    }
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/router.js
-var require_router = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/router.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Router = void 0;
-    exports.register = register;
-    exports.match = match;
-    var routes = {};
-    function register(path, componentFactory) {
-      routes[path] = componentFactory;
-    }
-    function match(path) {
-      return routes[path];
-    }
-    exports.Router = {
-      register,
-      match
-    };
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/ErrorBoundary.js
-var require_ErrorBoundary = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/ErrorBoundary.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ErrorBoundary = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var ErrorHandler_1 = require_ErrorHandler();
-    var ErrorBoundary = class extends react_1.default.Component {
-      constructor(props) {
-        super(props);
-        this.state = { hasError: false, error: null };
-      }
-      static getDerivedStateFromError(error) {
-        return { hasError: true, error };
-      }
-      componentDidCatch(error, errorInfo) {
-        console.error("[ErrorBoundary] Caught error:", error, errorInfo);
-        ErrorHandler_1.ErrorHandler.notify(error, "render", errorInfo);
-      }
-      render() {
-        if (this.state.hasError) {
-          if (typeof this.props.fallback === "function") {
-            return this.props.fallback(this.state.error);
-          }
-          return this.props.fallback || null;
-        }
-        return this.props.children;
-      }
-    };
-    exports.ErrorBoundary = ErrorBoundary;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/page_render.js
-var require_page_render = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/page_render.js"(exports) {
-    "use strict";
-    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
-      }
-      Object.defineProperty(o, k2, desc);
-    } : function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
-    });
-    var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
-      Object.defineProperty(o, "default", { enumerable: true, value: v });
-    } : function(o, v) {
-      o["default"] = v;
-    });
-    var __importStar = exports && exports.__importStar || /* @__PURE__ */ function() {
-      var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function(o2) {
-          var ar = [];
-          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
-          return ar;
-        };
-        return ownKeys(o);
-      };
-      return function(mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) {
-          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        }
-        __setModuleDefault(result, mod);
-        return result;
-      };
-    }();
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.setGlobalErrorFallback = setGlobalErrorFallback;
-    exports.ensureRenderer = ensureRenderer;
-    exports.render = render;
-    exports.destroy = destroy;
-    exports.getItemDSL = getItemDSL;
-    exports.elementToDsl = elementToDsl;
-    exports.notifyLifecycle = notifyLifecycle;
-    exports.getContainer = getContainer;
-    var react_1 = __importDefault(require_react_production_min());
-    var renderer_1 = require_renderer();
-    var Router = __importStar(require_router());
-    var PageContext_1 = require_PageContext();
-    var ErrorBoundary_1 = require_ErrorBoundary();
-    var renderer = null;
-    var globalErrorFallback = null;
-    function setGlobalErrorFallback(fallback) {
-      globalErrorFallback = fallback;
-    }
-    function ensureRenderer() {
-      if (renderer)
-        return renderer;
-      renderer = (0, renderer_1.createRenderer)();
-      return renderer;
-    }
-    function render(pageId, path, params) {
-      const startTime = Date.now();
-      const r = ensureRenderer();
-      console.log(`[JS Performance] render start for ${path}, pageId: ${pageId}`);
-      const factory = Router.match(path);
-      let app;
-      if (typeof factory === "function") {
-        app = factory(params || {});
       } else {
-        app = react_1.default.createElement("Column", { padding: 16, mainAxisAlignment: "center" }, react_1.default.createElement("Text", { text: `Route ${path} not found`, fontSize: 16, color: "#cc0000" }));
+        const dslChild = child.toDsl();
+        if (dslChild) {
+          children.push(dslChild);
+        }
       }
-      const fallbackUI = globalErrorFallback || ((error) => react_1.default.createElement("Column", {
-        mainAxisAlignment: "center",
-        crossAxisAlignment: "center",
-        padding: 20,
-        decoration: { color: "#FFF0F0" }
-      }, react_1.default.createElement("Text", {
-        text: "Application Error",
-        fontSize: 20,
-        color: "#D32F2F",
-        fontWeight: "bold",
-        margin: { bottom: 10 }
-      }), react_1.default.createElement("Text", {
-        text: error?.message || "Unknown error occurred",
-        fontSize: 14,
-        color: "#333333",
-        maxLines: 10,
-        overflow: "ellipsis"
-      })));
-      const wrappedApp = react_1.default.createElement(PageContext_1.PageContext.Provider, { value: { pageId } }, react_1.default.createElement(ErrorBoundary_1.ErrorBoundary, {
-        fallback: fallbackUI
-      }, app));
-      r.update(wrappedApp, pageId);
-      console.log(`[JS Performance] render total cost for ${path}: ${Date.now() - startTime}ms`);
     }
-    function destroy(pageId) {
-      const r = ensureRenderer();
-      r.destroy(pageId);
+    const result = {
+      id: this.id,
+      type: String(type),
+      props,
+      children
+    };
+    if (refId) {
+      const rawRefId = String(refId);
+      const pageId = this.container?.pageId || 0;
+      result.refId = rawRefId.indexOf(":") !== -1 ? rawRefId : `${pageId}:${rawRefId}`;
     }
-    function getItemDSL(pageId, refId, index) {
-      const r = ensureRenderer();
-      return r.getItemDSL(pageId, refId, index);
+    if (this.props?.isBoundary) {
+      result.isBoundary = true;
     }
-    function elementToDsl(pageId, element) {
-      const r = ensureRenderer();
-      return r.elementToDsl(pageId, element);
-    }
-    function notifyLifecycle(pageId, type) {
-      const r = ensureRenderer();
-      r.notifyLifecycle(pageId, type);
-    }
-    function getContainer(pageId) {
-      const r = ensureRenderer();
-      return r.getContainer(pageId);
+    return result;
+  }
+  destroy() {
+    const stack = [this];
+    while (stack.length > 0) {
+      const node = stack.pop();
+      node.clearCallbacks();
+      node.container?.unregisterNode(node);
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push(node.children[i]);
+      }
+      node.children = [];
     }
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/ScrollableBaseWidget.js
-var require_ScrollableBaseWidget = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/ScrollableBaseWidget.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ScrollableBaseWidget = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var page_render_1 = require_page_render();
-    var ScrollableBaseWidget = class extends BaseWidget_1.BaseWidget {
-      updateItem(index, dsl) {
-        let finalDsl = dsl;
-        if (react_1.default.isValidElement(dsl)) {
-          finalDsl = (0, page_render_1.elementToDsl)(this.pageId, dsl);
-        }
-        this.callNativeCommand("updateItem", { index, dsl: finalDsl });
-      }
-      updateItems(items) {
-        const finalItems = items.map((item) => {
-          let finalDsl = item.dsl;
-          if (react_1.default.isValidElement(item.dsl)) {
-            finalDsl = (0, page_render_1.elementToDsl)(this.pageId, item.dsl);
-          }
-          return { index: item.index, dsl: finalDsl };
-        });
-        this.callNativeCommand("updateItems", { items: finalItems });
-      }
-      refresh() {
-        this.callNativeCommand("refresh");
-      }
-    };
-    exports.ScrollableBaseWidget = ScrollableBaseWidget;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Text.js
-var require_Text = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Text.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Text = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Text = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Text", { ...this.props, isBoundary: false });
-      }
-    };
-    exports.Text = Text;
-    exports.default = Text;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Column.js
-var require_Column = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Column.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Column = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Column = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Column", { ...this.props });
-      }
-    };
-    exports.Column = Column;
-    exports.default = Column;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Row.js
-var require_Row = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Row.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Row = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Row = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Row", { ...this.props });
-      }
-    };
-    exports.Row = Row;
-    exports.default = Row;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Container.js
-var require_Container = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Container.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Container = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Container = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Container", { ...this.props });
-      }
-    };
-    exports.Container = Container;
-    exports.default = Container;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Button.js
-var require_Button = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Button.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Button = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Button = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Button", {
-          ...this.props
-        });
-      }
-    };
-    exports.Button = Button;
-    exports.default = Button;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/TextField.js
-var require_TextField = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/TextField.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.TextField = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var TextField = class extends BaseWidget_1.BaseWidget {
-      setText(text) {
-        this.callNativeCommand("setText", { text });
-      }
-      clear() {
-        this.callNativeCommand("clear", {});
-      }
-      focus() {
-        this.callNativeCommand("focus", {});
-      }
-      unfocus() {
-        this.callNativeCommand("unfocus", {});
-      }
-      setSelection(start, end) {
-        this.callNativeCommand("setSelection", { start, end });
-      }
-      selectAll() {
-        this.callNativeCommand("selectAll", {});
-      }
-      render() {
-        return react_1.default.createElement("TextField", {
-          ...this.props,
-          refId: this.scopedRefId,
-          isBoundary: true
-        });
-      }
-    };
-    exports.TextField = TextField;
-    exports.default = TextField;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Switch.js
-var require_Switch = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Switch.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Switch = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Switch = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Switch", { ...this.props });
-      }
-    };
-    exports.Switch = Switch;
-    exports.default = Switch;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Expanded.js
-var require_Expanded = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Expanded.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Expanded = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Expanded = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Expanded", { ...this.props });
-      }
-    };
-    exports.Expanded = Expanded;
-    exports.default = Expanded;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/ListView.js
-var require_ListView = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/ListView.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ListView = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var ScrollableBaseWidget_1 = require_ScrollableBaseWidget();
-    var ListView = class extends ScrollableBaseWidget_1.ScrollableBaseWidget {
-      animateTo(offset, duration = 300, curve = "easeInOut") {
-        this.callNativeCommand("animateTo", { offset, duration, curve });
-      }
-      jumpTo(offset) {
-        this.callNativeCommand("jumpTo", { offset });
-      }
-      render() {
-        const { children, ...rest } = this.props;
-        return react_1.default.createElement("ListView", {
-          ...rest,
-          hasBuilder: !!this.props.itemBuilder,
-          refId: this.scopedRefId,
-          isBoundary: true
-        }, children);
-      }
-    };
-    exports.ListView = ListView;
-    exports.default = ListView;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Padding.js
-var require_Padding = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Padding.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Padding = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Padding = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Padding", { ...this.props });
-      }
-    };
-    exports.Padding = Padding;
-    exports.default = Padding;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Image.js
-var require_Image = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Image.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Image = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Image = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Image", { ...this.props, isBoundary: false });
-      }
-    };
-    exports.Image = Image;
-    exports.default = Image;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/SizedBox.js
-var require_SizedBox = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/SizedBox.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SizedBox = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var SizedBox = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("SizedBox", { ...this.props });
-      }
-    };
-    exports.SizedBox = SizedBox;
-    exports.default = SizedBox;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Center.js
-var require_Center = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Center.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Center = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Center = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Center", { ...this.props, isBoundary: false });
-      }
-    };
-    exports.Center = Center;
-    exports.default = Center;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Icon.js
-var require_Icon = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Icon.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Icon = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Icon = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Icon", { ...this.props, isBoundary: false });
-      }
-    };
-    exports.Icon = Icon;
-    exports.default = Icon;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Flexible.js
-var require_Flexible = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Flexible.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Flexible = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Flexible = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Flexible", { ...this.props });
-      }
-    };
-    exports.Flexible = Flexible;
-    exports.default = Flexible;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/GestureDetector.js
-var require_GestureDetector = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/GestureDetector.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.GestureDetector = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var GestureDetector = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("GestureDetector", { ...this.props });
-      }
-    };
-    exports.GestureDetector = GestureDetector;
-    exports.default = GestureDetector;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/InkWell.js
-var require_InkWell = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/InkWell.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.InkWell = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var InkWell = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("InkWell", { ...this.props });
-      }
-    };
-    exports.InkWell = InkWell;
-    exports.default = InkWell;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Divider.js
-var require_Divider = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Divider.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Divider = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Divider = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Divider", { ...this.props, isBoundary: false });
-      }
-    };
-    exports.Divider = Divider;
-    exports.default = Divider;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/SingleChildScrollView.js
-var require_SingleChildScrollView = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/SingleChildScrollView.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SingleChildScrollView = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var SingleChildScrollView = class extends BaseWidget_1.BaseWidget {
-      animateTo(offset, duration = 300, curve = "easeInOut") {
-        this.callNativeCommand("animateTo", { offset, duration, curve });
-      }
-      render() {
-        return react_1.default.createElement("SingleChildScrollView", {
-          ...this.props,
-          refId: this.scopedRefId,
-          isBoundary: true
-        });
-      }
-    };
-    exports.SingleChildScrollView = SingleChildScrollView;
-    exports.default = SingleChildScrollView;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Stack.js
-var require_Stack = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Stack.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Stack = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Stack = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Stack", { ...this.props });
-      }
-    };
-    exports.Stack = Stack;
-    exports.default = Stack;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Positioned.js
-var require_Positioned = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Positioned.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Positioned = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Positioned = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Positioned", { ...this.props, isBoundary: false });
-      }
-    };
-    exports.Positioned = Positioned;
-    exports.default = Positioned;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Opacity.js
-var require_Opacity = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Opacity.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Opacity = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Opacity = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Opacity", { ...this.props, isBoundary: false });
-      }
-    };
-    exports.Opacity = Opacity;
-    exports.default = Opacity;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/CircularProgressIndicator.js
-var require_CircularProgressIndicator = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/CircularProgressIndicator.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.CircularProgressIndicator = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var CircularProgressIndicator = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("CircularProgressIndicator", { ...this.props, isBoundary: false });
-      }
-    };
-    exports.CircularProgressIndicator = CircularProgressIndicator;
-    exports.default = CircularProgressIndicator;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/SafeArea.js
-var require_SafeArea = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/SafeArea.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SafeArea = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var SafeArea = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("SafeArea", { ...this.props, isBoundary: false });
-      }
-    };
-    exports.SafeArea = SafeArea;
-    exports.default = SafeArea;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/FlutterProps.js
-var require_FlutterProps = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/FlutterProps.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.FlutterProps = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var FlutterProps = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("FlutterProps", { propsKey: this.props.propsKey }, this.props.children);
-      }
-    };
-    exports.FlutterProps = FlutterProps;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Scaffold.js
-var require_Scaffold = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Scaffold.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Scaffold = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var FlutterProps_1 = require_FlutterProps();
-    var Scaffold = class extends react_1.default.Component {
-      render() {
-        const { appBar, floatingActionButton, drawer, endDrawer, bottomNavigationBar, bottomSheet, children, ...otherProps } = this.props;
-        return react_1.default.createElement("Scaffold", {
-          isBoundary: true,
-          ...otherProps
-        }, appBar && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "appBar" }, appBar), floatingActionButton && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "floatingActionButton" }, floatingActionButton), drawer && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "drawer" }, drawer), endDrawer && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "endDrawer" }, endDrawer), bottomNavigationBar && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "bottomNavigationBar" }, bottomNavigationBar), bottomSheet && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "bottomSheet" }, bottomSheet), children);
-      }
-    };
-    exports.Scaffold = Scaffold;
-    exports.default = Scaffold;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/AppBar.js
-var require_AppBar = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/AppBar.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AppBar = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var FlutterProps_1 = require_FlutterProps();
-    var AppBar = class extends react_1.default.Component {
-      render() {
-        const { title, leading, actions, flexibleSpace, bottom, children, ...otherProps } = this.props;
-        return react_1.default.createElement("AppBar", { ...otherProps, isBoundary: true }, title && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "title" }, title), leading && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "leading" }, leading), actions && actions.map((action, index) => react_1.default.createElement(FlutterProps_1.FlutterProps, { key: `action-${index}`, propsKey: "actions" }, action)), flexibleSpace && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "flexibleSpace" }, flexibleSpace), bottom && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "bottom" }, bottom), children);
-      }
-    };
-    exports.AppBar = AppBar;
-    exports.default = AppBar;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/PageView.js
-var require_PageView = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/PageView.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.PageView = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var PageView = class extends BaseWidget_1.BaseWidget {
-      animateToPage(page, duration = 300, curve = "easeInOut") {
-        this.callNativeCommand("animateToPage", { page, duration, curve });
-      }
-      jumpToPage(page) {
-        this.callNativeCommand("jumpToPage", { page });
-      }
-      render() {
-        const { children, ...otherProps } = this.props;
-        return react_1.default.createElement("PageView", {
-          ...otherProps,
-          refId: this.scopedRefId,
-          isBoundary: true
-        }, children);
-      }
-    };
-    exports.PageView = PageView;
-    exports.default = PageView;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/GridView.js
-var require_GridView = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/GridView.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.GridView = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var ScrollableBaseWidget_1 = require_ScrollableBaseWidget();
-    var GridView = class extends ScrollableBaseWidget_1.ScrollableBaseWidget {
-      animateTo(offset, duration = 300, curve = "easeInOut") {
-        this.callNativeCommand("animateTo", { offset, duration, curve });
-      }
-      render() {
-        const { children, ...rest } = this.props;
-        return react_1.default.createElement("GridView", {
-          ...rest,
-          hasBuilder: !!this.props.itemBuilder,
-          refId: this.scopedRefId,
-          isBoundary: true
-        }, children);
-      }
-    };
-    exports.GridView = GridView;
-    exports.default = GridView;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/ListTile.js
-var require_ListTile = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/ListTile.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ListTile = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var FlutterProps_1 = require_FlutterProps();
-    var ListTile = class extends react_1.default.Component {
-      render() {
-        const { leading, title, subtitle, trailing, children, ...otherProps } = this.props;
-        return react_1.default.createElement("ListTile", { ...otherProps }, leading && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "leading" }, leading), title && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "title" }, title), subtitle && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "subtitle" }, subtitle), trailing && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "trailing" }, trailing), children);
-      }
-    };
-    exports.ListTile = ListTile;
-    exports.default = ListTile;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/BottomNavigationBar.js
-var require_BottomNavigationBar = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/BottomNavigationBar.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BottomNavigationBar = exports.BottomNavigationBarItem = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var FlutterProps_1 = require_FlutterProps();
-    var BottomNavigationBarItem = class extends react_1.default.Component {
-      render() {
-        const { icon, activeIcon, ...otherProps } = this.props;
-        return react_1.default.createElement("BottomNavigationBarItem", { ...otherProps }, icon && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "icon" }, icon), activeIcon && react_1.default.createElement(FlutterProps_1.FlutterProps, { propsKey: "activeIcon" }, activeIcon));
-      }
-    };
-    exports.BottomNavigationBarItem = BottomNavigationBarItem;
-    var BottomNavigationBar = class extends react_1.default.Component {
-      render() {
-        const { items, children, ...otherProps } = this.props;
-        return react_1.default.createElement("BottomNavigationBar", { ...otherProps }, items && items.map((item, index) => react_1.default.createElement(FlutterProps_1.FlutterProps, { key: `item-${index}`, propsKey: "items" }, item)), children);
-      }
-    };
-    exports.BottomNavigationBar = BottomNavigationBar;
-    exports.default = BottomNavigationBar;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/CustomScrollView.js
-var require_CustomScrollView = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/CustomScrollView.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.CustomScrollView = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var CustomScrollView = class extends BaseWidget_1.BaseWidget {
-      render() {
-        const { children, ...rest } = this.props;
-        return react_1.default.createElement("CustomScrollView", {
-          ...rest
-        }, children);
-      }
-    };
-    exports.CustomScrollView = CustomScrollView;
-    exports.default = CustomScrollView;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/SliverList.js
-var require_SliverList = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/SliverList.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SliverList = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var ScrollableBaseWidget_1 = require_ScrollableBaseWidget();
-    var SliverList = class extends ScrollableBaseWidget_1.ScrollableBaseWidget {
-      render() {
-        const { children, ...rest } = this.props;
-        return react_1.default.createElement("SliverList", {
-          ...rest,
-          hasBuilder: !!this.props.itemBuilder,
-          refId: this.scopedRefId,
-          isBoundary: true
-        }, children);
-      }
-    };
-    exports.SliverList = SliverList;
-    exports.default = SliverList;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/SliverGrid.js
-var require_SliverGrid = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/SliverGrid.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SliverGrid = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var ScrollableBaseWidget_1 = require_ScrollableBaseWidget();
-    var SliverGrid = class extends ScrollableBaseWidget_1.ScrollableBaseWidget {
-      render() {
-        const { children, ...rest } = this.props;
-        return react_1.default.createElement("SliverGrid", {
-          ...rest,
-          hasBuilder: !!this.props.itemBuilder,
-          refId: this.scopedRefId,
-          isBoundary: true
-        }, children);
-      }
-    };
-    exports.SliverGrid = SliverGrid;
-    exports.default = SliverGrid;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/SliverToBoxAdapter.js
-var require_SliverToBoxAdapter = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/SliverToBoxAdapter.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SliverToBoxAdapter = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var SliverToBoxAdapter = class extends BaseWidget_1.BaseWidget {
-      render() {
-        const { children, ...rest } = this.props;
-        return react_1.default.createElement("SliverToBoxAdapter", {
-          ...rest,
-          isBoundary: true
-        }, children);
-      }
-    };
-    exports.SliverToBoxAdapter = SliverToBoxAdapter;
-    exports.default = SliverToBoxAdapter;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/SliverAppBar.js
-var require_SliverAppBar = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/SliverAppBar.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SliverAppBar = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var SliverAppBar = class extends BaseWidget_1.BaseWidget {
-      render() {
-        const { children, title, leading, actions, bottom, ...rest } = this.props;
-        return react_1.default.createElement("SliverAppBar", {
-          ...rest,
-          isBoundary: true,
-          title,
-          leading,
-          actions,
-          bottom
-        }, children);
-      }
-    };
-    exports.SliverAppBar = SliverAppBar;
-    exports.default = SliverAppBar;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/SliverPersistentHeader.js
-var require_SliverPersistentHeader = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/SliverPersistentHeader.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SliverPersistentHeader = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var SliverPersistentHeader = class extends BaseWidget_1.BaseWidget {
-      render() {
-        const { children, ...rest } = this.props;
-        return react_1.default.createElement("SliverPersistentHeader", {
-          ...rest
-        }, children);
-      }
-    };
-    exports.SliverPersistentHeader = SliverPersistentHeader;
-    exports.default = SliverPersistentHeader;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Tabs.js
-var require_Tabs = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Tabs.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Tab = exports.DefaultTabController = exports.TabBarView = exports.TabBar = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var FlutterProps_1 = require_FlutterProps();
-    var TabBar = class extends react_1.default.Component {
-      render() {
-        const { tabs, ...otherProps } = this.props;
-        return react_1.default.createElement("TabBar", { ...otherProps, isBoundary: false }, tabs && tabs.map((tab, index) => react_1.default.createElement(FlutterProps_1.FlutterProps, { key: index, propsKey: "tabs" }, tab)));
-      }
-    };
-    exports.TabBar = TabBar;
-    var TabBarView = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("TabBarView", { ...this.props, isBoundary: true });
-      }
-    };
-    exports.TabBarView = TabBarView;
-    var DefaultTabController = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("DefaultTabController", { ...this.props, isBoundary: true });
-      }
-    };
-    exports.DefaultTabController = DefaultTabController;
-    var Tab = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Tab", { ...this.props, isBoundary: false });
-      }
-    };
-    exports.Tab = Tab;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/KeepAlive.js
-var require_KeepAlive = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/KeepAlive.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.KeepAlive = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var KeepAlive = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("KeepAlive", { ...this.props, isBoundary: true });
-      }
-    };
-    exports.KeepAlive = KeepAlive;
-    exports.default = KeepAlive;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Wrap.js
-var require_Wrap = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Wrap.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Wrap = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var Wrap = class extends BaseWidget_1.BaseWidget {
-      render() {
-        return react_1.default.createElement("Wrap", { ...this.props, isBoundary: true });
-      }
-    };
-    exports.Wrap = Wrap;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Card.js
-var require_Card = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Card.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Card = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var Card = class extends BaseWidget_1.BaseWidget {
-      render() {
-        const { child, children, ...rest } = this.props;
-        const content = child || children;
-        return react_1.default.createElement("Card", { ...rest, isBoundary: true }, content);
-      }
-    };
-    exports.Card = Card;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Checkbox.js
-var require_Checkbox = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Checkbox.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Checkbox = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var Checkbox = class extends BaseWidget_1.BaseWidget {
-      render() {
-        return react_1.default.createElement("Checkbox", { ...this.props });
-      }
-    };
-    exports.Checkbox = Checkbox;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/IntrinsicWidth.js
-var require_IntrinsicWidth = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/IntrinsicWidth.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.IntrinsicWidth = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var IntrinsicWidth = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("IntrinsicWidth", { ...this.props });
-      }
-    };
-    exports.IntrinsicWidth = IntrinsicWidth;
-    exports.default = IntrinsicWidth;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/IntrinsicHeight.js
-var require_IntrinsicHeight = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/IntrinsicHeight.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.IntrinsicHeight = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var IntrinsicHeight = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("IntrinsicHeight", { ...this.props });
-      }
-    };
-    exports.IntrinsicHeight = IntrinsicHeight;
-    exports.default = IntrinsicHeight;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/AnimatedContainer.js
-var require_AnimatedContainer = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/AnimatedContainer.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AnimatedContainer = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var AnimatedContainer = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("AnimatedContainer", { ...this.props });
-      }
-    };
-    exports.AnimatedContainer = AnimatedContainer;
-    exports.default = AnimatedContainer;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/AnimatedOpacity.js
-var require_AnimatedOpacity = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/AnimatedOpacity.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AnimatedOpacity = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var AnimatedOpacity = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("AnimatedOpacity", { ...this.props });
-      }
-    };
-    exports.AnimatedOpacity = AnimatedOpacity;
-    exports.default = AnimatedOpacity;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/AnimatedAlign.js
-var require_AnimatedAlign = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/AnimatedAlign.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AnimatedAlign = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var AnimatedAlign = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("AnimatedAlign", { ...this.props });
-      }
-    };
-    exports.AnimatedAlign = AnimatedAlign;
-    exports.default = AnimatedAlign;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/AnimatedPositioned.js
-var require_AnimatedPositioned = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/AnimatedPositioned.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AnimatedPositioned = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var AnimatedPositioned = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("AnimatedPositioned", { ...this.props });
-      }
-    };
-    exports.AnimatedPositioned = AnimatedPositioned;
-    exports.default = AnimatedPositioned;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/AnimatedPadding.js
-var require_AnimatedPadding = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/AnimatedPadding.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AnimatedPadding = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var AnimatedPadding = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("AnimatedPadding", { ...this.props });
-      }
-    };
-    exports.AnimatedPadding = AnimatedPadding;
-    exports.default = AnimatedPadding;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/AnimatedScale.js
-var require_AnimatedScale = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/AnimatedScale.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AnimatedScale = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var AnimatedScale = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("AnimatedScale", { ...this.props });
-      }
-    };
-    exports.AnimatedScale = AnimatedScale;
-    exports.default = AnimatedScale;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/AnimatedRotation.js
-var require_AnimatedRotation = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/AnimatedRotation.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AnimatedRotation = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var AnimatedRotation = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("AnimatedRotation", { ...this.props });
-      }
-    };
-    exports.AnimatedRotation = AnimatedRotation;
-    exports.default = AnimatedRotation;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/AnimatedSlide.js
-var require_AnimatedSlide = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/AnimatedSlide.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AnimatedSlide = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var AnimatedSlide = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("AnimatedSlide", { ...this.props });
-      }
-    };
-    exports.AnimatedSlide = AnimatedSlide;
-    exports.default = AnimatedSlide;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/AlertDialog.js
-var require_AlertDialog = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/AlertDialog.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AlertDialog = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var AlertDialog = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("AlertDialog", { ...this.props });
-      }
-    };
-    exports.AlertDialog = AlertDialog;
-    exports.default = AlertDialog;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/RotationTransition.js
-var require_RotationTransition = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/RotationTransition.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.RotationTransition = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var RotationTransition = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("RotationTransition", { ...this.props });
-      }
-    };
-    exports.RotationTransition = RotationTransition;
-    exports.default = RotationTransition;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/ScaleTransition.js
-var require_ScaleTransition = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/ScaleTransition.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ScaleTransition = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var ScaleTransition = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("ScaleTransition", { ...this.props });
-      }
-    };
-    exports.ScaleTransition = ScaleTransition;
-    exports.default = ScaleTransition;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/SlideTransition.js
-var require_SlideTransition = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/SlideTransition.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SlideTransition = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var SlideTransition = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("SlideTransition", { ...this.props });
-      }
-    };
-    exports.SlideTransition = SlideTransition;
-    exports.default = SlideTransition;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/ConstrainedBox.js
-var require_ConstrainedBox = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/ConstrainedBox.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ConstrainedBox = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var ConstrainedBox = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("ConstrainedBox", { ...this.props });
-      }
-    };
-    exports.ConstrainedBox = ConstrainedBox;
-    exports.default = ConstrainedBox;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/FittedBox.js
-var require_FittedBox = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/FittedBox.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.FittedBox = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var FittedBox = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("FittedBox", { ...this.props });
-      }
-    };
-    exports.FittedBox = FittedBox;
-    exports.default = FittedBox;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/Visibility.js
-var require_Visibility = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/Visibility.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Visibility = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var Visibility = class extends react_1.default.Component {
-      render() {
-        return react_1.default.createElement("Visibility", { ...this.props });
-      }
-    };
-    exports.Visibility = Visibility;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/CustomPaint.js
-var require_CustomPaint = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/CustomPaint.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.CustomPaint = exports.CustomPainter = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var controllerIdCounter = 1;
-    var CustomPainter = class {
-      constructor(paintCallback) {
-        this.commands = [];
-        this.scopedRefId = null;
-        this.target = "painter";
-        this.id = controllerIdCounter++;
-        this.paintCallback = paintCallback;
-        if (this.paintCallback) {
-          this.paintCallback(this);
-        }
-      }
-      /**
-       * Internal method to bind the painter to a widget instance.
-       * Called by CustomPaint widget during render.
-       */
-      bind(scopedRefId, target) {
-        this.scopedRefId = scopedRefId;
-        this.target = target;
-      }
-      save() {
-        this.commands.push({ type: "save" });
-      }
-      restore() {
-        this.commands.push({ type: "restore" });
-      }
-      translate(dx, dy) {
-        this.commands.push({ type: "translate", dx, dy });
-      }
-      scale(sx, sy) {
-        this.commands.push({ type: "scale", sx, sy });
-      }
-      rotate(radians) {
-        this.commands.push({ type: "rotate", radians });
-      }
-      drawLine(p1, p2, paint) {
-        this.commands.push({ type: "drawLine", p1, p2, paint });
-      }
-      drawRect(rect, paint) {
-        this.commands.push({ type: "drawRect", rect, paint });
-      }
-      drawCircle(center, radius, paint) {
-        this.commands.push({ type: "drawCircle", center, radius, paint });
-      }
-      drawOval(rect, paint) {
-        this.commands.push({ type: "drawOval", rect, paint });
-      }
-      drawArc(rect, startAngle, sweepAngle, useCenter, paint) {
-        this.commands.push({ type: "drawArc", rect, startAngle, sweepAngle, useCenter, paint });
-      }
-      drawRRect(rrect, paint) {
-        this.commands.push({ type: "drawRRect", rrect, paint });
-      }
-      serialize() {
-        return this.commands;
-      }
-      /**
-       * Triggers a re-render of the CustomPaint widget to update the canvas.
-       * If a builder callback is provided or was passed to constructor, it will be executed
-       * to rebuild commands after clearing existing ones.
-       */
-      repaint(builder) {
-        const activeBuilder = builder || this.paintCallback;
-        if (activeBuilder) {
-          this.commands = [];
-          activeBuilder(this);
-        }
-        if (this.onRepaint) {
-          this.onRepaint();
-        }
-      }
-      clear() {
-        this.commands = [];
-      }
-    };
-    exports.CustomPainter = CustomPainter;
-    var CustomPaint = class extends BaseWidget_1.BaseWidget {
-      constructor(props) {
-        super(props);
-        this.state = { ...this.state, repaintTick: 0 };
-      }
-      componentDidMount() {
-        if (super.componentDidMount) {
-          super.componentDidMount();
-        }
-        this.bindPainter();
-      }
-      componentDidUpdate(prevProps, prevState, snapshot) {
-        if (super.componentDidUpdate) {
-          super.componentDidUpdate(prevProps, prevState, snapshot);
-        }
-        this.bindPainter();
-      }
-      bindPainter() {
-        const { painter, foregroundPainter } = this.props;
-        if (painter) {
-          painter.onRepaint = () => this.forceUpdate();
-        }
-        if (foregroundPainter) {
-          foregroundPainter.onRepaint = () => this.forceUpdate();
-        }
-      }
-      render() {
-        const { painter, foregroundPainter, child, ...rest } = this.props;
-        if (painter) {
-          painter.bind(this.scopedRefId, "painter");
-        }
-        if (foregroundPainter) {
-          foregroundPainter.bind(this.scopedRefId, "foregroundPainter");
-        }
-        const painterCommands = painter?.serialize();
-        const foregroundPainterCommands = foregroundPainter?.serialize();
-        return react_1.default.createElement("CustomPaint", {
-          ...rest,
-          refId: this.scopedRefId,
-          painter: painterCommands ? [...painterCommands] : void 0,
-          // Create new array reference
-          foregroundPainter: foregroundPainterCommands ? [...foregroundPainterCommands] : void 0,
-          isBoundary: true
-        }, child);
-      }
-    };
-    exports.CustomPaint = CustomPaint;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/VideoPlayer.js
-var require_VideoPlayer = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/VideoPlayer.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.VideoPlayer = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var VideoPlayer = class extends BaseWidget_1.BaseWidget {
-      get widgetType() {
-        return "VideoPlayer";
-      }
-      play() {
-        this.callNativeCommand("play");
-      }
-      pause() {
-        this.callNativeCommand("pause");
-      }
-      stop() {
-        this.callNativeCommand("stop");
-      }
-      seekTo(position) {
-        this.callNativeCommand("seekTo", { position });
-      }
-      setVolume(volume) {
-        this.callNativeCommand("setVolume", { volume });
-      }
-      setLooping(looping) {
-        this.callNativeCommand("setLooping", { looping });
-      }
-      setPlaybackSpeed(speed) {
-        this.callNativeCommand("setPlaybackSpeed", { speed });
-      }
-      render() {
-        return react_1.default.createElement("VideoPlayer", {
-          ...this.props,
-          refId: this.scopedRefId
-        });
-      }
-    };
-    exports.VideoPlayer = VideoPlayer;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/VisibilityDetector.js
-var require_VisibilityDetector = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/VisibilityDetector.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.VisibilityDetector = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var BaseWidget_1 = require_BaseWidget();
-    var VisibilityDetector = class extends BaseWidget_1.BaseWidget {
-      get widgetType() {
-        return "VisibilityDetector";
-      }
-      render() {
-        return react_1.default.createElement("VisibilityDetector", {
-          ...this.props,
-          refId: this.scopedRefId
-        }, this.props.children);
-      }
-    };
-    exports.VisibilityDetector = VisibilityDetector;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/services/ComponentStore.js
-var require_ComponentStore = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/services/ComponentStore.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var ComponentStore = class _ComponentStore {
-      constructor() {
-        this.components = /* @__PURE__ */ new Map();
-        this.counter = 0;
-      }
-      static getInstance() {
-        if (!_ComponentStore.instance) {
-          _ComponentStore.instance = new _ComponentStore();
-        }
-        return _ComponentStore.instance;
-      }
-      register(component) {
-        const id = `cmp_${++this.counter}_${Date.now()}`;
-        this.components.set(id, component);
-        return id;
-      }
-      get(id) {
-        return this.components.get(id);
-      }
-      remove(id) {
-        this.components.delete(id);
-      }
-    };
-    exports.default = ComponentStore;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/GenericPage.js
-var require_GenericPage = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/GenericPage.js"(exports) {
-    "use strict";
-    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
-      }
-      Object.defineProperty(o, k2, desc);
-    } : function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
+};
+
+// ../../fuickjs_framework/fuickjs/src/strategies/IncrementalStrategy.ts
+var IncrementalStrategy = class {
+  constructor(container) {
+    this.mutationQueue = [];
+    this.container = container;
+  }
+  recordUpdate(node, updatePayload) {
+    const props = {};
+    for (let i = 0; i < updatePayload.length; i += 2) {
+      const key = updatePayload[i];
+      const val = updatePayload[i + 1];
+      if (key === "children") continue;
+      props[key] = val;
+    }
+    const processed = this.container.processProps(node.id, props, node.type);
+    this.mutationQueue.push({ type: 1, id: node.id, props: processed });
+    this.enqueueBoundaryRefresh(node);
+  }
+  recordInsert(parent, child, index) {
+    if (child.type === "FlutterProps" || child.type === "flutter-props") {
+      this.recordHostUpdateFromFlutterProps(child);
+      return;
+    }
+    if (parent.type === "FlutterProps" || parent.type === "flutter-props") {
+      this.recordHostUpdateFromFlutterProps(parent);
+      return;
+    }
+    const childDsl = child.toDsl();
+    this.mutationQueue.push({
+      type: 2,
+      parentId: parent.id,
+      childId: child.id,
+      index,
+      childDsl
     });
-    var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
-      Object.defineProperty(o, "default", { enumerable: true, value: v });
-    } : function(o, v) {
-      o["default"] = v;
-    });
-    var __importStar = exports && exports.__importStar || /* @__PURE__ */ function() {
-      var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function(o2) {
-          var ar = [];
-          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
-          return ar;
-        };
-        return ownKeys(o);
-      };
-      return function(mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) {
-          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+    this.enqueueBoundaryRefresh(parent);
+  }
+  recordRemoval(parent, child) {
+    if (child.type === "FlutterProps" || child.type === "flutter-props") {
+      this.recordHostUpdateFromFlutterProps(child);
+      return;
+    }
+    if (parent.type === "FlutterProps" || parent.type === "flutter-props") {
+      this.recordHostUpdateFromFlutterProps(parent);
+      return;
+    }
+    this.mutationQueue.push({ type: 3, parentId: parent.id, childId: child.id });
+    this.enqueueBoundaryRefresh(parent);
+  }
+  clear() {
+    this.mutationQueue = [];
+  }
+  commit() {
+    if (this.mutationQueue.length === 0) return;
+    const commitStart = Date.now();
+    const pageId = this.container.pageId;
+    const optimizedOps = [];
+    const lastUpdateIndexById = /* @__PURE__ */ new Map();
+    for (const op of this.mutationQueue) {
+      if (op.type === 1) {
+        const key = String(op.id);
+        const prevIndex = lastUpdateIndexById.get(key);
+        if (prevIndex !== void 0) {
+          optimizedOps[prevIndex] = null;
         }
-        __setModuleDefault(result, mod);
-        return result;
-      };
-    }();
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.GenericPage = GenericPage;
-    var react_1 = __importStar(require_react_production_min());
-    var ComponentStore_1 = __importDefault(require_ComponentStore());
-    var Container_1 = require_Container();
-    var Text_1 = require_Text();
-    function GenericPage(props) {
-      const { componentId } = props;
-      const component = ComponentStore_1.default.getInstance().get(componentId);
-      (0, react_1.useEffect)(() => {
-        return () => {
-          if (componentId) {
-            ComponentStore_1.default.getInstance().remove(componentId);
+        lastUpdateIndexById.set(key, optimizedOps.length);
+        optimizedOps.push(op);
+      } else {
+        optimizedOps.push(op);
+      }
+    }
+    const flattenedOps = [];
+    for (const op of optimizedOps) {
+      if (op) {
+        if (op.type === 1) {
+          flattenedOps.push(1, op.id, op.props);
+        } else if (op.type === 2) {
+          flattenedOps.push(2, op.parentId, op.childId, op.index, op.childDsl);
+        } else if (op.type === 3) {
+          flattenedOps.push(3, op.parentId, op.childId);
+        }
+      }
+    }
+    UIService.patchOps(Number(pageId), flattenedOps);
+    console.log(
+      `[JS Performance] commit(patchOps) page=${pageId} `
+    );
+    this.mutationQueue = [];
+  }
+  getBoundaryNode(node) {
+    if (!node) return null;
+    let current = node;
+    while (current.parent && !current.props?.isBoundary) {
+      current = current.parent;
+    }
+    return current;
+  }
+  enqueueBoundaryRefresh(node) {
+    const boundary = this.getBoundaryNode(node);
+    if (boundary && boundary !== node) {
+      this.mutationQueue.push({ type: 1, id: boundary.id, props: {} });
+    }
+  }
+  recordHostUpdateFromFlutterProps(flutterPropsNode) {
+    const host = flutterPropsNode.parent;
+    if (!host) return;
+    const propsKey = flutterPropsNode.props?.propsKey;
+    if (!propsKey) return;
+    const allValues = [];
+    let hasMultiple = false;
+    for (const child of host.children) {
+      if (child.type === "FlutterProps" || child.type === "flutter-props") {
+        const key = child.props?.propsKey;
+        if (key === propsKey) {
+          const childrenDsl = child.children.map((c) => c.toDsl()).filter((c) => c !== null);
+          if (childrenDsl.length > 0) {
+            allValues.push(...childrenDsl);
           }
-        };
-      }, [componentId]);
-      if (!component) {
-        return react_1.default.createElement(
-          Container_1.Container,
-          { alignment: "center" },
-          react_1.default.createElement(Text_1.Text, { text: "Content not found" })
+          if (child !== flutterPropsNode && child.props?.propsKey === propsKey) {
+            hasMultiple = true;
+          }
+        }
+      }
+    }
+    let finalValue;
+    if (allValues.length === 0) {
+      finalValue = null;
+    } else if (allValues.length === 1 && !hasMultiple) {
+      const accumulatedValues = [];
+      for (const child of host.children) {
+        if ((child.type === "FlutterProps" || child.type === "flutter-props") && child.props?.propsKey === propsKey) {
+          const childrenDsl = child.children.map((c) => c.toDsl()).filter((c) => c !== null);
+          if (childrenDsl.length > 0) {
+            const val = childrenDsl.length === 1 ? childrenDsl[0] : childrenDsl;
+            accumulatedValues.push(val);
+          }
+        }
+      }
+      if (accumulatedValues.length === 0) {
+        finalValue = null;
+      } else if (accumulatedValues.length === 1) {
+        finalValue = accumulatedValues[0];
+      } else {
+        finalValue = accumulatedValues;
+      }
+    } else {
+      finalValue = allValues;
+    }
+    this.mutationQueue.push({
+      type: 1,
+      id: host.id,
+      props: { [propsKey]: finalValue }
+    });
+    this.enqueueBoundaryRefresh(host);
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/strategies/DiffStrategy.ts
+var DiffStrategy = class {
+  constructor(container) {
+    this.changedNodes = /* @__PURE__ */ new Set();
+    this.rendered = false;
+    this.container = container;
+  }
+  markChanged(node) {
+    if (!node) return;
+    let current = node;
+    while (current.parent && !current.props?.isBoundary) {
+      current = current.parent;
+    }
+    this.changedNodes.add(current);
+    if (current === this.container.root) {
+      console.log(`[JS Performance] Root node (id=${current.id}, type=${current.type}) marked as changed!`);
+    }
+  }
+  clear() {
+    this.changedNodes.clear();
+  }
+  commit() {
+    if (this.changedNodes.size === 0) {
+      return;
+    }
+    if (!this.container.root) {
+      return;
+    }
+    const commitStart = Date.now();
+    const pageId = this.container.pageId;
+    const rootChanged = this.container.root && this.changedNodes.has(this.container.root);
+    if (rootChanged) {
+      console.log(
+        `[JS Performance] rootChanged is true for page ${pageId}. Root node:`,
+        this.container.root?.type,
+        this.container.root?.id
+      );
+    }
+    if (!this.rendered || rootChanged) {
+      const dslStart = Date.now();
+      const dsl = this.container.root?.toDsl();
+      const dslEnd = Date.now();
+      if (dsl && dsl.type) {
+        UIService.renderUI(Number(pageId), dsl);
+        this.rendered = true;
+        console.log(
+          `[JS Performance] commit(full) page=${pageId} total=${Date.now() - commitStart}ms (dsl=${dslEnd - dslStart}ms)`
         );
       }
-      return react_1.default.createElement(react_1.default.Fragment, null, component);
+    } else {
+      const patches = [];
+      const processedNodes = /* @__PURE__ */ new Set();
+      const normalizedChangedNodes = /* @__PURE__ */ new Set();
+      for (const node of this.changedNodes) {
+        if ((node.type === "FlutterProps" || node.type === "flutter-props") && node.parent) {
+          normalizedChangedNodes.add(node.parent);
+        } else {
+          normalizedChangedNodes.add(node);
+        }
+      }
+      const topLevelNodes = /* @__PURE__ */ new Set();
+      for (const node of normalizedChangedNodes) {
+        let isRedundant = false;
+        let current = node.parent;
+        while (current) {
+          if (normalizedChangedNodes.has(current)) {
+            isRedundant = true;
+            break;
+          }
+          current = current.parent;
+        }
+        if (!isRedundant) {
+          topLevelNodes.add(node);
+        }
+      }
+      const dslStart = Date.now();
+      for (const node of topLevelNodes) {
+        if (processedNodes.has(node.id)) continue;
+        const dsl = node.toDsl();
+        if (dsl) {
+          patches.push(dsl);
+          processedNodes.add(node.id);
+        }
+      }
+      const dslEnd = Date.now();
+      if (patches.length > 0) {
+        UIService.patchUI(Number(pageId), patches);
+        const changedNodeTypes = Array.from(topLevelNodes).map((n) => n.type).join(", ");
+        console.log(
+          `[JS Performance] commit(patchUI) page=${pageId} nodes=${topLevelNodes.size} types=[${changedNodeTypes}] total=${Date.now() - commitStart}ms (dsl=${dslEnd - dslStart}ms)`
+        );
+      }
+    }
+    this.clear();
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/PageContainer.ts
+var PageContainer = class {
+  constructor(pageId) {
+    this.root = null;
+    this.incrementalMode = true;
+    this.eventCallbacks = /* @__PURE__ */ new Map();
+    this.onVisibleCallbacks = /* @__PURE__ */ new Set();
+    this.onInvisibleCallbacks = /* @__PURE__ */ new Set();
+    this.nodes = /* @__PURE__ */ new Map();
+    this.nodesByRefId = /* @__PURE__ */ new Map();
+    this.virtualNodeIdCounter = 1e6;
+    // Start high for virtual nodes
+    this.isVisible = false;
+    this.pageId = pageId;
+    this.incrementalStrategy = new IncrementalStrategy(this);
+    this.diffStrategy = new DiffStrategy(this);
+  }
+  registerNode(node) {
+    this.nodes.set(node.id, node);
+    if (node.props?.refId) {
+      this.nodesByRefId.set(String(node.props.refId), node);
     }
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/widgets/index.js
-var require_widgets = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/widgets/index.js"(exports) {
-    "use strict";
-    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
+  unregisterNode(node) {
+    this.nodes.delete(node.id);
+    if (node.props?.refId) {
+      this.nodesByRefId.delete(String(node.props.refId));
+    }
+  }
+  getNodeByRefId(refId) {
+    return this.nodesByRefId.get(refId);
+  }
+  registerCallback(nodeId, eventKey, fn) {
+    this.eventCallbacks.set(`${nodeId}:${eventKey}`, fn);
+  }
+  unregisterCallback(nodeId, eventKey) {
+    this.eventCallbacks.delete(`${nodeId}:${eventKey}`);
+  }
+  getCallback(nodeId, eventKey) {
+    return this.eventCallbacks.get(`${nodeId}:${eventKey}`);
+  }
+  registerVisibleCallback(fn) {
+    this.onVisibleCallbacks.add(fn);
+    if (this.isVisible) {
+      try {
+        fn();
+      } catch (e) {
+        console.error(`Error in onVisible callback (immediate) for page ${this.pageId}:`, e);
       }
-      Object.defineProperty(o, k2, desc);
-    } : function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
+    }
+  }
+  unregisterVisibleCallback(fn) {
+    this.onVisibleCallbacks.delete(fn);
+  }
+  registerInvisibleCallback(fn) {
+    this.onInvisibleCallbacks.add(fn);
+  }
+  unregisterInvisibleCallback(fn) {
+    this.onInvisibleCallbacks.delete(fn);
+  }
+  notifyVisible() {
+    this.isVisible = true;
+    this.onVisibleCallbacks.forEach((fn) => {
+      try {
+        fn();
+      } catch (e) {
+        console.error(`Error in onVisible callback for page ${this.pageId}:`, e);
+      }
     });
-    var __exportStar = exports && exports.__exportStar || function(m, exports2) {
-      for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    __exportStar(require_types(), exports);
-    __exportStar(require_BaseWidget(), exports);
-    __exportStar(require_ScrollableBaseWidget(), exports);
-    __exportStar(require_Text(), exports);
-    __exportStar(require_Column(), exports);
-    __exportStar(require_Row(), exports);
-    __exportStar(require_Container(), exports);
-    __exportStar(require_Button(), exports);
-    __exportStar(require_TextField(), exports);
-    __exportStar(require_Switch(), exports);
-    __exportStar(require_Expanded(), exports);
-    __exportStar(require_ListView(), exports);
-    __exportStar(require_Padding(), exports);
-    __exportStar(require_Image(), exports);
-    __exportStar(require_SizedBox(), exports);
-    __exportStar(require_Center(), exports);
-    __exportStar(require_Icon(), exports);
-    __exportStar(require_Flexible(), exports);
-    __exportStar(require_GestureDetector(), exports);
-    __exportStar(require_InkWell(), exports);
-    __exportStar(require_Divider(), exports);
-    __exportStar(require_SingleChildScrollView(), exports);
-    __exportStar(require_Stack(), exports);
-    __exportStar(require_Positioned(), exports);
-    __exportStar(require_Opacity(), exports);
-    __exportStar(require_CircularProgressIndicator(), exports);
-    __exportStar(require_SafeArea(), exports);
-    __exportStar(require_Scaffold(), exports);
-    __exportStar(require_AppBar(), exports);
-    __exportStar(require_FlutterProps(), exports);
-    __exportStar(require_PageView(), exports);
-    __exportStar(require_GridView(), exports);
-    __exportStar(require_ListTile(), exports);
-    __exportStar(require_BottomNavigationBar(), exports);
-    __exportStar(require_CustomScrollView(), exports);
-    __exportStar(require_SliverList(), exports);
-    __exportStar(require_SliverGrid(), exports);
-    __exportStar(require_SliverToBoxAdapter(), exports);
-    __exportStar(require_SliverAppBar(), exports);
-    __exportStar(require_SliverPersistentHeader(), exports);
-    __exportStar(require_Tabs(), exports);
-    __exportStar(require_KeepAlive(), exports);
-    __exportStar(require_Wrap(), exports);
-    __exportStar(require_Card(), exports);
-    __exportStar(require_Checkbox(), exports);
-    __exportStar(require_IntrinsicWidth(), exports);
-    __exportStar(require_IntrinsicHeight(), exports);
-    __exportStar(require_AnimatedContainer(), exports);
-    __exportStar(require_AnimatedOpacity(), exports);
-    __exportStar(require_AnimatedAlign(), exports);
-    __exportStar(require_AnimatedPositioned(), exports);
-    __exportStar(require_AnimatedPadding(), exports);
-    __exportStar(require_AnimatedScale(), exports);
-    __exportStar(require_AnimatedRotation(), exports);
-    __exportStar(require_AnimatedSlide(), exports);
-    __exportStar(require_AlertDialog(), exports);
-    __exportStar(require_RotationTransition(), exports);
-    __exportStar(require_ScaleTransition(), exports);
-    __exportStar(require_SlideTransition(), exports);
-    __exportStar(require_ConstrainedBox(), exports);
-    __exportStar(require_FittedBox(), exports);
-    __exportStar(require_Visibility(), exports);
-    __exportStar(require_CustomPaint(), exports);
-    __exportStar(require_VideoPlayer(), exports);
-    __exportStar(require_VisibilityDetector(), exports);
-    __exportStar(require_GenericPage(), exports);
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/components.js
-var require_components = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/components.js"(exports) {
-    "use strict";
-    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
+  notifyInvisible() {
+    this.isVisible = false;
+    this.onInvisibleCallbacks.forEach((fn) => {
+      try {
+        fn();
+      } catch (e) {
+        console.error(`Error in onInvisible callback for page ${this.pageId}:`, e);
       }
-      Object.defineProperty(o, k2, desc);
-    } : function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
     });
-    var __exportStar = exports && exports.__exportStar || function(m, exports2) {
-      for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    __exportStar(require_widgets(), exports);
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/services/ConsoleService.js
-var require_ConsoleService = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/services/ConsoleService.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ConsoleService = void 0;
-    var ConsoleService = class {
-      static log(message) {
-        this.console("log", message);
-      }
-      static warn(message) {
-        this.console("warn", message);
-      }
-      static error(message) {
-        this.console("error", message);
-      }
-      static console(level, message) {
-        dartCallNative("Console.console", { level, message });
-      }
-    };
-    exports.ConsoleService = ConsoleService;
+  setIncrementalMode(enabled) {
+    this.incrementalMode = enabled;
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/ex/console.js
-var require_console = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/ex/console.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.log = log;
-    exports.warn = warn;
-    exports.error = error;
-    var ConsoleService_1 = require_ConsoleService();
-    function log(...args) {
-      const message = args.map((a) => String(a)).join(" ");
-      try {
-        ConsoleService_1.ConsoleService.log(message);
-      } catch {
-        const globalObj = globalThis;
-        if (typeof globalObj.print === "function") {
-          globalObj.print(message);
-        }
-      }
-    }
-    function warn(...args) {
-      const message = args.map((a) => String(a)).join(" ");
-      try {
-        ConsoleService_1.ConsoleService.warn(message);
-      } catch {
-        const globalObj = globalThis;
-        if (typeof globalObj.print === "function") {
-          globalObj.print("[WARN] " + message);
-        }
-      }
-    }
-    function error(...args) {
-      const message = args.map((a) => String(a)).join(" ");
-      try {
-        ConsoleService_1.ConsoleService.error(message);
-      } catch {
-        const globalObj = globalThis;
-        if (typeof globalObj.print === "function") {
-          globalObj.print("[ERROR] " + message);
-        }
-      }
+  recordUpdate(node, updatePayload) {
+    if (this.incrementalMode) {
+      this.incrementalStrategy.recordUpdate(node, updatePayload);
+    } else {
+      this.diffStrategy.markChanged(node);
     }
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/services/TimerService.js
-var require_TimerService = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/services/TimerService.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.TimerService = void 0;
-    var TimerService = class {
-      static createTimer(id, delay, isInterval) {
-        dartCallNative("Timer.createTimer", { id, delay, isInterval });
-      }
-      static deleteTimer(id) {
-        dartCallNative("Timer.deleteTimer", { id });
-      }
-    };
-    exports.TimerService = TimerService;
+  recordInsert(parent, child, index) {
+    if (this.incrementalMode) {
+      this.incrementalStrategy.recordInsert(parent, child, index);
+    } else {
+      this.diffStrategy.markChanged(parent);
+    }
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/ex/timer.js
-var require_timer = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/ex/timer.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.setTimeout = setTimeout2;
-    exports.clearTimeout = clearTimeout2;
-    exports.setInterval = setInterval;
-    exports.clearInterval = clearInterval;
-    var TimerService_1 = require_TimerService();
-    var ErrorHandler_1 = require_ErrorHandler();
-    var nextTimerId = 1;
-    var timerMap = /* @__PURE__ */ new Map();
-    function setTimeout2(fn, ms) {
-      const id = nextTimerId++;
-      timerMap.set(id, { fn, type: "timeout" });
-      const delay = ms || 0;
-      try {
-        TimerService_1.TimerService.createTimer(id, delay, false);
-      } catch {
-        try {
-          fn();
-        } catch (innerE) {
-          console.error(`[Timer] Error in immediate timer callback:`, innerE);
-          ErrorHandler_1.ErrorHandler.notify(innerE, "timer", { id });
+  recordRemoval(parent, child) {
+    if (this.incrementalMode) {
+      this.incrementalStrategy.recordRemoval(parent, child);
+    } else {
+      this.diffStrategy.markChanged(parent);
+    }
+  }
+  markChanged(node) {
+    this.diffStrategy.markChanged(node);
+  }
+  createInstance(type, props) {
+    const node = new Node(type, props, this);
+    this.markChanged(node);
+    return node;
+  }
+  createTextInstance(text) {
+    const node = new Node(TEXT_TYPE, { text }, this);
+    this.markChanged(node);
+    return node;
+  }
+  appendChild(parent, child) {
+    if (child.parent) {
+      const oldIndex = child.parent.children.indexOf(child);
+      if (oldIndex >= 0) {
+        child.parent.children.splice(oldIndex, 1);
+        if (this.incrementalMode) {
+          this.recordRemoval(child.parent, child);
+        } else {
+          this.markChanged(child.parent);
         }
       }
-      return id;
+    } else {
+      const oldIndex = parent.children.indexOf(child);
+      if (oldIndex >= 0) {
+        parent.children.splice(oldIndex, 1);
+      }
     }
-    function clearTimeout2(id) {
-      timerMap.delete(id);
-      TimerService_1.TimerService.deleteTimer(id);
+    child.parent = parent;
+    parent.children.push(child);
+    if (this.incrementalMode) {
+      this.recordInsert(parent, child, parent.children.length - 1);
+    } else {
+      this.markChanged(parent);
     }
-    function setInterval(fn, ms) {
-      const id = nextTimerId++;
-      timerMap.set(id, { fn, type: "interval" });
-      TimerService_1.TimerService.createTimer(id, ms || 0, true);
-      return id;
-    }
-    function clearInterval(id) {
-      timerMap.delete(id);
-      TimerService_1.TimerService.deleteTimer(id);
-    }
-    globalThis.__handleTimer = (id) => {
-      const entry = timerMap.get(id);
-      if (entry) {
-        if (entry.type === "timeout") {
-          timerMap.delete(id);
-        }
-        try {
-          if (typeof entry.fn === "function") {
-            entry.fn();
+  }
+  insertBefore(parent, child, beforeChild) {
+    if (child.parent) {
+      const oldIndex = child.parent.children.indexOf(child);
+      if (oldIndex >= 0) {
+        child.parent.children.splice(oldIndex, 1);
+        if (child.parent !== parent) {
+          if (this.incrementalMode) {
+            this.recordRemoval(child.parent, child);
           } else {
-            console.error(`[Timer] Callback for timer ${id} is not a function:`, entry.fn);
+            this.markChanged(child.parent);
           }
-        } catch (e) {
-          console.error(`[Timer] Error in timer ${id} callback:`, e);
-          ErrorHandler_1.ErrorHandler.notify(e, "timer", { id });
+        } else {
+          if (this.incrementalMode) {
+            this.recordRemoval(parent, child);
+          }
         }
       }
-    };
+    } else {
+      const oldIndex = parent.children.indexOf(child);
+      if (oldIndex >= 0) {
+        parent.children.splice(oldIndex, 1);
+      }
+    }
+    child.parent = parent;
+    const i = parent.children.indexOf(beforeChild);
+    if (i >= 0) {
+      parent.children.splice(i, 0, child);
+    } else {
+      parent.children.push(child);
+    }
+    if (this.incrementalMode) {
+      const newIndex = i >= 0 ? i : parent.children.length - 1;
+      this.recordInsert(parent, child, newIndex);
+    } else {
+      this.markChanged(parent);
+    }
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/services/NetworkService.js
-var require_NetworkService = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/services/NetworkService.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.NetworkService = void 0;
-    var NetworkService = class {
-      static async fetch(url, method, headers, body) {
-        if (typeof dartCallNativeAsync !== "function") {
-          throw new Error("dartCallNativeAsync is not available.");
+  removeChild(parent, child) {
+    const i = parent.children.indexOf(child);
+    if (i >= 0) parent.children.splice(i, 1);
+    child.destroy();
+    if (this.incrementalMode) {
+      this.recordRemoval(parent, child);
+    } else {
+      this.markChanged(parent);
+    }
+  }
+  appendChildToContainer(child) {
+    this.root = child;
+    this.markChanged(child);
+  }
+  removeChildFromContainer(child) {
+    if (this.root === child) {
+      this.root = null;
+    }
+    child.destroy();
+  }
+  commitTextUpdate(node, text) {
+    node.props.text = String(text);
+    this.markChanged(node);
+  }
+  commit() {
+    try {
+      if (!this.diffStrategy.rendered) {
+        this.diffStrategy.commit();
+      } else if (this.incrementalMode) {
+        this.incrementalStrategy.commit();
+      } else {
+        this.diffStrategy.commit();
+      }
+    } catch (e) {
+      console.error(`[PageContainer] Error during commit for page ${this.pageId}:`, e);
+    } finally {
+      this.clear();
+    }
+  }
+  getItemDSL(refId, index) {
+    const node = this.getNodeByRefId(refId);
+    if (!node) {
+      return null;
+    }
+    const itemBuilder = node.props?.itemBuilder;
+    if (typeof itemBuilder !== "function") {
+      return null;
+    }
+    try {
+      const element = itemBuilder(index);
+      const dsl = this.elementToDsl(element);
+      return dsl;
+    } catch (e) {
+      console.error(`[PageContainer] Error in itemBuilder for refId ${refId} at index ${index}:`, e);
+      return null;
+    }
+  }
+  elementToDsl(element, depth = 0) {
+    if (!element) return null;
+    let currentElement = element;
+    while (true) {
+      if (!currentElement) return null;
+      if (typeof currentElement === "string" || typeof currentElement === "number") {
+        return { type: "Text", props: { text: String(currentElement) } };
+      }
+      if (Array.isArray(currentElement)) {
+        return currentElement.map((e) => this.elementToDsl(e, depth + 1)).filter((e) => e !== null);
+      }
+      const elAny = currentElement;
+      if (elAny.type) {
+        let type = elAny.type;
+        const originalProps = elAny.props || {};
+        while (typeof type === "object" && type !== null && type.type) {
+          type = type.type;
         }
-        return await dartCallNativeAsync("Network.fetch", {
-          url,
-          method,
-          headers,
-          body
-        });
-      }
-    };
-    exports.NetworkService = NetworkService;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/ex/fetch.js
-var require_fetch = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/ex/fetch.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.fetch = fetch;
-    var NetworkService_1 = require_NetworkService();
-    async function fetch(url, options = {}) {
-      const result = await NetworkService_1.NetworkService.fetch(url, options.method || "GET", options.headers || {}, options.body);
-      return {
-        status: result.status,
-        ok: result.status >= 200 && result.status < 300,
-        headers: result.headers,
-        text: async () => result.body,
-        json: async () => JSON.parse(result.body)
-      };
-    }
-    if (typeof globalThis !== "undefined") {
-      globalThis.fetch = fetch;
-    }
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/runtime.js
-var require_runtime = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/runtime.js"(exports) {
-    "use strict";
-    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
-      }
-      Object.defineProperty(o, k2, desc);
-    } : function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
-    });
-    var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
-      Object.defineProperty(o, "default", { enumerable: true, value: v });
-    } : function(o, v) {
-      o["default"] = v;
-    });
-    var __importStar = exports && exports.__importStar || /* @__PURE__ */ function() {
-      var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function(o2) {
-          var ar = [];
-          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
-          return ar;
+        if (typeof type === "function") {
+          if (type.prototype && type.prototype.isReactComponent) {
+            const instance = new type(originalProps);
+            instance.context = { pageId: this.pageId };
+            if (elAny.ref) {
+              if (typeof elAny.ref === "function") {
+                elAny.ref(instance);
+              } else if (typeof elAny.ref === "object" && elAny.ref !== null) {
+                elAny.ref.current = instance;
+              }
+            }
+            currentElement = instance.render();
+            continue;
+          }
+          currentElement = type(originalProps);
+          continue;
+        }
+        const { children, ...props } = originalProps;
+        const nodeId = typeof props.id === "number" ? props.id : ++this.virtualNodeIdCounter;
+        if (!props.id || typeof props.id !== "number") props.id = nodeId;
+        const processedProps = this.processProps(nodeId, props, String(type), [], depth + 1);
+        const dslChildren = [];
+        const childrenToProcess = Array.isArray(children) ? children : children ? [children] : [];
+        for (const child of childrenToProcess) {
+          const childDsl = this.elementToDsl(child, depth + 1);
+          if (childDsl) {
+            if (Array.isArray(childDsl)) {
+              for (const item of childDsl) {
+                this.processDslChild(processedProps, dslChildren, item);
+              }
+            } else {
+              this.processDslChild(processedProps, dslChildren, childDsl);
+            }
+          }
+        }
+        const result = {
+          id: nodeId,
+          type: String(type),
+          props: processedProps,
+          children: dslChildren
         };
-        return ownKeys(o);
-      };
-      return function(mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) {
-          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        if (props.refId) {
+          const rawRefId = String(props.refId);
+          result.refId = rawRefId.indexOf(":") !== -1 ? rawRefId : `${this.pageId}:${rawRefId}`;
         }
-        __setModuleDefault(result, mod);
+        if (props.isBoundary) {
+          result.isBoundary = true;
+        }
         return result;
-      };
-    }();
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Runtime = void 0;
-    exports.bindGlobals = bindGlobals;
-    var PageRender = __importStar(require_page_render());
-    var Console = __importStar(require_console());
-    var Timer = __importStar(require_timer());
-    var fetch_1 = require_fetch();
-    var ErrorHandler_1 = require_ErrorHandler();
-    function bindGlobals() {
-      setupPolyfills();
-      Object.assign(globalThis, {
-        FuickAppController: {
-          render: PageRender.render,
-          destroy: PageRender.destroy,
-          getItemDSL: PageRender.getItemDSL,
-          notifyLifecycle: PageRender.notifyLifecycle,
-          dispatchEvent: (eventObj, payload) => {
-            const r = PageRender.ensureRenderer();
-            r.dispatchEvent(eventObj, payload);
+      }
+      return null;
+    }
+  }
+  processDslChild(processedProps, dslChildren, childDsl) {
+    const child = childDsl;
+    if (child.type === "FlutterProps" || child.type === "flutter-props") {
+      const propsKey = child.props?.propsKey;
+      if (propsKey) {
+        const propChildren = child.children || [];
+        if (propChildren.length > 0) {
+          const newValue = propChildren.length === 1 ? propChildren[0] : propChildren;
+          if (processedProps[propsKey]) {
+            if (Array.isArray(processedProps[propsKey])) {
+              processedProps[propsKey].push(newValue);
+            } else {
+              processedProps[propsKey] = [processedProps[propsKey], newValue];
+            }
+          } else {
+            processedProps[propsKey] = newValue;
           }
+        }
+      }
+    } else {
+      dslChildren.push(child);
+    }
+  }
+  /**
+   * 递归处理组件属性，将 React/JS 特有的属性转换为 Flutter 可识别的 DSL 格式
+   *
+   * 处理逻辑包括：
+   * 1. 识别并转换函数回调为 Flutter 事件对象 (isFuickEvent)
+   * 2. 递归处理嵌套的对象和数组
+   * 3. 过滤掉 React 内部使用的私有属性
+   * 4. 处理嵌套的 React 元素 (Element to DSL)
+   *
+   * @param nodeId 当前属性所属节点的 ID，用于事件回调定位
+   * @param props 原始属性对象
+   * @param nodeType 节点类型 (如 'ListView', 'Text')，用于特殊逻辑处理
+   * @param path 当前处理的属性路径 (如 'decoration.color')，用于生成唯一的事件 key
+   * @returns 处理后的 DSL 属性对象
+   */
+  processProps(nodeId, props, nodeType, path = [], depth = 0) {
+    if (!props || typeof props !== "object") return props;
+    if (import_react5.default.isValidElement(props)) return this.elementToDsl(props, depth + 1);
+    if (Array.isArray(props)) {
+      return props.map((item, index) => {
+        const newPath = [...path, index];
+        return this.processProps(nodeId, item, nodeType, newPath, depth + 1);
+      });
+    }
+    const processedProps = {};
+    const propsObj = props;
+    for (const key in propsObj) {
+      if (path.length === 0 && (key === "children" || key === "key" || key === "ref" || key === "isBoundary")) continue;
+      if (key === "itemBuilder") {
+        continue;
+      }
+      const value = propsObj[key];
+      if (typeof value === "function") {
+        const fullKey = this.buildPath(path, key);
+        this.registerCallback(nodeId, fullKey, value);
+        processedProps[key] = {
+          id: Number(nodeId),
+          // 节点 ID
+          nodeId: Number(nodeId),
+          // 节点 ID (兼容性保留)
+          eventKey: String(fullKey),
+          // 唯一的事件标识符 (包含路径)
+          pageId: Number(this.pageId),
+          // 页面 ID
+          isFuickEvent: true
+          // 标识这是一个需要 JS 回调的事件
+        };
+      } else if (value && typeof value === "object") {
+        const newPath = [...path, key];
+        processedProps[key] = this.processProps(nodeId, value, nodeType, newPath, depth + 1);
+      } else {
+        processedProps[key] = value;
+      }
+    }
+    return processedProps;
+  }
+  buildPath(path, key) {
+    if (path.length === 0) return key;
+    let result = "";
+    for (const segment of path) {
+      if (typeof segment === "number") {
+        result += `[${segment}]`;
+      } else {
+        result += result ? `.${segment}` : segment;
+      }
+    }
+    return result + (result ? `.${key}` : key);
+  }
+  clear() {
+    this.diffStrategy.clear();
+    this.incrementalStrategy.clear();
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/ErrorHandler.ts
+var currentHandler = null;
+var isNotifying = false;
+function notify(error2, source, detail) {
+  if (!currentHandler || isNotifying) {
+    return;
+  }
+  try {
+    isNotifying = true;
+    currentHandler(error2, source, detail);
+  } catch (handlerError) {
+    try {
+      console.error("[ErrorHandler] Handler error:", handlerError);
+    } catch {
+    }
+  } finally {
+    isNotifying = false;
+  }
+}
+var ErrorHandler = {
+  set(handler) {
+    currentHandler = handler || null;
+  },
+  notify
+};
+
+// ../../fuickjs_framework/fuickjs/src/renderer.ts
+var containers = {};
+var roots = {};
+function dispatchEvent(eventObj, payload) {
+  try {
+    const evt = eventObj;
+    const pageId = evt?.pageId;
+    const nodeId = Number(evt?.nodeId || evt?.id);
+    const eventKey = evt?.eventKey;
+    const container = containers[pageId];
+    if (container) {
+      const fn = container.getCallback(nodeId, eventKey);
+      if (typeof fn === "function") {
+        fn(payload);
+      } else {
+        console.warn(`[Renderer] Callback not found for nodeId=${nodeId}, eventKey=${eventKey}`);
+      }
+    } else {
+      console.warn(`[Renderer] Container not found for pageId=${pageId}`);
+    }
+  } catch (e) {
+    console.error(`[Renderer] Error in dispatchEvent:`, e);
+    ErrorHandler.notify(e, "event", { eventObj, payload });
+  }
+}
+function createRenderer() {
+  const reconciler = (0, import_react_reconciler.default)(createHostConfig());
+  const handleRecoverableError = (error2, errorInfo) => {
+    ErrorHandler.notify(error2, "render", errorInfo);
+  };
+  function ensureRoot(pageId) {
+    if (roots[pageId]) return roots[pageId];
+    const container = new PageContainer(pageId);
+    const root = reconciler.createContainer(container, 1, null, false, null, "", handleRecoverableError, null);
+    containers[pageId] = container;
+    roots[pageId] = root;
+    return root;
+  }
+  return {
+    update(element, pageId) {
+      const root = ensureRoot(pageId);
+      const performUpdate = () => {
+        try {
+          reconciler.updateContainer(element, root, null, () => {
+          });
+        } catch (e) {
+          const msg = e.message || String(e);
+          if (msg.includes("327") || msg.includes("working")) {
+            globalThis.setTimeout(performUpdate, 16);
+          } else {
+            console.error(`[Renderer] Error updating page ${pageId}:`, e);
+            ErrorHandler.notify(e, "render", { pageId });
+          }
+        }
+      };
+      performUpdate();
+    },
+    destroy(pageId) {
+      const root = roots[pageId];
+      if (root) {
+        const performDestroy = () => {
+          try {
+            reconciler.updateContainer(null, root, null, () => {
+              console.log(`[Renderer] Page ${pageId} unmounted successfully`);
+            });
+            delete roots[pageId];
+            delete containers[pageId];
+          } catch (e) {
+            const msg = e.message || String(e);
+            if (msg.includes("327") || msg.includes("working")) {
+              globalThis.setTimeout(performDestroy, 16);
+            } else {
+              console.error(`[Renderer] Error destroying page ${pageId}:`, e);
+              ErrorHandler.notify(e, "render", { pageId });
+              delete roots[pageId];
+              delete containers[pageId];
+            }
+          }
+        };
+        performDestroy();
+      }
+    },
+    dispatchEvent,
+    getItemDSL(pageId, refId, index) {
+      const container = containers[pageId];
+      if (container) {
+        return container.getItemDSL(refId, index);
+      }
+      return null;
+    },
+    elementToDsl(pageId, element) {
+      let container = containers[pageId];
+      if (!container) {
+        container = new PageContainer(pageId);
+      }
+      return container.elementToDsl(element);
+    },
+    notifyLifecycle(pageId, type) {
+      const container = containers[pageId];
+      if (container) {
+        if (type === "visible") {
+          container.notifyVisible();
+        } else if (type === "invisible") {
+          container.notifyInvisible();
+        }
+      }
+    },
+    getContainer(pageId) {
+      return containers[pageId];
+    }
+  };
+}
+
+// ../../fuickjs_framework/fuickjs/src/router.ts
+var routes = {};
+function register(path, componentFactory) {
+  routes[path] = componentFactory;
+}
+function match(path) {
+  return routes[path];
+}
+var Router = {
+  register,
+  match
+};
+
+// ../../fuickjs_framework/fuickjs/src/ErrorBoundary.tsx
+var import_react6 = __toESM(require_react_production_min());
+var ErrorBoundary = class extends import_react6.default.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error2) {
+    return { hasError: true, error: error2 };
+  }
+  componentDidCatch(error2, errorInfo) {
+    console.error("[ErrorBoundary] Caught error:", error2, errorInfo);
+    ErrorHandler.notify(error2, "render", errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      if (typeof this.props.fallback === "function") {
+        return this.props.fallback(this.state.error);
+      }
+      return this.props.fallback || null;
+    }
+    return this.props.children;
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/page_render.ts
+var renderer = null;
+var globalErrorFallback = null;
+function setGlobalErrorFallback(fallback) {
+  globalErrorFallback = fallback;
+}
+function ensureRenderer() {
+  if (renderer) return renderer;
+  renderer = createRenderer();
+  return renderer;
+}
+function render(pageId, path, params) {
+  const startTime = Date.now();
+  const r = ensureRenderer();
+  console.log(`[JS Performance] render start for ${path}, pageId: ${pageId}`);
+  const factory = match(path);
+  let app;
+  if (typeof factory === "function") {
+    app = factory(params || {});
+  } else {
+    app = import_react7.default.createElement(
+      "Column",
+      { padding: 16, mainAxisAlignment: "center" },
+      import_react7.default.createElement("Text", { text: `Route ${path} not found`, fontSize: 16, color: "#cc0000" })
+    );
+  }
+  const fallbackUI = globalErrorFallback || ((error2) => import_react7.default.createElement(
+    "Column",
+    {
+      mainAxisAlignment: "center",
+      crossAxisAlignment: "center",
+      padding: 20,
+      decoration: { color: "#FFF0F0" }
+    },
+    import_react7.default.createElement("Text", {
+      text: "Application Error",
+      fontSize: 20,
+      color: "#D32F2F",
+      fontWeight: "bold",
+      margin: { bottom: 10 }
+    }),
+    import_react7.default.createElement("Text", {
+      text: error2?.message || "Unknown error occurred",
+      fontSize: 14,
+      color: "#333333",
+      maxLines: 10,
+      overflow: "ellipsis"
+    })
+  ));
+  const wrappedApp = import_react7.default.createElement(
+    PageContext.Provider,
+    { value: { pageId } },
+    import_react7.default.createElement(
+      ErrorBoundary,
+      {
+        fallback: fallbackUI
+      },
+      app
+    )
+  );
+  r.update(wrappedApp, pageId);
+  console.log(`[JS Performance] render total cost for ${path}: ${Date.now() - startTime}ms`);
+}
+function destroy(pageId) {
+  const r = ensureRenderer();
+  r.destroy(pageId);
+}
+function getItemDSL(pageId, refId, index) {
+  const r = ensureRenderer();
+  return r.getItemDSL(pageId, refId, index);
+}
+function elementToDsl(pageId, element) {
+  const r = ensureRenderer();
+  return r.elementToDsl(pageId, element);
+}
+function notifyLifecycle(pageId, type) {
+  const r = ensureRenderer();
+  r.notifyLifecycle(pageId, type);
+}
+function getContainer(pageId) {
+  const r = ensureRenderer();
+  return r.getContainer(pageId);
+}
+
+// ../../fuickjs_framework/fuickjs/src/widgets/ScrollableBaseWidget.tsx
+var ScrollableBaseWidget = class extends BaseWidget {
+  updateItem(index, dsl) {
+    let finalDsl = dsl;
+    if (import_react8.default.isValidElement(dsl)) {
+      finalDsl = elementToDsl(this.pageId, dsl);
+    }
+    this.callNativeCommand("updateItem", { index, dsl: finalDsl });
+  }
+  updateItems(items) {
+    const finalItems = items.map((item) => {
+      let finalDsl = item.dsl;
+      if (import_react8.default.isValidElement(item.dsl)) {
+        finalDsl = elementToDsl(this.pageId, item.dsl);
+      }
+      return { index: item.index, dsl: finalDsl };
+    });
+    this.callNativeCommand("updateItems", { items: finalItems });
+  }
+  refresh() {
+    this.callNativeCommand("refresh");
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Text.tsx
+var import_react9 = __toESM(require_react_production_min());
+var Text = class extends import_react9.default.Component {
+  render() {
+    return import_react9.default.createElement("Text", { ...this.props, isBoundary: false });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Column.tsx
+var import_react10 = __toESM(require_react_production_min());
+var Column = class extends import_react10.default.Component {
+  render() {
+    return import_react10.default.createElement("Column", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Row.tsx
+var import_react11 = __toESM(require_react_production_min());
+var Row = class extends import_react11.default.Component {
+  render() {
+    return import_react11.default.createElement("Row", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Container.tsx
+var import_react12 = __toESM(require_react_production_min());
+var Container = class extends import_react12.default.Component {
+  render() {
+    return import_react12.default.createElement("Container", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Button.tsx
+var import_react13 = __toESM(require_react_production_min());
+var Button = class extends import_react13.default.Component {
+  render() {
+    return import_react13.default.createElement("Button", {
+      ...this.props
+    });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/TextField.tsx
+var import_react14 = __toESM(require_react_production_min());
+var TextField = class extends BaseWidget {
+  setText(text) {
+    this.callNativeCommand("setText", { text });
+  }
+  clear() {
+    this.callNativeCommand("clear", {});
+  }
+  focus() {
+    this.callNativeCommand("focus", {});
+  }
+  unfocus() {
+    this.callNativeCommand("unfocus", {});
+  }
+  setSelection(start, end) {
+    this.callNativeCommand("setSelection", { start, end });
+  }
+  selectAll() {
+    this.callNativeCommand("selectAll", {});
+  }
+  render() {
+    return import_react14.default.createElement("TextField", {
+      ...this.props,
+      refId: this.scopedRefId,
+      isBoundary: true
+    });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Switch.tsx
+var import_react15 = __toESM(require_react_production_min());
+var Switch = class extends import_react15.default.Component {
+  render() {
+    return import_react15.default.createElement("Switch", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Expanded.tsx
+var import_react16 = __toESM(require_react_production_min());
+var Expanded = class extends import_react16.default.Component {
+  render() {
+    return import_react16.default.createElement("Expanded", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/ListView.tsx
+var import_react17 = __toESM(require_react_production_min());
+var ListView = class extends ScrollableBaseWidget {
+  animateTo(offset, duration = 300, curve = "easeInOut") {
+    this.callNativeCommand("animateTo", { offset, duration, curve });
+  }
+  jumpTo(offset) {
+    this.callNativeCommand("jumpTo", { offset });
+  }
+  render() {
+    const { children, ...rest } = this.props;
+    return import_react17.default.createElement(
+      "ListView",
+      {
+        ...rest,
+        hasBuilder: !!this.props.itemBuilder,
+        refId: this.scopedRefId,
+        isBoundary: true
+      },
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Padding.tsx
+var import_react18 = __toESM(require_react_production_min());
+var Padding = class extends import_react18.default.Component {
+  render() {
+    return import_react18.default.createElement("Padding", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Image.tsx
+var import_react19 = __toESM(require_react_production_min());
+var Image = class extends import_react19.default.Component {
+  render() {
+    return import_react19.default.createElement("Image", { ...this.props, isBoundary: false });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/SizedBox.tsx
+var import_react20 = __toESM(require_react_production_min());
+var SizedBox = class extends import_react20.default.Component {
+  render() {
+    return import_react20.default.createElement("SizedBox", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Center.tsx
+var import_react21 = __toESM(require_react_production_min());
+var Center = class extends import_react21.default.Component {
+  render() {
+    return import_react21.default.createElement("Center", { ...this.props, isBoundary: false });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Icon.tsx
+var import_react22 = __toESM(require_react_production_min());
+var Icon = class extends import_react22.default.Component {
+  render() {
+    return import_react22.default.createElement("Icon", { ...this.props, isBoundary: false });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Flexible.tsx
+var import_react23 = __toESM(require_react_production_min());
+var Flexible = class extends import_react23.default.Component {
+  render() {
+    return import_react23.default.createElement("Flexible", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/GestureDetector.tsx
+var import_react24 = __toESM(require_react_production_min());
+var GestureDetector = class extends import_react24.default.Component {
+  render() {
+    return import_react24.default.createElement("GestureDetector", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/InkWell.tsx
+var import_react25 = __toESM(require_react_production_min());
+var InkWell = class extends import_react25.default.Component {
+  render() {
+    return import_react25.default.createElement("InkWell", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Divider.tsx
+var import_react26 = __toESM(require_react_production_min());
+var Divider = class extends import_react26.default.Component {
+  render() {
+    return import_react26.default.createElement("Divider", { ...this.props, isBoundary: false });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/SingleChildScrollView.tsx
+var import_react27 = __toESM(require_react_production_min());
+var SingleChildScrollView = class extends BaseWidget {
+  animateTo(offset, duration = 300, curve = "easeInOut") {
+    this.callNativeCommand("animateTo", { offset, duration, curve });
+  }
+  render() {
+    return import_react27.default.createElement("SingleChildScrollView", {
+      ...this.props,
+      refId: this.scopedRefId,
+      isBoundary: true
+    });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Stack.tsx
+var import_react28 = __toESM(require_react_production_min());
+var Stack = class extends import_react28.default.Component {
+  render() {
+    return import_react28.default.createElement("Stack", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Positioned.tsx
+var import_react29 = __toESM(require_react_production_min());
+var Positioned = class extends import_react29.default.Component {
+  render() {
+    return import_react29.default.createElement("Positioned", { ...this.props, isBoundary: false });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Opacity.tsx
+var import_react30 = __toESM(require_react_production_min());
+var Opacity = class extends import_react30.default.Component {
+  render() {
+    return import_react30.default.createElement("Opacity", { ...this.props, isBoundary: false });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/CircularProgressIndicator.tsx
+var import_react31 = __toESM(require_react_production_min());
+var CircularProgressIndicator = class extends import_react31.default.Component {
+  render() {
+    return import_react31.default.createElement("CircularProgressIndicator", { ...this.props, isBoundary: false });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/SafeArea.tsx
+var import_react32 = __toESM(require_react_production_min());
+var SafeArea = class extends import_react32.default.Component {
+  render() {
+    return import_react32.default.createElement("SafeArea", { ...this.props, isBoundary: false });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Scaffold.tsx
+var import_react34 = __toESM(require_react_production_min());
+
+// ../../fuickjs_framework/fuickjs/src/widgets/FlutterProps.tsx
+var import_react33 = __toESM(require_react_production_min());
+var FlutterProps = class extends import_react33.default.Component {
+  render() {
+    return import_react33.default.createElement("FlutterProps", { propsKey: this.props.propsKey }, this.props.children);
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Scaffold.tsx
+var Scaffold = class extends import_react34.default.Component {
+  render() {
+    const {
+      appBar,
+      floatingActionButton,
+      drawer,
+      endDrawer,
+      bottomNavigationBar,
+      bottomSheet,
+      children,
+      ...otherProps
+    } = this.props;
+    return import_react34.default.createElement(
+      "Scaffold",
+      {
+        isBoundary: true,
+        ...otherProps
+      },
+      appBar && import_react34.default.createElement(FlutterProps, { propsKey: "appBar" }, appBar),
+      floatingActionButton && import_react34.default.createElement(FlutterProps, { propsKey: "floatingActionButton" }, floatingActionButton),
+      drawer && import_react34.default.createElement(FlutterProps, { propsKey: "drawer" }, drawer),
+      endDrawer && import_react34.default.createElement(FlutterProps, { propsKey: "endDrawer" }, endDrawer),
+      bottomNavigationBar && import_react34.default.createElement(FlutterProps, { propsKey: "bottomNavigationBar" }, bottomNavigationBar),
+      bottomSheet && import_react34.default.createElement(FlutterProps, { propsKey: "bottomSheet" }, bottomSheet),
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/AppBar.tsx
+var import_react35 = __toESM(require_react_production_min());
+var AppBar = class extends import_react35.default.Component {
+  render() {
+    const { title, leading, actions, flexibleSpace, bottom, children, ...otherProps } = this.props;
+    return import_react35.default.createElement(
+      "AppBar",
+      { ...otherProps, isBoundary: true },
+      title && import_react35.default.createElement(FlutterProps, { propsKey: "title" }, title),
+      leading && import_react35.default.createElement(FlutterProps, { propsKey: "leading" }, leading),
+      actions && actions.map(
+        (action, index) => import_react35.default.createElement(FlutterProps, { key: `action-${index}`, propsKey: "actions" }, action)
+      ),
+      flexibleSpace && import_react35.default.createElement(FlutterProps, { propsKey: "flexibleSpace" }, flexibleSpace),
+      bottom && import_react35.default.createElement(FlutterProps, { propsKey: "bottom" }, bottom),
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/PageView.tsx
+var import_react36 = __toESM(require_react_production_min());
+var PageView = class extends BaseWidget {
+  animateToPage(page, duration = 300, curve = "easeInOut") {
+    this.callNativeCommand("animateToPage", { page, duration, curve });
+  }
+  jumpToPage(page) {
+    this.callNativeCommand("jumpToPage", { page });
+  }
+  render() {
+    const { children, ...otherProps } = this.props;
+    return import_react36.default.createElement(
+      "PageView",
+      {
+        ...otherProps,
+        refId: this.scopedRefId,
+        isBoundary: true
+      },
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/GridView.tsx
+var import_react37 = __toESM(require_react_production_min());
+var GridView = class extends ScrollableBaseWidget {
+  animateTo(offset, duration = 300, curve = "easeInOut") {
+    this.callNativeCommand("animateTo", { offset, duration, curve });
+  }
+  render() {
+    const { children, ...rest } = this.props;
+    return import_react37.default.createElement(
+      "GridView",
+      {
+        ...rest,
+        hasBuilder: !!this.props.itemBuilder,
+        refId: this.scopedRefId,
+        isBoundary: true
+      },
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/ListTile.tsx
+var import_react38 = __toESM(require_react_production_min());
+var ListTile = class extends import_react38.default.Component {
+  render() {
+    const { leading, title, subtitle, trailing, children, ...otherProps } = this.props;
+    return import_react38.default.createElement(
+      "ListTile",
+      { ...otherProps },
+      leading && import_react38.default.createElement(FlutterProps, { propsKey: "leading" }, leading),
+      title && import_react38.default.createElement(FlutterProps, { propsKey: "title" }, title),
+      subtitle && import_react38.default.createElement(FlutterProps, { propsKey: "subtitle" }, subtitle),
+      trailing && import_react38.default.createElement(FlutterProps, { propsKey: "trailing" }, trailing),
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/BottomNavigationBar.tsx
+var import_react39 = __toESM(require_react_production_min());
+var BottomNavigationBarItem = class extends import_react39.default.Component {
+  render() {
+    const { icon, activeIcon, ...otherProps } = this.props;
+    return import_react39.default.createElement(
+      "BottomNavigationBarItem",
+      { ...otherProps },
+      icon && import_react39.default.createElement(FlutterProps, { propsKey: "icon" }, icon),
+      activeIcon && import_react39.default.createElement(FlutterProps, { propsKey: "activeIcon" }, activeIcon)
+    );
+  }
+};
+var BottomNavigationBar = class extends import_react39.default.Component {
+  render() {
+    const { items, children, ...otherProps } = this.props;
+    return import_react39.default.createElement(
+      "BottomNavigationBar",
+      { ...otherProps },
+      items && items.map(
+        (item, index) => import_react39.default.createElement(FlutterProps, { key: `item-${index}`, propsKey: "items" }, item)
+      ),
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/CustomScrollView.tsx
+var import_react40 = __toESM(require_react_production_min());
+var CustomScrollView = class extends BaseWidget {
+  render() {
+    const { children, ...rest } = this.props;
+    return import_react40.default.createElement(
+      "CustomScrollView",
+      {
+        ...rest
+      },
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/SliverList.tsx
+var import_react41 = __toESM(require_react_production_min());
+var SliverList = class extends ScrollableBaseWidget {
+  render() {
+    const { children, ...rest } = this.props;
+    return import_react41.default.createElement(
+      "SliverList",
+      {
+        ...rest,
+        hasBuilder: !!this.props.itemBuilder,
+        refId: this.scopedRefId,
+        isBoundary: true
+      },
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/SliverGrid.tsx
+var import_react42 = __toESM(require_react_production_min());
+var SliverGrid = class extends ScrollableBaseWidget {
+  render() {
+    const { children, ...rest } = this.props;
+    return import_react42.default.createElement(
+      "SliverGrid",
+      {
+        ...rest,
+        hasBuilder: !!this.props.itemBuilder,
+        refId: this.scopedRefId,
+        isBoundary: true
+      },
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/SliverToBoxAdapter.tsx
+var import_react43 = __toESM(require_react_production_min());
+var SliverToBoxAdapter = class extends BaseWidget {
+  render() {
+    const { children, ...rest } = this.props;
+    return import_react43.default.createElement(
+      "SliverToBoxAdapter",
+      {
+        ...rest,
+        isBoundary: true
+      },
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/SliverAppBar.tsx
+var import_react44 = __toESM(require_react_production_min());
+var SliverAppBar = class extends BaseWidget {
+  render() {
+    const { children, title, leading, actions, bottom, ...rest } = this.props;
+    return import_react44.default.createElement(
+      "SliverAppBar",
+      {
+        ...rest,
+        isBoundary: true,
+        title,
+        leading,
+        actions,
+        bottom
+      },
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/SliverPersistentHeader.tsx
+var import_react45 = __toESM(require_react_production_min());
+var SliverPersistentHeader = class extends BaseWidget {
+  render() {
+    const { children, ...rest } = this.props;
+    return import_react45.default.createElement(
+      "SliverPersistentHeader",
+      {
+        ...rest
+      },
+      children
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Tabs.tsx
+var import_react46 = __toESM(require_react_production_min());
+var TabBar = class extends import_react46.default.Component {
+  render() {
+    const { tabs, ...otherProps } = this.props;
+    return import_react46.default.createElement(
+      "TabBar",
+      { ...otherProps, isBoundary: false },
+      tabs && tabs.map((tab, index) => import_react46.default.createElement(FlutterProps, { key: index, propsKey: "tabs" }, tab))
+    );
+  }
+};
+var TabBarView = class extends import_react46.default.Component {
+  render() {
+    return import_react46.default.createElement("TabBarView", { ...this.props, isBoundary: true });
+  }
+};
+var DefaultTabController = class extends import_react46.default.Component {
+  render() {
+    return import_react46.default.createElement("DefaultTabController", { ...this.props, isBoundary: true });
+  }
+};
+var Tab = class extends import_react46.default.Component {
+  render() {
+    return import_react46.default.createElement("Tab", { ...this.props, isBoundary: false });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/KeepAlive.tsx
+var import_react47 = __toESM(require_react_production_min());
+var KeepAlive = class extends import_react47.default.Component {
+  render() {
+    return import_react47.default.createElement("KeepAlive", { ...this.props, isBoundary: true });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Wrap.tsx
+var import_react48 = __toESM(require_react_production_min());
+var Wrap = class extends BaseWidget {
+  render() {
+    return import_react48.default.createElement("Wrap", { ...this.props, isBoundary: true });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Card.tsx
+var import_react49 = __toESM(require_react_production_min());
+var Card = class extends BaseWidget {
+  render() {
+    const { child, children, ...rest } = this.props;
+    const content = child || children;
+    return import_react49.default.createElement("Card", { ...rest, isBoundary: true }, content);
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Checkbox.tsx
+var import_react50 = __toESM(require_react_production_min());
+var Checkbox = class extends BaseWidget {
+  render() {
+    return import_react50.default.createElement("Checkbox", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/IntrinsicWidth.tsx
+var import_react51 = __toESM(require_react_production_min());
+var IntrinsicWidth = class extends import_react51.default.Component {
+  render() {
+    return import_react51.default.createElement("IntrinsicWidth", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/IntrinsicHeight.tsx
+var import_react52 = __toESM(require_react_production_min());
+var IntrinsicHeight = class extends import_react52.default.Component {
+  render() {
+    return import_react52.default.createElement("IntrinsicHeight", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/AnimatedContainer.tsx
+var import_react53 = __toESM(require_react_production_min());
+var AnimatedContainer = class extends import_react53.default.Component {
+  render() {
+    return import_react53.default.createElement("AnimatedContainer", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/AnimatedOpacity.tsx
+var import_react54 = __toESM(require_react_production_min());
+var AnimatedOpacity = class extends import_react54.default.Component {
+  render() {
+    return import_react54.default.createElement("AnimatedOpacity", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/AnimatedAlign.tsx
+var import_react55 = __toESM(require_react_production_min());
+var AnimatedAlign = class extends import_react55.default.Component {
+  render() {
+    return import_react55.default.createElement("AnimatedAlign", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/AnimatedPositioned.tsx
+var import_react56 = __toESM(require_react_production_min());
+var AnimatedPositioned = class extends import_react56.default.Component {
+  render() {
+    return import_react56.default.createElement("AnimatedPositioned", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/AnimatedPadding.tsx
+var import_react57 = __toESM(require_react_production_min());
+var AnimatedPadding = class extends import_react57.default.Component {
+  render() {
+    return import_react57.default.createElement("AnimatedPadding", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/AnimatedScale.tsx
+var import_react58 = __toESM(require_react_production_min());
+var AnimatedScale = class extends import_react58.default.Component {
+  render() {
+    return import_react58.default.createElement("AnimatedScale", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/AnimatedRotation.tsx
+var import_react59 = __toESM(require_react_production_min());
+var AnimatedRotation = class extends import_react59.default.Component {
+  render() {
+    return import_react59.default.createElement("AnimatedRotation", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/AnimatedSlide.tsx
+var import_react60 = __toESM(require_react_production_min());
+var AnimatedSlide = class extends import_react60.default.Component {
+  render() {
+    return import_react60.default.createElement("AnimatedSlide", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/AlertDialog.tsx
+var import_react61 = __toESM(require_react_production_min());
+var AlertDialog = class extends import_react61.default.Component {
+  render() {
+    return import_react61.default.createElement("AlertDialog", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/RotationTransition.tsx
+var import_react62 = __toESM(require_react_production_min());
+var RotationTransition = class extends import_react62.default.Component {
+  render() {
+    return import_react62.default.createElement("RotationTransition", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/ScaleTransition.tsx
+var import_react63 = __toESM(require_react_production_min());
+var ScaleTransition = class extends import_react63.default.Component {
+  render() {
+    return import_react63.default.createElement("ScaleTransition", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/SlideTransition.tsx
+var import_react64 = __toESM(require_react_production_min());
+var SlideTransition = class extends import_react64.default.Component {
+  render() {
+    return import_react64.default.createElement("SlideTransition", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/ConstrainedBox.tsx
+var import_react65 = __toESM(require_react_production_min());
+var ConstrainedBox = class extends import_react65.default.Component {
+  render() {
+    return import_react65.default.createElement("ConstrainedBox", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/FittedBox.tsx
+var import_react66 = __toESM(require_react_production_min());
+var FittedBox = class extends import_react66.default.Component {
+  render() {
+    return import_react66.default.createElement("FittedBox", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Visibility.tsx
+var import_react67 = __toESM(require_react_production_min());
+var Visibility = class extends import_react67.default.Component {
+  render() {
+    return import_react67.default.createElement("Visibility", { ...this.props });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/CustomPaint.tsx
+var import_react68 = __toESM(require_react_production_min());
+var controllerIdCounter = 1;
+var CustomPainter = class {
+  constructor(paintCallback) {
+    this.commands = [];
+    this.scopedRefId = null;
+    this.target = "painter";
+    this.id = controllerIdCounter++;
+    this.paintCallback = paintCallback;
+    if (this.paintCallback) {
+      this.paintCallback(this);
+    }
+  }
+  /**
+   * Internal method to bind the painter to a widget instance.
+   * Called by CustomPaint widget during render.
+   */
+  bind(scopedRefId, target) {
+    this.scopedRefId = scopedRefId;
+    this.target = target;
+  }
+  save() {
+    this.commands.push({ type: "save" });
+  }
+  restore() {
+    this.commands.push({ type: "restore" });
+  }
+  translate(dx, dy) {
+    this.commands.push({ type: "translate", dx, dy });
+  }
+  scale(sx, sy) {
+    this.commands.push({ type: "scale", sx, sy });
+  }
+  rotate(radians) {
+    this.commands.push({ type: "rotate", radians });
+  }
+  drawLine(p1, p2, paint) {
+    this.commands.push({ type: "drawLine", p1, p2, paint });
+  }
+  drawRect(rect, paint) {
+    this.commands.push({ type: "drawRect", rect, paint });
+  }
+  drawCircle(center, radius, paint) {
+    this.commands.push({ type: "drawCircle", center, radius, paint });
+  }
+  drawOval(rect, paint) {
+    this.commands.push({ type: "drawOval", rect, paint });
+  }
+  drawArc(rect, startAngle, sweepAngle, useCenter, paint) {
+    this.commands.push({ type: "drawArc", rect, startAngle, sweepAngle, useCenter, paint });
+  }
+  drawRRect(rrect, paint) {
+    this.commands.push({ type: "drawRRect", rrect, paint });
+  }
+  serialize() {
+    return this.commands;
+  }
+  /**
+   * Triggers a re-render of the CustomPaint widget to update the canvas.
+   * If a builder callback is provided or was passed to constructor, it will be executed
+   * to rebuild commands after clearing existing ones.
+   */
+  repaint(builder) {
+    const activeBuilder = builder || this.paintCallback;
+    if (activeBuilder) {
+      this.commands = [];
+      activeBuilder(this);
+    }
+    if (this.onRepaint) {
+      this.onRepaint();
+    }
+  }
+  clear() {
+    this.commands = [];
+  }
+};
+var CustomPaint = class extends BaseWidget {
+  constructor(props) {
+    super(props);
+    this.state = { ...this.state, repaintTick: 0 };
+  }
+  componentDidMount() {
+    if (super.componentDidMount) {
+      super.componentDidMount();
+    }
+    this.bindPainter();
+  }
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (super.componentDidUpdate) {
+      super.componentDidUpdate(prevProps, prevState, snapshot);
+    }
+    this.bindPainter();
+  }
+  bindPainter() {
+    const { painter, foregroundPainter } = this.props;
+    if (painter) {
+      painter.onRepaint = () => this.forceUpdate();
+    }
+    if (foregroundPainter) {
+      foregroundPainter.onRepaint = () => this.forceUpdate();
+    }
+  }
+  render() {
+    const { painter, foregroundPainter, child, ...rest } = this.props;
+    if (painter) {
+      painter.bind(this.scopedRefId, "painter");
+    }
+    if (foregroundPainter) {
+      foregroundPainter.bind(this.scopedRefId, "foregroundPainter");
+    }
+    const painterCommands = painter?.serialize();
+    const foregroundPainterCommands = foregroundPainter?.serialize();
+    return import_react68.default.createElement(
+      "CustomPaint",
+      {
+        ...rest,
+        refId: this.scopedRefId,
+        painter: painterCommands ? [...painterCommands] : void 0,
+        // Create new array reference
+        foregroundPainter: foregroundPainterCommands ? [...foregroundPainterCommands] : void 0,
+        isBoundary: true
+      },
+      child
+    );
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/VideoPlayer.tsx
+var import_react69 = __toESM(require_react_production_min());
+var VideoPlayer = class extends BaseWidget {
+  get widgetType() {
+    return "VideoPlayer";
+  }
+  play() {
+    this.callNativeCommand("play");
+  }
+  pause() {
+    this.callNativeCommand("pause");
+  }
+  stop() {
+    this.callNativeCommand("stop");
+  }
+  seekTo(position) {
+    this.callNativeCommand("seekTo", { position });
+  }
+  setVolume(volume) {
+    this.callNativeCommand("setVolume", { volume });
+  }
+  setLooping(looping) {
+    this.callNativeCommand("setLooping", { looping });
+  }
+  setPlaybackSpeed(speed) {
+    this.callNativeCommand("setPlaybackSpeed", { speed });
+  }
+  render() {
+    return import_react69.default.createElement("VideoPlayer", {
+      ...this.props,
+      refId: this.scopedRefId
+    });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/VisibilityDetector.tsx
+var import_react70 = __toESM(require_react_production_min());
+var VisibilityDetector = class extends BaseWidget {
+  get widgetType() {
+    return "VisibilityDetector";
+  }
+  render() {
+    return import_react70.default.createElement("VisibilityDetector", {
+      ...this.props,
+      refId: this.scopedRefId
+    }, this.props.children);
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/GenericPage.tsx
+var import_react71 = __toESM(require_react_production_min());
+
+// ../../fuickjs_framework/fuickjs/src/services/ComponentStore.ts
+var ComponentStore = class _ComponentStore {
+  constructor() {
+    this.components = /* @__PURE__ */ new Map();
+    this.counter = 0;
+  }
+  static getInstance() {
+    if (!_ComponentStore.instance) {
+      _ComponentStore.instance = new _ComponentStore();
+    }
+    return _ComponentStore.instance;
+  }
+  register(component) {
+    const id = `cmp_${++this.counter}_${Date.now()}`;
+    this.components.set(id, component);
+    return id;
+  }
+  get(id) {
+    return this.components.get(id);
+  }
+  remove(id) {
+    this.components.delete(id);
+  }
+};
+var ComponentStore_default = ComponentStore;
+
+// ../../fuickjs_framework/fuickjs/src/widgets/GenericPage.tsx
+function GenericPage(props) {
+  const { componentId } = props;
+  const component = ComponentStore_default.getInstance().get(componentId);
+  (0, import_react71.useEffect)(() => {
+    return () => {
+      if (componentId) {
+        ComponentStore_default.getInstance().remove(componentId);
+      }
+    };
+  }, [componentId]);
+  if (!component) {
+    return /* @__PURE__ */ import_react71.default.createElement(Container, { alignment: "center" }, /* @__PURE__ */ import_react71.default.createElement(Text, { text: "Content not found" }));
+  }
+  return /* @__PURE__ */ import_react71.default.createElement(import_react71.default.Fragment, null, component);
+}
+
+// ../../fuickjs_framework/fuickjs/src/services/ConsoleService.ts
+var ConsoleService = class {
+  static log(message) {
+    this.console("log", message);
+  }
+  static warn(message) {
+    this.console("warn", message);
+  }
+  static error(message) {
+    this.console("error", message);
+  }
+  static console(level, message) {
+    dartCallNative("Console.console", { level, message });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/ex/console.ts
+function log(...args) {
+  const message = args.map((a) => String(a)).join(" ");
+  try {
+    ConsoleService.log(message);
+  } catch {
+    const globalObj = globalThis;
+    if (typeof globalObj.print === "function") {
+      globalObj.print(message);
+    }
+  }
+}
+function warn(...args) {
+  const message = args.map((a) => String(a)).join(" ");
+  try {
+    ConsoleService.warn(message);
+  } catch {
+    const globalObj = globalThis;
+    if (typeof globalObj.print === "function") {
+      globalObj.print("[WARN] " + message);
+    }
+  }
+}
+function error(...args) {
+  const message = args.map((a) => String(a)).join(" ");
+  try {
+    ConsoleService.error(message);
+  } catch {
+    const globalObj = globalThis;
+    if (typeof globalObj.print === "function") {
+      globalObj.print("[ERROR] " + message);
+    }
+  }
+}
+
+// ../../fuickjs_framework/fuickjs/src/services/TimerService.ts
+var TimerService = class {
+  static createTimer(id, delay, isInterval) {
+    dartCallNative("Timer.createTimer", { id, delay, isInterval });
+  }
+  static deleteTimer(id) {
+    dartCallNative("Timer.deleteTimer", { id });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/ex/timer.ts
+var nextTimerId = 1;
+var timerMap = /* @__PURE__ */ new Map();
+function setTimeout2(fn, ms) {
+  const id = nextTimerId++;
+  timerMap.set(id, { fn, type: "timeout" });
+  const delay = ms || 0;
+  try {
+    TimerService.createTimer(id, delay, false);
+  } catch {
+    try {
+      fn();
+    } catch (innerE) {
+      console.error(`[Timer] Error in immediate timer callback:`, innerE);
+      ErrorHandler.notify(innerE, "timer", { id });
+    }
+  }
+  return id;
+}
+function clearTimeout2(id) {
+  timerMap.delete(id);
+  TimerService.deleteTimer(id);
+}
+function setInterval(fn, ms) {
+  const id = nextTimerId++;
+  timerMap.set(id, { fn, type: "interval" });
+  TimerService.createTimer(id, ms || 0, true);
+  return id;
+}
+function clearInterval(id) {
+  timerMap.delete(id);
+  TimerService.deleteTimer(id);
+}
+globalThis.__handleTimer = (id) => {
+  const entry = timerMap.get(id);
+  if (entry) {
+    if (entry.type === "timeout") {
+      timerMap.delete(id);
+    }
+    try {
+      if (typeof entry.fn === "function") {
+        entry.fn();
+      } else {
+        console.error(`[Timer] Callback for timer ${id} is not a function:`, entry.fn);
+      }
+    } catch (e) {
+      console.error(`[Timer] Error in timer ${id} callback:`, e);
+      ErrorHandler.notify(e, "timer", { id });
+    }
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/services/NetworkService.ts
+var NetworkService = class {
+  static async fetch(url, method, headers, body) {
+    if (typeof dartCallNativeAsync !== "function") {
+      throw new Error("dartCallNativeAsync is not available.");
+    }
+    return await dartCallNativeAsync("Network.fetch", {
+      url,
+      method,
+      headers,
+      body
+    });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/ex/fetch.ts
+async function fetch(url, options = {}) {
+  const result = await NetworkService.fetch(url, options.method || "GET", options.headers || {}, options.body);
+  return {
+    status: result.status,
+    ok: result.status >= 200 && result.status < 300,
+    headers: result.headers,
+    text: async () => result.body,
+    json: async () => JSON.parse(result.body)
+  };
+}
+if (typeof globalThis !== "undefined") {
+  globalThis.fetch = fetch;
+}
+
+// ../../fuickjs_framework/fuickjs/src/runtime.ts
+function bindGlobals() {
+  setupPolyfills();
+  Object.assign(globalThis, {
+    FuickAppController: {
+      render,
+      destroy,
+      getItemDSL,
+      notifyLifecycle,
+      dispatchEvent: (eventObj, payload) => {
+        const r = ensureRenderer();
+        r.dispatchEvent(eventObj, payload);
+      }
+    }
+  });
+}
+var Runtime = {
+  bindGlobals
+};
+function setupPolyfills() {
+  const oldConsole = globalThis.console || {};
+  globalThis.console = {
+    ...oldConsole,
+    log,
+    warn,
+    error
+  };
+  globalThis.setTimeout = setTimeout2;
+  globalThis.clearTimeout = clearTimeout2;
+  globalThis.setInterval = setInterval;
+  globalThis.clearInterval = clearInterval;
+  globalThis.fetch = fetch;
+  if (!globalThis.performance) {
+    globalThis.performance = {
+      now: () => Date.now()
+    };
+  }
+  const globalAny = globalThis;
+  const handleError = (error2, source, detail) => {
+    ErrorHandler.notify(error2, source, detail);
+  };
+  if (typeof globalAny.addEventListener === "function") {
+    const addEventListener = globalAny.addEventListener;
+    addEventListener("unhandledrejection", (event) => {
+      handleError(event?.reason ?? event, "promise", event);
+      if (typeof event?.preventDefault === "function") {
+        event.preventDefault();
+      }
+    });
+    addEventListener("error", (event) => {
+      handleError(event?.error ?? event?.message ?? event, "runtime", event);
+    });
+  } else {
+    globalAny.onunhandledrejection = (event) => {
+      handleError(event?.reason ?? event, "promise", event);
+      if (typeof event?.preventDefault === "function") {
+        event.preventDefault();
+      }
+    };
+    globalAny.onerror = (message, source, lineno, colno, error2) => {
+      handleError(error2 ?? message, "runtime", { message, source, lineno, colno });
+    };
+  }
+}
+
+// ../../fuickjs_framework/fuickjs/src/hooks.ts
+var import_react73 = __toESM(require_react_production_min());
+
+// ../../fuickjs_framework/fuickjs/src/services/NavigatorService.ts
+var import_react72 = __toESM(require_react_production_min());
+var NavigatorService = class {
+  static push(path, params, pageId, rootNavigator) {
+    return dartCallNative("Navigator.push", { path, params, pageId, rootNavigator });
+  }
+  static pushReplace(path, params, pageId, rootNavigator) {
+    return dartCallNative("Navigator.pushReplace", { path, params, pageId, rootNavigator });
+  }
+  static showModal(path, params, options, pageId, rootNavigator) {
+    const finalParams = {
+      ...params || {},
+      presentation: "bottomSheet",
+      minHeight: options?.minHeight,
+      maxHeight: options?.maxHeight
+    };
+    return this.push(path, finalParams, pageId, rootNavigator);
+  }
+  static showDialog(pathOrComponent, params, pageId, rootNavigator) {
+    if (import_react72.default.isValidElement(pathOrComponent) || typeof pathOrComponent !== "string") {
+      return this.showComponentDialog("/_generic_dialog", pathOrComponent, params, pageId, rootNavigator);
+    }
+    const finalParams = {
+      ...params || {},
+      presentation: "dialog"
+    };
+    return this.push(pathOrComponent, finalParams, pageId, rootNavigator);
+  }
+  static showComponentDialog(path, component, params, pageId, rootNavigator) {
+    const id = ComponentStore_default.getInstance().register(component);
+    const finalParams = {
+      ...params || {},
+      componentId: id,
+      presentation: "dialog"
+    };
+    return this.push(path, finalParams, pageId, rootNavigator);
+  }
+  static pop(pageId, rootNavigator, result) {
+    dartCallNative("Navigator.pop", { pageId, rootNavigator, result });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/hooks.ts
+function usePageId() {
+  const { pageId } = (0, import_react73.useContext)(PageContext);
+  return pageId;
+}
+function useNavigator() {
+  const pageId = usePageId();
+  return {
+    push: (path, params, rootNavigator) => NavigatorService.push(path, params, pageId, rootNavigator),
+    pushReplace: (path, params, rootNavigator) => NavigatorService.pushReplace(path, params, pageId, rootNavigator),
+    showModal: (path, params, options, rootNavigator) => NavigatorService.showModal(path, params, options, pageId, rootNavigator),
+    showDialog: (pathOrComponent, params, rootNavigator) => NavigatorService.showDialog(pathOrComponent, params, pageId, rootNavigator),
+    showComponentDialog: (path, component, params, rootNavigator) => NavigatorService.showComponentDialog(path, component, params, pageId, rootNavigator),
+    pop: (result) => {
+      return NavigatorService.pop(pageId, false, result);
+    }
+  };
+}
+function useVisible(callback) {
+  const { pageId } = (0, import_react73.useContext)(PageContext);
+  (0, import_react73.useEffect)(() => {
+    const container = getContainer(pageId);
+    if (container) {
+      container.registerVisibleCallback(callback);
+    }
+    return () => {
+      const container2 = getContainer(pageId);
+      if (container2) {
+        container2.unregisterVisibleCallback(callback);
+      }
+    };
+  }, [pageId, callback]);
+}
+function useInvisible(callback) {
+  const { pageId } = (0, import_react73.useContext)(PageContext);
+  (0, import_react73.useEffect)(() => {
+    const container = getContainer(pageId);
+    if (container) {
+      container.registerInvisibleCallback(callback);
+    }
+    return () => {
+      const container2 = getContainer(pageId);
+      if (container2) {
+        container2.unregisterInvisibleCallback(callback);
+      }
+    };
+  }, [pageId, callback]);
+}
+
+// ../../fuickjs_framework/fuickjs/src/Fuick.ts
+var Fuick = {
+  /**
+   * Expose a JS object to Flutter.
+   * The object will be attached to globalThis with the given name,
+   * allowing Flutter to invoke its methods using `ctx.invoke(name, method, args)`.
+   *
+   * @param name The name to expose the object as
+   * @param obj The object instance
+   */
+  expose(name, obj) {
+    if (!name) {
+      console.error("[Fuick] Expose name cannot be empty");
+      return;
+    }
+    const globalObj = globalThis;
+    if (globalObj[name]) {
+      console.warn(`[Fuick] Overwriting existing global object: ${name}`);
+    }
+    globalObj[name] = obj;
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/services/NativeEventService.ts
+var NativeEventService = class {
+  static emit(event, data) {
+    dartCallNative("NativeEvent.emit", [event, data]);
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/NativeEvent.ts
+var NativeEventImpl = class {
+  constructor() {
+    this.listeners = /* @__PURE__ */ new Map();
+  }
+  /**
+   * 监听事件
+   * @param event 事件名称
+   * @param callback 回调函数
+   * @returns 取消监听的函数
+   */
+  on(event, callback) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, []);
+    }
+    this.listeners.get(event).push(callback);
+    return () => this.off(event, callback);
+  }
+  /**
+   * 移除事件监听
+   * @param event 事件名称
+   * @param callback 回调函数
+   */
+  off(event, callback) {
+    const callbacks = this.listeners.get(event);
+    if (callbacks) {
+      const index = callbacks.indexOf(callback);
+      if (index > -1) {
+        callbacks.splice(index, 1);
+      }
+      if (callbacks.length === 0) {
+        this.listeners.delete(event);
+      }
+    }
+  }
+  /**
+   * 发送事件（同时发送给 JS 内部监听器和 Native）
+   * @param event 事件名称
+   * @param data 事件数据
+   */
+  emit(event, data) {
+    NativeEventService.emit(event, data);
+    this.dispatchLocal(event, data);
+  }
+  /**
+   * 仅触发本地监听器（不发送给 Native）
+   * 主要供 Native 调用 receive 时使用
+   */
+  dispatchLocal(event, data) {
+    const callbacks = this.listeners.get(event);
+    if (callbacks) {
+      [...callbacks].forEach((callback) => {
+        try {
+          callback(data);
+        } catch (e) {
+          console.error(`[NativeEvent] Error in listener for event "${event}":`, e);
         }
       });
     }
-    exports.Runtime = {
-      bindGlobals
-    };
-    function setupPolyfills() {
-      const oldConsole = globalThis.console || {};
-      globalThis.console = {
-        ...oldConsole,
-        log: Console.log,
-        warn: Console.warn,
-        error: Console.error
-      };
-      globalThis.setTimeout = Timer.setTimeout;
-      globalThis.clearTimeout = Timer.clearTimeout;
-      globalThis.setInterval = Timer.setInterval;
-      globalThis.clearInterval = Timer.clearInterval;
-      globalThis.fetch = fetch_1.fetch;
-      if (!globalThis.performance) {
-        globalThis.performance = {
-          now: () => Date.now()
-        };
-      }
-      const globalAny = globalThis;
-      const handleError = (error, source, detail) => {
-        ErrorHandler_1.ErrorHandler.notify(error, source, detail);
-      };
-      if (typeof globalAny.addEventListener === "function") {
-        const addEventListener = globalAny.addEventListener;
-        addEventListener("unhandledrejection", (event) => {
-          handleError(event?.reason ?? event, "promise", event);
-          if (typeof event?.preventDefault === "function") {
-            event.preventDefault();
-          }
-        });
-        addEventListener("error", (event) => {
-          handleError(event?.error ?? event?.message ?? event, "runtime", event);
-        });
-      } else {
-        globalAny.onunhandledrejection = (event) => {
-          handleError(event?.reason ?? event, "promise", event);
-          if (typeof event?.preventDefault === "function") {
-            event.preventDefault();
-          }
-        };
-        globalAny.onerror = (message, source, lineno, colno, error) => {
-          handleError(error ?? message, "runtime", { message, source, lineno, colno });
-        };
-      }
-    }
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/services/NavigatorService.js
-var require_NavigatorService = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/services/NavigatorService.js"(exports) {
-    "use strict";
-    var __importDefault = exports && exports.__importDefault || function(mod) {
-      return mod && mod.__esModule ? mod : { "default": mod };
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.NavigatorService = void 0;
-    var react_1 = __importDefault(require_react_production_min());
-    var ComponentStore_1 = __importDefault(require_ComponentStore());
-    var NavigatorService = class {
-      static push(path, params, pageId, rootNavigator) {
-        return dartCallNative("Navigator.push", { path, params, pageId, rootNavigator });
-      }
-      static pushReplace(path, params, pageId, rootNavigator) {
-        return dartCallNative("Navigator.pushReplace", { path, params, pageId, rootNavigator });
-      }
-      static showModal(path, params, options, pageId, rootNavigator) {
-        const finalParams = {
-          ...params || {},
-          presentation: "bottomSheet",
-          minHeight: options?.minHeight,
-          maxHeight: options?.maxHeight
-        };
-        return this.push(path, finalParams, pageId, rootNavigator);
-      }
-      static showDialog(pathOrComponent, params, pageId, rootNavigator) {
-        if (react_1.default.isValidElement(pathOrComponent) || typeof pathOrComponent !== "string") {
-          return this.showComponentDialog("/_generic_dialog", pathOrComponent, params, pageId, rootNavigator);
-        }
-        const finalParams = {
-          ...params || {},
-          presentation: "dialog"
-        };
-        return this.push(pathOrComponent, finalParams, pageId, rootNavigator);
-      }
-      static showComponentDialog(path, component, params, pageId, rootNavigator) {
-        const id = ComponentStore_1.default.getInstance().register(component);
-        const finalParams = {
-          ...params || {},
-          componentId: id,
-          presentation: "dialog"
-        };
-        return this.push(path, finalParams, pageId, rootNavigator);
-      }
-      static pop(pageId, rootNavigator, result) {
-        dartCallNative("Navigator.pop", { pageId, rootNavigator, result });
-      }
-    };
-    exports.NavigatorService = NavigatorService;
+  /**
+   * 接收来自 Native 的事件
+   * @param event 事件名称
+   * @param data 事件数据
+   */
+  receive(event, data) {
+    this.dispatchLocal(event, data);
   }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/hooks.js
-var require_hooks = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/hooks.js"(exports) {
-    "use strict";
-    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
-      }
-      Object.defineProperty(o, k2, desc);
-    } : function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
-    });
-    var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
-      Object.defineProperty(o, "default", { enumerable: true, value: v });
-    } : function(o, v) {
-      o["default"] = v;
-    });
-    var __importStar = exports && exports.__importStar || /* @__PURE__ */ function() {
-      var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function(o2) {
-          var ar = [];
-          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
-          return ar;
-        };
-        return ownKeys(o);
-      };
-      return function(mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) {
-          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        }
-        __setModuleDefault(result, mod);
-        return result;
-      };
-    }();
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.usePageId = usePageId;
-    exports.useNavigator = useNavigator;
-    exports.useVisible = useVisible;
-    exports.useInvisible = useInvisible;
-    var react_1 = require_react_production_min();
-    var PageContext_1 = require_PageContext();
-    var PageRender = __importStar(require_page_render());
-    var NavigatorService_1 = require_NavigatorService();
-    function usePageId() {
-      const { pageId } = (0, react_1.useContext)(PageContext_1.PageContext);
-      return pageId;
-    }
-    function useNavigator() {
-      const pageId = usePageId();
-      return {
-        push: (path, params, rootNavigator) => NavigatorService_1.NavigatorService.push(path, params, pageId, rootNavigator),
-        pushReplace: (path, params, rootNavigator) => NavigatorService_1.NavigatorService.pushReplace(path, params, pageId, rootNavigator),
-        showModal: (path, params, options, rootNavigator) => NavigatorService_1.NavigatorService.showModal(path, params, options, pageId, rootNavigator),
-        showDialog: (pathOrComponent, params, rootNavigator) => NavigatorService_1.NavigatorService.showDialog(pathOrComponent, params, pageId, rootNavigator),
-        showComponentDialog: (path, component, params, rootNavigator) => NavigatorService_1.NavigatorService.showComponentDialog(path, component, params, pageId, rootNavigator),
-        pop: (...args) => {
-          let result = args[0];
-          if (args.length >= 2) {
-            result = args[1];
-          }
-          return NavigatorService_1.NavigatorService.pop(pageId, false, result);
-        }
-      };
-    }
-    function useVisible(callback) {
-      const { pageId } = (0, react_1.useContext)(PageContext_1.PageContext);
-      (0, react_1.useEffect)(() => {
-        const container = PageRender.getContainer(pageId);
-        if (container) {
-          container.registerVisibleCallback(callback);
-        }
-        return () => {
-          const container2 = PageRender.getContainer(pageId);
-          if (container2) {
-            container2.unregisterVisibleCallback(callback);
-          }
-        };
-      }, [pageId, callback]);
-    }
-    function useInvisible(callback) {
-      const { pageId } = (0, react_1.useContext)(PageContext_1.PageContext);
-      (0, react_1.useEffect)(() => {
-        const container = PageRender.getContainer(pageId);
-        if (container) {
-          container.registerInvisibleCallback(callback);
-        }
-        return () => {
-          const container2 = PageRender.getContainer(pageId);
-          if (container2) {
-            container2.unregisterInvisibleCallback(callback);
-          }
-        };
-      }, [pageId, callback]);
-    }
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/Fuick.js
-var require_Fuick = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/Fuick.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Fuick = void 0;
-    exports.Fuick = {
-      /**
-       * Expose a JS object to Flutter.
-       * The object will be attached to globalThis with the given name,
-       * allowing Flutter to invoke its methods using `ctx.invoke(name, method, args)`.
-       *
-       * @param name The name to expose the object as
-       * @param obj The object instance
-       */
-      expose(name, obj) {
-        if (!name) {
-          console.error("[Fuick] Expose name cannot be empty");
-          return;
-        }
-        const globalObj = globalThis;
-        if (globalObj[name]) {
-          console.warn(`[Fuick] Overwriting existing global object: ${name}`);
-        }
-        globalObj[name] = obj;
-      }
-    };
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/services/NativeEventService.js
-var require_NativeEventService = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/services/NativeEventService.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.NativeEventService = void 0;
-    var NativeEventService = class {
-      static emit(event, data) {
-        dartCallNative("NativeEvent.emit", [event, data]);
-      }
-    };
-    exports.NativeEventService = NativeEventService;
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/NativeEvent.js
-var require_NativeEvent = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/NativeEvent.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.NativeEvent = void 0;
-    var NativeEventService_1 = require_NativeEventService();
-    var Fuick_1 = require_Fuick();
-    var NativeEventImpl = class {
-      constructor() {
-        this.listeners = /* @__PURE__ */ new Map();
-      }
-      /**
-       * 监听事件
-       * @param event 事件名称
-       * @param callback 回调函数
-       * @returns 取消监听的函数
-       */
-      on(event, callback) {
-        if (!this.listeners.has(event)) {
-          this.listeners.set(event, []);
-        }
-        this.listeners.get(event).push(callback);
-        return () => this.off(event, callback);
-      }
-      /**
-       * 移除事件监听
-       * @param event 事件名称
-       * @param callback 回调函数
-       */
-      off(event, callback) {
-        const callbacks = this.listeners.get(event);
-        if (callbacks) {
-          const index = callbacks.indexOf(callback);
-          if (index > -1) {
-            callbacks.splice(index, 1);
-          }
-          if (callbacks.length === 0) {
-            this.listeners.delete(event);
-          }
-        }
-      }
-      /**
-       * 发送事件（同时发送给 JS 内部监听器和 Native）
-       * @param event 事件名称
-       * @param data 事件数据
-       */
-      emit(event, data) {
-        NativeEventService_1.NativeEventService.emit(event, data);
-        this.dispatchLocal(event, data);
-      }
-      /**
-       * 仅触发本地监听器（不发送给 Native）
-       * 主要供 Native 调用 receive 时使用
-       */
-      dispatchLocal(event, data) {
-        const callbacks = this.listeners.get(event);
-        if (callbacks) {
-          [...callbacks].forEach((callback) => {
-            try {
-              callback(data);
-            } catch (e) {
-              console.error(`[NativeEvent] Error in listener for event "${event}":`, e);
-            }
-          });
-        }
-      }
-      /**
-       * 接收来自 Native 的事件
-       * @param event 事件名称
-       * @param data 事件数据
-       */
-      receive(event, data) {
-        this.dispatchLocal(event, data);
-      }
-    };
-    exports.NativeEvent = new NativeEventImpl();
-    Fuick_1.Fuick.expose("NativeEvent", exports.NativeEvent);
-  }
-});
-
-// ../../fuickjs_framework/fuickjs/dist/index.js
-var require_dist = __commonJS({
-  "../../fuickjs_framework/fuickjs/dist/index.js"(exports) {
-    "use strict";
-    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
-      }
-      Object.defineProperty(o, k2, desc);
-    } : function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
-    });
-    var __exportStar = exports && exports.__exportStar || function(m, exports2) {
-      for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    __exportStar(require_components(), exports);
-    __exportStar(require_renderer(), exports);
-    __exportStar(require_router(), exports);
-    __exportStar(require_runtime(), exports);
-    __exportStar(require_page_render(), exports);
-    __exportStar(require_hooks(), exports);
-    __exportStar(require_ErrorBoundary(), exports);
-    __exportStar(require_ErrorHandler(), exports);
-    __exportStar(require_timer(), exports);
-    __exportStar(require_console(), exports);
-    __exportStar(require_fetch(), exports);
-    __exportStar(require_ids(), exports);
-    __exportStar(require_PageContext(), exports);
-    __exportStar(require_Fuick(), exports);
-    __exportStar(require_NativeEvent(), exports);
-  }
-});
+};
+var NativeEvent = new NativeEventImpl();
+Fuick.expose("NativeEvent", NativeEvent);
 
 // src/framework_entry.ts
-var import_react = __toESM(require_react_production_min());
-var FuickFramework = __toESM(require_dist());
-globalThis.React = import_react.default;
-globalThis.FuickFramework = FuickFramework;
+globalThis.React = import_react74.default;
+globalThis.FuickFramework = src_exports;
 /*! Bundled license information:
 
 react/cjs/react.production.min.js:

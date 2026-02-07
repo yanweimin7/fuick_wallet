@@ -1,8 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Scaffold, AppBar, Center, Column, Text, Container, Padding, CustomPaint, CustomPainter } from 'fuickjs';
+import { Scaffold, AppBar, Center, Column, Text, Container, Padding, SizedBox } from 'fuickjs';
+// @ts-ignore
+import { CustomPaint, CustomPainter } from 'fuickjs';
 import QRCode from 'qrcode';
 import { WalletInfo } from '../../services/WalletManager';
 import { ChainConfig, getSelectedChain } from '../../services/ChainRegistry';
+import { Theme } from '../../theme';
+import { Card } from '../../components/common';
 
 export default function ReceivePage(props: { wallet: WalletInfo }) {
   const [chain, setChain] = useState<ChainConfig | null>(null);
@@ -17,9 +21,12 @@ export default function ReceivePage(props: { wallet: WalletInfo }) {
 
   const address = wallet?.addresses?.[chain?.id || ''] || wallet?.address;
 
+  const [error, setError] = useState<string>('');
+
   const painter = useMemo(() => {
     if (!address) return null;
     try {
+      setError('');
       // @ts-ignore
       const qr = QRCode.create(address, { errorCorrectionLevel: 'M' });
 
@@ -31,11 +38,6 @@ export default function ReceivePage(props: { wallet: WalletInfo }) {
       const offset = (containerSize - qrSize) / 2;
 
       return new CustomPainter((p: any) => {
-        // Manually apply offset to avoid translate issues
-        // p.translate(offset, offset);
-
-        // Use Hex colors to ensure compatibility
-        // p.drawRect({ left: 0, top: 0, width: boxSize, height: boxSize }, { color: '#FFFFFF', style: 'fill' });
         for (let y = 0; y < size; y++) {
           for (let x = 0; x < size; x++) {
             if (data[y * size + x]) {
@@ -59,39 +61,61 @@ export default function ReceivePage(props: { wallet: WalletInfo }) {
   }, [address]);
 
   return (
-    <Scaffold appBar={<AppBar title="Receive" />}>
-      <Center>
-        <Column mainAxisAlignment="center" crossAxisAlignment="center">
-          <Text text={chain?.name || 'Loading...'} fontWeight="bold" fontSize={18} />
-          <Container height={30} />
-          {painter ? (
-            <Container
-              width={220}
-              height={220}
-              alignment="center"
-              decoration={{
-                color: 'white',
-                borderRadius: 10,
-                boxShadow: { color: '#0000001A', blurRadius: 10, offset: { dx: 0, dy: 4 } }
-              }}
-            >
-              <CustomPaint painter={painter} size={{ width: 220, height: 220 }} />
-            </Container>
-          ) : (
-            <Container width={220} height={220} color="#f0f0f0" alignment="center">
-              <Text text="Generating..." />
-            </Container>
-          )}
-          <Container height={30} />
-          <Padding padding={{ horizontal: 40 }}>
-            <Container padding={16} decoration={{ color: '#f5f5f5', borderRadius: 8 }}>
-              <Text text={address || ''} textAlign="center" color="#333" fontSize={14} />
-            </Container>
-          </Padding>
-          <Container height={30} />
-          <Text text="Scan QR code to receive assets" color="#888" fontSize={12} />
-        </Column>
-      </Center>
+    <Scaffold appBar={<AppBar title="Receive" backgroundColor={Theme.colors.surface} foregroundColor={Theme.colors.textPrimary} />}>
+      <Container color={Theme.colors.background}>
+        <Center>
+          <Column mainAxisAlignment="center" crossAxisAlignment="center">
+            <Text text={chain?.name || 'Loading...'} fontWeight="bold" fontSize={20} color={Theme.colors.textPrimary} />
+            <SizedBox height={30} />
+            {painter ? (
+              <Container
+                width={240}
+                height={240}
+                alignment="center"
+                decoration={{
+                  color: 'white',
+                  borderRadius: Theme.borderRadius.l,
+                  boxShadow: Theme.shadows.medium
+                }}
+              >
+                <CustomPaint painter={painter} size={{ width: 220, height: 220 }} />
+              </Container>
+            ) : (
+              <Container
+                width={240}
+                height={240}
+                decoration={{
+                  color: Theme.colors.surface,
+                  borderRadius: Theme.borderRadius.l,
+                  boxShadow: Theme.shadows.medium
+                }}
+                alignment="center"
+              >
+                <Column mainAxisAlignment="center" crossAxisAlignment="center">
+                  <Text text={error ? "QR Generation Failed" : (address ? "Generating..." : "Address not ready")} color={error ? Theme.colors.error : Theme.colors.textSecondary} fontWeight="bold" />
+                  {error && <Padding padding={{ top: 10 }}><Text text={error} fontSize={12} color={Theme.colors.error} maxLines={10} textAlign="center" /></Padding>}
+                </Column>
+              </Container>
+            )}
+            <SizedBox height={30} />
+            <Padding padding={{ horizontal: Theme.spacing.xl }}>
+              <Container
+                padding={Theme.spacing.m}
+                decoration={{
+                  color: Theme.colors.surface,
+                  borderRadius: Theme.borderRadius.m,
+                  border: { width: 1, color: Theme.colors.divider }
+                }}
+              >
+                <Text text={address || ''} textAlign="center" color={Theme.colors.textPrimary} fontSize={14} />
+              </Container>
+            </Padding>
+            <SizedBox height={20} />
+            <Text text="Scan QR code to receive assets" color={Theme.colors.textSecondary} fontSize={14} />
+          </Column>
+        </Center>
+      </Container>
     </Scaffold>
   );
 }
+

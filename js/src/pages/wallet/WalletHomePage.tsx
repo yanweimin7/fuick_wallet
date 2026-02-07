@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { AppBar, Button, Center, Column, Scaffold, Container, Text, TextField, Padding, CircularProgressIndicator, Row, Icon, GestureDetector, Expanded, ListView, useNavigator } from "fuickjs";
+import { AppBar, Center, Column, Scaffold, Container, Text, Padding, Row, Icon, Expanded, useNavigator, InkWell, SizedBox, SingleChildScrollView } from "fuickjs";
 import { WalletService } from "../../services/WalletService";
 import { WalletManager, WalletInfo } from "../../services/WalletManager";
 import { ChainConfig, getSelectedChain } from "../../services/ChainRegistry";
-
+import { Theme } from "../../theme";
+import { Card } from "../../components/common";
 
 export default function WalletHomePage() {
   const navigator = useNavigator();
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
   const [balance, setBalance] = useState("0.00");
-  const [toAddress, setToAddress] = useState("");
-  const [amount, setAmount] = useState("");
-  const [txHash, setTxHash] = useState("");
-  const [loading, setLoading] = useState(false);
   const [chain, setChain] = useState<ChainConfig | null>(null);
+  const [hideBalance, setHideBalance] = useState(false);
 
   useEffect(() => {
     loadWallet();
@@ -28,7 +26,6 @@ export default function WalletHomePage() {
     if (wallets.length > 0) {
       setWallet(wallets[0]);
     } else {
-      // Should not happen if flow is correct, but handle anyway
       setWallet(null);
     }
   };
@@ -47,7 +44,6 @@ export default function WalletHomePage() {
     const chainType = chain?.type?.toLowerCase() || 'evm';
     WalletService.getBalance(rpc, addr, chainType)
       .then(val => {
-        // Format balance to 4 decimal places if possible, or just string
         try {
           const num = parseFloat(val);
           setBalance(num.toFixed(4));
@@ -64,8 +60,6 @@ export default function WalletHomePage() {
     if (result && (result as any).id) {
       setWallet(result as WalletInfo);
     } else {
-      // Refresh anyway in case wallet list changed (e.g. deleted)
-      // Ideally we check if current wallet still exists
       const wallets = WalletManager.getInstance().getWallets();
       if (wallet && !wallets.find(w => w.id === wallet.id)) {
         setWallet(wallets.length > 0 ? wallets[0] : null);
@@ -75,221 +69,175 @@ export default function WalletHomePage() {
     }
   };
 
-  const handleTransfer = async () => {
-    if (!wallet || !toAddress || !amount) return;
-    setLoading(true);
-    setTxHash("");
-    try {
-      const secret = await WalletManager.getInstance().getSecret(wallet.id);
-      if (!secret) {
-        throw new Error("Secret not found");
-      }
-
-      const rpc = chain?.rpcUrl || "https://sepolia.drpc.org";
-      const chainType = chain?.type?.toLowerCase() || 'evm';
-
-      const privateKey = secret.privateKeys?.[chainType];
-
-      if (!privateKey) {
-        throw new Error(`Private key not found for ${chainType}`);
-      }
-
-      const hash = await WalletService.transfer(rpc, privateKey, toAddress, amount, chainType);
-      setTxHash(hash);
-      setLoading(false);
-      fetchBalance();
-    } catch (e: any) {
-      console.error("Transfer failed", e);
-      setLoading(false);
-      setTxHash("Failed: " + (e.message || "Unknown error"));
+  const handleSwitchChain = async () => {
+    // @ts-ignore
+    const result = await navigator.push("/wallet/chain_select");
+    if (result) {
+      setChain(result as ChainConfig);
+    } else {
+      const c = await getSelectedChain();
+      setChain(c);
     }
   };
 
+  const formatAddress = (addr: string) => {
+    if (!addr) return "";
+    return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
+  };
+
   const ActionButton = ({ icon, label, onTap }: { icon: string, label: string, onTap?: () => void }) => (
-    <GestureDetector onTap={onTap}>
-      <Column crossAxisAlignment="center">
+    <InkWell onTap={onTap}>
+      <Column mainAxisAlignment="center" crossAxisAlignment="center">
         <Container
-          width={48} height={48}
-          decoration={{ color: "#E0F7FA", borderRadius: 24 }}
+          width={50}
+          height={50}
           alignment="center"
+          decoration={{
+            color: Theme.colors.primary,
+            borderRadius: 25,
+            boxShadow: Theme.shadows.medium
+          }}
         >
-          <Icon name={icon} color="#006064" size={24} />
+          <Icon name={icon} color="white" size={24} />
         </Container>
-        <Container height={8} />
-        <Text text={label} fontSize={12} color="#333333" />
+        <SizedBox height={8} />
+        <Text text={label} color={Theme.colors.textPrimary} fontSize={14} fontWeight="w500" />
       </Column>
-    </GestureDetector>
+    </InkWell>
   );
-
-  const TokenItem = ({ icon, symbol, name, balance, price, change }: any) => (
-    <Column>
-      <Container padding={{ top: 16, bottom: 16 }}>
-        <Row mainAxisAlignment="spaceBetween" crossAxisAlignment="center">
-          <Row>
-            <Container width={40} height={40} decoration={{ color: "#f0f0f0", borderRadius: 20 }} alignment="center">
-              <Icon name={icon} size={24} />
-            </Container>
-            <Container width={12} />
-            <Column crossAxisAlignment="start">
-              <Text text={symbol} fontWeight="bold" fontSize={16} />
-              <Row>
-                <Text text={price} fontSize={12} color="#666666" />
-                <Container width={4} />
-                <Text text={change} fontSize={12} color={change.startsWith('+') ? "green" : "red"} />
-              </Row>
-            </Column>
-          </Row>
-          <Column crossAxisAlignment="end">
-            <Text text={balance} fontWeight="bold" fontSize={16} />
-            <Text text={`$${(parseFloat(balance) * parseFloat(price.replace('$', ''))).toFixed(2)}`} fontSize={12} color="#666666" />
-          </Column>
-        </Row>
-      </Container>
-      <Container height={1} color="#f0f0f0" />
-    </Column>
-  );
-
-  if (!wallet) {
-    return (
-      <Scaffold>
-        <Center>
-          <CircularProgressIndicator />
-          <Container height={16} />
-          <Text text="Loading Wallet..." />
-        </Center>
-      </Scaffold>
-    );
-  }
 
   return (
     <Scaffold
       appBar={
         <AppBar
-          centerTitle={false}
-          backgroundColor="white"
+          title="My Wallet"
+          backgroundColor={Theme.colors.background}
           elevation={0}
-          title={
-            <GestureDetector onTap={handleSwitchWallet}>
-              <Row crossAxisAlignment="center">
-                <Container
-                  width={32} height={32}
-                  decoration={{ color: "#FFCDD2", borderRadius: 16 }}
-                  alignment="center"
-                  margin={{ right: 8 }}
-                >
-                  <Icon name="account_balance_wallet" color="#D32F2F" size={18} />
-                </Container>
-                <Text text={wallet.name} fontSize={16} fontWeight="bold" color="black" />
-                <Icon name="keyboard_arrow_down" color="#666666" />
-              </Row>
-            </GestureDetector>
-          }
+          centerTitle={false}
           actions={[
-            <Container padding={{ right: 8 }} alignment="center">
-              <Icon name="qr_code_scanner" color="black" />
-            </Container>,
-            <GestureDetector onTap={async () => {
-              // @ts-ignore
-              const chosen = await navigator.showModal("/wallet/chain_select", {}, { maxHeight: 0.9 });
-              if (chosen && (chosen as any).id) {
-                setChain(chosen as ChainConfig);
-              }
-            }}>
-              <Container padding={{ right: 16 }} alignment="center">
-                <Row crossAxisAlignment="center">
-                  <Icon name="public" color="#006064" />
-                  <Container width={4} />
-                  <Text text={chain?.name || "网络"} color="#006064" />
+            <InkWell onTap={handleSwitchChain}>
+              <Container padding={{ horizontal: 12, vertical: 6 }} decoration={{ color: Theme.colors.surface, borderRadius: 16 }}>
+                <Row>
+                  <Text text={chain?.name || "Network"} color={Theme.colors.primary} fontWeight="bold" />
+                  <Icon name="expand_more" color={Theme.colors.primary} size={20} />
                 </Row>
               </Container>
-            </GestureDetector>
+            </InkWell>,
+            <SizedBox width={8} />,
+            <InkWell onTap={handleSwitchWallet}>
+              <Container padding={{ horizontal: 12, vertical: 6 }} decoration={{ color: Theme.colors.surface, borderRadius: 16 }}>
+                <Row>
+                  <Text text={wallet?.name || "No Wallet"} color={Theme.colors.primary} fontWeight="bold" />
+                  <Icon name="expand_more" color={Theme.colors.primary} size={20} />
+                </Row>
+              </Container>
+            </InkWell>,
+            <SizedBox width={8} />,
+            <InkWell onTap={async () => {
+              await navigator.push("/wallet/detail", { walletId: wallet?.id });
+              loadWallet();
+            }}>
+              <Container padding={8}>
+                <Icon name="settings" color={Theme.colors.textSecondary} size={24} />
+              </Container>
+            </InkWell>,
+            <SizedBox width={8} />
           ]}
         />
       }
     >
-      <Padding padding={{ top: 0, left: 20, right: 20, bottom: 20 }}>
-        <Column crossAxisAlignment="start">
-          <Container height={24} />
-
-          {/* Balance */}
-          <Text text={`$${(parseFloat(balance === "Loading..." || balance === "Error" ? "0" : balance) * 2000).toFixed(2)}`} fontSize={32} fontWeight="bold" />
-          <Row crossAxisAlignment="center">
-            <Text text={`+<0.01 (+0.36%) Today's PNL`} fontSize={12} color="green" />
-          </Row>
-
-          <Container height={24} />
+      <Container color={Theme.colors.background}>
+        <Column>
+          <Padding padding={20}>
+            {/* Balance Card */}
+            <Container
+              width={Infinity}
+              padding={24}
+              decoration={{
+                color: Theme.colors.primary, // Could be gradient if supported
+                borderRadius: Theme.borderRadius.xl,
+                boxShadow: Theme.shadows.large
+              }}
+            >
+              <Column crossAxisAlignment="start">
+                <Row mainAxisAlignment="spaceBetween">
+                  <Text text="Total Balance" color="#FFFFFFCC" fontSize={14} />
+                  <InkWell onTap={() => setHideBalance(!hideBalance)}>
+                    <Icon name={hideBalance ? "visibility_off" : "visibility"} color="#FFFFFFCC" size={20} />
+                  </InkWell>
+                </Row>
+                <SizedBox height={8} />
+                <Text
+                  text={hideBalance ? "****" : `${balance} ${chain?.symbol || "ETH"}`}
+                  color="white"
+                  fontSize={32}
+                  fontWeight="bold"
+                />
+                <SizedBox height={20} />
+                <Container
+                  padding={{ horizontal: 12, vertical: 6 }}
+                  decoration={{ color: "#FFFFFF33", borderRadius: 20 }}
+                >
+                  <Row mainAxisSize="min">
+                    <Text text={formatAddress(wallet?.address || "")} color="white" fontSize={12} />
+                    <SizedBox width={4} />
+                    <Icon name="content_copy" color="white" size={12} />
+                  </Row>
+                </Container>
+              </Column>
+            </Container>
+          </Padding>
 
           {/* Actions */}
-          <Row mainAxisAlignment="spaceBetween">
-            <ActionButton icon="send" label="Transfer" onTap={() => { /* Show transfer modal/page */ }} />
-            <ActionButton icon="call_received" label="Receive" onTap={() => {
-              // @ts-ignore
-              navigator.push("/wallet/receive", { wallet: wallet });
-            }} />
-            <ActionButton icon="history" label="History" />
-            <ActionButton icon="more_horiz" label="More" onTap={() => {
-              // @ts-ignore
-              navigator.push("/wallet/detail", { walletId: wallet?.id });
-            }} />
-          </Row>
-
-          <Container height={24} />
-
-          {/* Cards (Optional based on image) */}
-          <Row mainAxisAlignment="spaceBetween">
-            <Container width={100} height={80} decoration={{ color: "#F5F5F5", borderRadius: 12 }} padding={12}>
-              <Column crossAxisAlignment="start">
-                <Icon name="savings" color="#8BC34A" />
-                <Expanded><Container /></Expanded>
-                <Text text="Earn" fontSize={12} color="#666666" />
-                <Text text="$0.05" fontWeight="bold" fontSize={14} />
-              </Column>
-            </Container>
-            <Container width={100} height={80} decoration={{ color: "#F5F5F5", borderRadius: 12 }} padding={12}>
-              <Column crossAxisAlignment="start">
-                <Icon name="credit_card" color="#FF9800" />
-                <Expanded><Container /></Expanded>
-                <Text text="Card" fontSize={12} color="#666666" />
-                <Text text="No Fee" fontWeight="bold" fontSize={14} />
-              </Column>
-            </Container>
-            <Container width={100} height={80} decoration={{ color: "#F5F5F5", borderRadius: 12 }} padding={12}>
-              <Column crossAxisAlignment="start">
-                <Icon name="swap_horiz" color="#2196F3" />
-                <Expanded><Container /></Expanded>
-                <Text text="Swap" fontSize={12} color="#666666" />
-                <Text text="Trade" fontWeight="bold" fontSize={14} />
-              </Column>
-            </Container>
-          </Row>
-
-          <Container height={24} />
-
-          {/* Tokens List Header */}
-          <Row mainAxisAlignment="spaceBetween" crossAxisAlignment="center">
-            <Text text="Tokens $0.03" fontWeight="bold" fontSize={16} />
-            <Icon name="tune" color="#666666" />
-          </Row>
-
-          <Container height={8} />
-
-          {/* Token List */}
-          <TokenItem icon="currency_bitcoin" symbol="BNB" name="BNB" balance="<0.0001" price="$659.2" change="+6.88%" />
-          <TokenItem icon="attach_money" symbol="USDC" name="USDC" balance="0.0038" price="$1.00" change="0.00%" />
-
-          {/* Yield Banner */}
-          <Container
-            margin={{ top: 8, bottom: 8 }}
-            padding={12}
-            decoration={{ color: "#E0F2F1", borderRadius: 8 }}
-          >
-            <Row mainAxisAlignment="spaceBetween">
-              <Text text="Earn 10% APY" color="#00695C" fontWeight="bold" fontSize={12} />
-              <Icon name="chevron_right" color="#00695C" size={16} />
+          <Padding padding={{ horizontal: 20 }}>
+            <Row mainAxisAlignment="spaceAround">
+              <ActionButton icon="arrow_upward" label="Send" />
+              <ActionButton icon="arrow_downward" label="Receive" onTap={() => navigator.push("/wallet/receive", { wallet })} />
+              <ActionButton icon="swap_vert" label="Swap" />
+              <ActionButton icon="history" label="History" />
             </Row>
-          </Container>
+          </Padding>
+
+          <SizedBox height={30} />
+
+          {/* Assets List */}
+          <Expanded>
+            <Container
+              decoration={{
+                color: Theme.colors.surface,
+                borderRadius: { topLeft: Theme.borderRadius.xl, topRight: Theme.borderRadius.xl }
+              }}
+              padding={{ top: 20, left: 20, right: 20 }}
+            >
+              <Column mainAxisAlignment="start">
+                <Text text="Assets" fontSize={20} fontWeight="bold" color={Theme.colors.textPrimary} />
+                <SizedBox height={16} />
+                <SingleChildScrollView>
+                  {/* Mock Assets */}
+                  <Card padding={16} margin={12}>
+                    <Row>
+                      <Container width={40} height={40} decoration={{ color: Theme.colors.primaryLight, borderRadius: 20 }} alignment="center">
+                        <Text text="E" color="white" fontWeight="bold" />
+                      </Container>
+                      <SizedBox width={16} />
+                      <Expanded>
+                        <Column crossAxisAlignment="start">
+                          <Text text={chain?.symbol || "ETH"} fontWeight="bold" fontSize={16} />
+                          <Text text={chain?.name || "Ethereum"} color={Theme.colors.textSecondary} fontSize={14} />
+                        </Column>
+                      </Expanded>
+                      <Column crossAxisAlignment="end">
+                        <Text text={hideBalance ? "****" : balance} fontWeight="bold" fontSize={16} />
+                        <Text text="$0.00" color={Theme.colors.textSecondary} fontSize={14} />
+                      </Column>
+                    </Row>
+                  </Card>
+                </SingleChildScrollView>
+              </Column>
+            </Container>
+          </Expanded>
         </Column>
-      </Padding>
+      </Container>
     </Scaffold>
   );
 }
