@@ -1,42 +1,38 @@
 import React, { useEffect, useState } from "react";
 import { AppBar, Button, Center, Column, Scaffold, useNavigator, Container, Text, CircularProgressIndicator, Padding } from "fuickjs";
-import { WalletService, WalletAccount } from "../../services/WalletService";
+import { WalletService } from "../../services/WalletService";
+import { WalletManager } from "../../services/WalletManager";
 
-export default function CreateWalletPage() {
+export default function CreateWalletPage(props: { nextPath?: string }) {
   const navigator = useNavigator();
-  const [wallet, setWallet] = useState<WalletAccount | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     // Debug: Check connectivity
     WalletService.ping().then(res => console.log("Wallet Service Ping:", res)).catch(e => console.error("Wallet Service Ping Failed:", e));
 
-    WalletService.createWallet().then(w => {
-      if (w) {
-        setWallet(w);
-      } else {
-        setError("Wallet creation returned null");
+    const createAndNavigate = async () => {
+      try {
+        const w = await WalletManager.getInstance().createWallet();
+        if (w) {
+          // 延迟一点跳转，让用户看到完成状态（可选，或者直接跳）
+          if (props.nextPath) {
+            // @ts-ignore
+            (navigator as any).pushReplace(props.nextPath, w);
+          } else {
+            navigator.pop(false, w);
+          }
+        } else {
+          setError("Wallet creation returned null");
+        }
+      } catch (e: any) {
+        console.error("Failed to create wallet", e);
+        setError("Failed: " + (e.message || e.toString()));
       }
-      setLoading(false);
-    }).catch(e => {
-      console.error("Failed to create wallet", e);
-      setError("Failed: " + (e.message || e.toString()));
-      setLoading(false);
-    });
-  }, []);
+    };
 
-  if (loading) {
-    return (
-      <Scaffold appBar={<AppBar title="Create Wallet" />}>
-        <Center>
-          <CircularProgressIndicator />
-          <Container height={20} />
-          <Text text="Generating Wallet..." />
-        </Center>
-      </Scaffold>
-    );
-  }
+    createAndNavigate();
+  }, []);
 
   if (error) {
     return (
@@ -51,34 +47,16 @@ export default function CreateWalletPage() {
   }
 
   return (
-    <Scaffold appBar={<AppBar title="New Wallet Created" />}>
-      <Padding padding={20}>
-        <Column crossAxisAlignment="start">
-          <Text text="Mnemonic (Keep Secret!):" fontWeight="bold" />
-          <Container padding={10} color="#eeeeee">
-            <Text text={wallet?.mnemonic || ""} />
-          </Container>
-
-          <Container height={20} />
-
-          <Text text="Address:" fontWeight="bold" />
-          <Text text={wallet?.address || ""} />
-
-          <Container height={20} />
-
-          <Text text="Private Key:" fontWeight="bold" />
-          <Text text={wallet?.privateKey || ""} />
-
-          <Container height={40} />
-
-          <Center>
-            <Button
-              text="Go to Wallet Home"
-              onTap={() => navigator.push("/wallet/home", { ...wallet })}
-            />
-          </Center>
+    <Scaffold appBar={<AppBar title="Creating Wallet" />}>
+      <Center>
+        <Column mainAxisAlignment="center" crossAxisAlignment="center">
+          <CircularProgressIndicator />
+          <Container height={24} />
+          <Text text="Creating your secure wallet..." fontWeight="bold" fontSize={16} />
+          <Container height={8} />
+          <Text text="This may take a few seconds." fontSize={12} color="#666666" />
         </Column>
-      </Padding>
+      </Center>
     </Scaffold>
   );
 }

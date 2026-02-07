@@ -6,15 +6,10 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fuick Web3 Wallet'),
-      ),
-      body: const FuickAppView(
-        appName: 'bundle',
-        initialRoute: '/wallet/entry',
-        initialParams: {},
-      ),
+    return FuickAppView(
+      appName: 'bundle',
+      initialRoute: '/',
+      initialParams: {},
     );
   }
 }

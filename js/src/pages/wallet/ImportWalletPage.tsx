@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { AppBar, Button, Center, Column, Scaffold, useNavigator, Container, Text, TextField, Padding } from "fuickjs";
-import { WalletService, WalletAccount } from "../../services/WalletService";
+import { WalletManager } from "../../services/WalletManager";
 
-export default function ImportWalletPage() {
+export default function ImportWalletPage(props: { nextPath?: string }) {
   const navigator = useNavigator();
+  const [name, setName] = useState("");
   const [mnemonic, setMnemonic] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -16,14 +17,17 @@ export default function ImportWalletPage() {
     setLoading(true);
     setError("");
 
-    WalletService.importWallet(mnemonic)
-      .then(wallet => {
+    WalletManager.getInstance().importWallet(name || undefined, mnemonic)
+      .then(async wallet => {
         setLoading(false);
         if (wallet && wallet.address) {
           // Navigate to wallet home or show success
           console.log("Wallet imported:", wallet);
-          // Navigate to wallet home, passing wallet properties directly as props
-          navigator.push("/wallet/home", wallet);
+          if (props.nextPath) {
+            navigator.push(props.nextPath, wallet);
+          } else {
+            navigator.pop(false, wallet);
+          }
         } else {
           setError("Invalid mnemonic or import failed");
         }
@@ -39,6 +43,17 @@ export default function ImportWalletPage() {
     <Scaffold appBar={<AppBar title="Import Wallet" />}>
       <Padding padding={20}>
         <Column crossAxisAlignment="start">
+          <Text text="Wallet Name (Optional):" fontWeight="bold" />
+          <Container height={10} />
+          <TextField
+            text={name}
+            onChanged={(val) => setName(val)}
+            decoration={{
+              hintText: "e.g. My Savings",
+              border: { width: 1, color: "#cccccc" }
+            }}
+          />
+          <Container height={20} />
           <Text text="Enter Mnemonic Phrase:" fontWeight="bold" />
           <Container height={10} />
           <TextField

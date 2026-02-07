@@ -20,6 +20,11 @@ export class WalletService {
         return dartCallNativeAsync('Wallet.importWallet', { mnemonic });
     }
 
+    static importPrivateKey(privateKey: string): Promise<WalletAccount> {
+        // @ts-ignore
+        return dartCallNativeAsync('Wallet.importPrivateKey', { privateKey });
+    }
+
     static getBalance(rpcUrl: string, address: string): Promise<string> {
         // @ts-ignore
         return dartCallNativeAsync('Wallet.getBalance', { rpcUrl, address });

@@ -5,6 +5,7 @@ import 'package:fuickjs_flutter/core/service/BaseFuickService.dart';
 import 'package:hex/hex.dart';
 import 'package:http/http.dart';
 import 'package:web3dart/web3dart.dart';
+import 'dart:convert';
 
 // Top-level function for compute
 Future<Map<String, String>> _generateWalletTask(String? mnemonic) async {
@@ -24,6 +25,16 @@ Future<Map<String, String>> _generateWalletTask(String? mnemonic) async {
     'mnemonic': validMnemonic,
     'address': address.hex,
     'privateKey': HEX.encode(privateKeyList),
+  };
+}
+
+Future<Map<String, String>> _importPrivateKeyTask(String privateKeyStr) async {
+  final privateKey = EthPrivateKey.fromHex(privateKeyStr);
+  final address = privateKey.address;
+
+  return {
+    'address': address.hex,
+    'privateKey': privateKeyStr,
   };
 }
 
@@ -55,6 +66,22 @@ class FuickWalletService extends BaseFuickService {
           // Run in a separate isolate
           final result = await compute<String?, Map<String, String>>(
               _generateWalletTask, mnemonic);
+          return result;
+        } catch (e, stack) {
+          print(stack);
+          rethrow;
+        }
+      }
+      return null;
+    });
+
+    registerAsyncMethod('importPrivateKey', (args) async {
+      if (args is Map) {
+        final privateKey = args['privateKey'];
+        try {
+          // Run in a separate isolate
+          final result = await compute<String, Map<String, String>>(
+              _importPrivateKeyTask, privateKey);
           return result;
         } catch (e, stack) {
           print(stack);

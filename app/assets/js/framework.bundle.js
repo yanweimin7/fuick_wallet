@@ -8443,6 +8443,110 @@ var require_VisibilityDetector = __commonJS({
   }
 });
 
+// ../../fuickjs_framework/fuickjs/dist/services/ComponentStore.js
+var require_ComponentStore = __commonJS({
+  "../../fuickjs_framework/fuickjs/dist/services/ComponentStore.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var ComponentStore = class _ComponentStore {
+      constructor() {
+        this.components = /* @__PURE__ */ new Map();
+        this.counter = 0;
+      }
+      static getInstance() {
+        if (!_ComponentStore.instance) {
+          _ComponentStore.instance = new _ComponentStore();
+        }
+        return _ComponentStore.instance;
+      }
+      register(component) {
+        const id = `cmp_${++this.counter}_${Date.now()}`;
+        this.components.set(id, component);
+        return id;
+      }
+      get(id) {
+        return this.components.get(id);
+      }
+      remove(id) {
+        this.components.delete(id);
+      }
+    };
+    exports.default = ComponentStore;
+  }
+});
+
+// ../../fuickjs_framework/fuickjs/dist/widgets/GenericPage.js
+var require_GenericPage = __commonJS({
+  "../../fuickjs_framework/fuickjs/dist/widgets/GenericPage.js"(exports) {
+    "use strict";
+    var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      var desc = Object.getOwnPropertyDescriptor(m, k);
+      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+        desc = { enumerable: true, get: function() {
+          return m[k];
+        } };
+      }
+      Object.defineProperty(o, k2, desc);
+    } : function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      o[k2] = m[k];
+    });
+    var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      Object.defineProperty(o, "default", { enumerable: true, value: v });
+    } : function(o, v) {
+      o["default"] = v;
+    });
+    var __importStar = exports && exports.__importStar || /* @__PURE__ */ function() {
+      var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function(o2) {
+          var ar = [];
+          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+          return ar;
+        };
+        return ownKeys(o);
+      };
+      return function(mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) {
+          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        }
+        __setModuleDefault(result, mod);
+        return result;
+      };
+    }();
+    var __importDefault = exports && exports.__importDefault || function(mod) {
+      return mod && mod.__esModule ? mod : { "default": mod };
+    };
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.GenericPage = GenericPage;
+    var react_1 = __importStar(require_react_production_min());
+    var ComponentStore_1 = __importDefault(require_ComponentStore());
+    var Container_1 = require_Container();
+    var Text_1 = require_Text();
+    function GenericPage(props) {
+      const { componentId } = props;
+      const component = ComponentStore_1.default.getInstance().get(componentId);
+      (0, react_1.useEffect)(() => {
+        return () => {
+          if (componentId) {
+            ComponentStore_1.default.getInstance().remove(componentId);
+          }
+        };
+      }, [componentId]);
+      if (!component) {
+        return react_1.default.createElement(
+          Container_1.Container,
+          { alignment: "center" },
+          react_1.default.createElement(Text_1.Text, { text: "Content not found" })
+        );
+      }
+      return react_1.default.createElement(react_1.default.Fragment, null, component);
+    }
+  }
+});
+
 // ../../fuickjs_framework/fuickjs/dist/widgets/index.js
 var require_widgets = __commonJS({
   "../../fuickjs_framework/fuickjs/dist/widgets/index.js"(exports) {
@@ -8529,6 +8633,7 @@ var require_widgets = __commonJS({
     __exportStar(require_CustomPaint(), exports);
     __exportStar(require_VideoPlayer(), exports);
     __exportStar(require_VisibilityDetector(), exports);
+    __exportStar(require_GenericPage(), exports);
   }
 });
 
@@ -8873,11 +8978,47 @@ var require_runtime = __commonJS({
 var require_NavigatorService = __commonJS({
   "../../fuickjs_framework/fuickjs/dist/services/NavigatorService.js"(exports) {
     "use strict";
+    var __importDefault = exports && exports.__importDefault || function(mod) {
+      return mod && mod.__esModule ? mod : { "default": mod };
+    };
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.NavigatorService = void 0;
+    var react_1 = __importDefault(require_react_production_min());
+    var ComponentStore_1 = __importDefault(require_ComponentStore());
     var NavigatorService = class {
       static push(path, params, pageId, rootNavigator) {
         return dartCallNative("Navigator.push", { path, params, pageId, rootNavigator });
+      }
+      static pushReplace(path, params, pageId, rootNavigator) {
+        return dartCallNative("Navigator.pushReplace", { path, params, pageId, rootNavigator });
+      }
+      static showModal(path, params, options, pageId, rootNavigator) {
+        const finalParams = {
+          ...params || {},
+          presentation: "bottomSheet",
+          minHeight: options?.minHeight,
+          maxHeight: options?.maxHeight
+        };
+        return this.push(path, finalParams, pageId, rootNavigator);
+      }
+      static showDialog(pathOrComponent, params, pageId, rootNavigator) {
+        if (react_1.default.isValidElement(pathOrComponent) || typeof pathOrComponent !== "string") {
+          return this.showComponentDialog("/_generic_dialog", pathOrComponent, params, pageId, rootNavigator);
+        }
+        const finalParams = {
+          ...params || {},
+          presentation: "dialog"
+        };
+        return this.push(pathOrComponent, finalParams, pageId, rootNavigator);
+      }
+      static showComponentDialog(path, component, params, pageId, rootNavigator) {
+        const id = ComponentStore_1.default.getInstance().register(component);
+        const finalParams = {
+          ...params || {},
+          componentId: id,
+          presentation: "dialog"
+        };
+        return this.push(path, finalParams, pageId, rootNavigator);
       }
       static pop(pageId, rootNavigator, result) {
         dartCallNative("Navigator.pop", { pageId, rootNavigator, result });
@@ -8945,7 +9086,17 @@ var require_hooks = __commonJS({
       const pageId = usePageId();
       return {
         push: (path, params, rootNavigator) => NavigatorService_1.NavigatorService.push(path, params, pageId, rootNavigator),
-        pop: (rootNavigator, result) => NavigatorService_1.NavigatorService.pop(pageId, rootNavigator, result)
+        pushReplace: (path, params, rootNavigator) => NavigatorService_1.NavigatorService.pushReplace(path, params, pageId, rootNavigator),
+        showModal: (path, params, options, rootNavigator) => NavigatorService_1.NavigatorService.showModal(path, params, options, pageId, rootNavigator),
+        showDialog: (pathOrComponent, params, rootNavigator) => NavigatorService_1.NavigatorService.showDialog(pathOrComponent, params, pageId, rootNavigator),
+        showComponentDialog: (path, component, params, rootNavigator) => NavigatorService_1.NavigatorService.showComponentDialog(path, component, params, pageId, rootNavigator),
+        pop: (...args) => {
+          let result = args[0];
+          if (args.length >= 2) {
+            result = args[1];
+          }
+          return NavigatorService_1.NavigatorService.pop(pageId, false, result);
+        }
       };
     }
     function useVisible(callback) {

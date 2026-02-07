@@ -7,11 +7,15 @@ import {
   Text,
   Container,
   Button,
+  GenericPage,
 } from "fuickjs";
-import WalletEntryPage from "./pages/wallet/WalletEntryPage";
+import OnboardingPage from "./pages/OnboardingPage";
+import BootstrapPage from "./pages/BootstrapPage";
 import CreateWalletPage from "./pages/wallet/CreateWalletPage";
 import ImportWalletPage from "./pages/wallet/ImportWalletPage";
 import WalletHomePage from "./pages/wallet/WalletHomePage";
+import MainTabsPage from "./pages/wallet/MainTabsPage";
+import WalletListPage from "./pages/wallet/WalletListPage";
 
 // Custom Global Error UI
 const CustomErrorUI = (error: Error) =>
@@ -67,15 +71,21 @@ export function initApp() {
 
     // Router Registration
     // @ts-ignore
-    Router.register("/", (args) => React.createElement(WalletEntryPage, args as any));
+    Router.register("/", (args) => React.createElement(BootstrapPage, args as any));
     // @ts-ignore
-    Router.register("/wallet/entry", (args) => React.createElement(WalletEntryPage, args as any));
+    Router.register("/wallet/onboarding", (args) => React.createElement(OnboardingPage, args as any));
     // @ts-ignore
     Router.register("/wallet/create", (args) => React.createElement(CreateWalletPage, args as any));
     // @ts-ignore
     Router.register("/wallet/import", (args) => React.createElement(ImportWalletPage, args as any));
     // @ts-ignore
-    Router.register("/wallet/home", (args) => React.createElement(WalletHomePage, args as any));
+    Router.register("/wallet/home", (args) => React.createElement(MainTabsPage, args as any));
+    // @ts-ignore
+    Router.register("/wallet/list", (args) => React.createElement(WalletListPage, args as any));
+    // @ts-ignore
+    Router.register("/_generic_dialog", (args) => React.createElement(GenericPage, args as any));
+    // @ts-ignore
+    Router.register("/wallet/detail", (args) => React.createElement(WalletHomePage, args as any));
 
     console.log("Wallet App Initialized");
   } catch (e) {
