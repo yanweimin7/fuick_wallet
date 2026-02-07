@@ -825,11 +825,14 @@ function MarketPage() {
 // src/pages/wallet/MainTabsPage.tsx
 function MainTabsPage() {
   const [currentIndex, setCurrentIndex] = (0, import_react8.useState)(0);
-  const pages = [
-    /* @__PURE__ */ import_react8.default.createElement(HomePage, null),
-    /* @__PURE__ */ import_react8.default.createElement(MarketPage, null),
-    /* @__PURE__ */ import_react8.default.createElement(WalletHomePage, null)
-  ];
+  const pageViewRef = (0, import_react8.useRef)(null);
+  const handleTabTap = (index) => {
+    setCurrentIndex(index);
+    pageViewRef.current?.jumpToPage(index);
+  };
+  const handlePageChanged = (index) => {
+    setCurrentIndex(index);
+  };
   return /* @__PURE__ */ import_react8.default.createElement(
     import_fuickjs8.Scaffold,
     {
@@ -837,7 +840,7 @@ function MainTabsPage() {
         import_fuickjs8.BottomNavigationBar,
         {
           currentIndex,
-          onTap: setCurrentIndex,
+          onTap: handleTabTap,
           items: [
             /* @__PURE__ */ import_react8.default.createElement(
               import_fuickjs8.BottomNavigationBarItem,
@@ -867,7 +870,17 @@ function MainTabsPage() {
         }
       )
     },
-    pages[currentIndex]
+    /* @__PURE__ */ import_react8.default.createElement(
+      import_fuickjs8.PageView,
+      {
+        ref: pageViewRef,
+        onPageChanged: handlePageChanged,
+        initialPage: 0
+      },
+      /* @__PURE__ */ import_react8.default.createElement(HomePage, null),
+      /* @__PURE__ */ import_react8.default.createElement(MarketPage, null),
+      /* @__PURE__ */ import_react8.default.createElement(WalletHomePage, null)
+    )
   );
 }
 

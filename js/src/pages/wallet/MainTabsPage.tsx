@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Scaffold, BottomNavigationBar, BottomNavigationBarItem, Icon, useNavigator } from "fuickjs";
+import React, { useState, useRef } from "react";
+import { Scaffold, BottomNavigationBar, BottomNavigationBarItem, Icon, PageView } from "fuickjs";
 import { WalletInfo } from "../../services/WalletManager";
 import HomePage from "./HomePage";
 import MarketPage from "./MarketPage";
@@ -7,19 +7,23 @@ import WalletHomePage from "./WalletHomePage";
 
 export default function MainTabsPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const pageViewRef = useRef<PageView>(null);
 
-  const pages = [
-    <HomePage />,
-    <MarketPage />,
-    <WalletHomePage />
-  ];
+  const handleTabTap = (index: number) => {
+    setCurrentIndex(index);
+    pageViewRef.current?.jumpToPage(index);
+  };
+
+  const handlePageChanged = (index: number) => {
+    setCurrentIndex(index);
+  };
 
   return (
     <Scaffold
       bottomNavigationBar={
         <BottomNavigationBar
           currentIndex={currentIndex}
-          onTap={setCurrentIndex}
+          onTap={handleTabTap}
           items={[
             <BottomNavigationBarItem
               key="home"
@@ -40,7 +44,15 @@ export default function MainTabsPage() {
         />
       }
     >
-      {pages[currentIndex]}
+      <PageView
+        ref={pageViewRef}
+        onPageChanged={handlePageChanged}
+        initialPage={0}
+      >
+        <HomePage />
+        <MarketPage />
+        <WalletHomePage />
+      </PageView>
     </Scaffold>
   );
 }
