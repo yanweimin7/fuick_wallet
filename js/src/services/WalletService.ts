@@ -37,6 +37,11 @@ export class WalletService {
         return dartCallNativeAsync('Wallet.getBalance', { rpcUrl, address, chainType });
     }
 
+    static getTokenBalance(rpcUrl: string, contractAddress: string, address: string, chainType: string = 'evm'): Promise<string> {
+        // @ts-ignore
+        return dartCallNativeAsync('Wallet.getTokenBalance', { rpcUrl, contractAddress, address, chainType });
+    }
+
     static transfer(rpcUrl: string, privateKey: string, to: string, amount: string, chainType: string = 'evm'): Promise<string> {
         // @ts-ignore
         return dartCallNativeAsync('Wallet.transfer', { rpcUrl, privateKey, to, amount, chainType });

@@ -1948,6 +1948,9 @@ var WalletService = class {
   static getBalance(rpcUrl, address, chainType = "evm") {
     return dartCallNativeAsync("Wallet.getBalance", { rpcUrl, address, chainType });
   }
+  static getTokenBalance(rpcUrl, contractAddress, address, chainType = "evm") {
+    return dartCallNativeAsync("Wallet.getTokenBalance", { rpcUrl, contractAddress, address, chainType });
+  }
   static transfer(rpcUrl, privateKey, to, amount, chainType = "evm") {
     return dartCallNativeAsync("Wallet.transfer", { rpcUrl, privateKey, to, amount, chainType });
   }
@@ -1962,7 +1965,21 @@ var CHAINS = [
     chainId: 1,
     rpcUrl: "https://rpc.ankr.com/eth",
     explorer: "https://etherscan.io",
-    symbol: "ETH"
+    symbol: "ETH",
+    tokens: [
+      {
+        symbol: "USDT",
+        name: "Tether USD",
+        address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+        decimals: 6
+      },
+      {
+        symbol: "USDC",
+        name: "USD Coin",
+        address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        decimals: 6
+      }
+    ]
   },
   {
     id: "eth-sepolia",
@@ -1971,7 +1988,54 @@ var CHAINS = [
     chainId: 11155111,
     rpcUrl: "https://sepolia.drpc.org",
     explorer: "https://sepolia.etherscan.io",
-    symbol: "ETH"
+    symbol: "ETH",
+    tokens: []
+  },
+  {
+    id: "base-mainnet",
+    name: "Base",
+    type: "EVM",
+    chainId: 8453,
+    rpcUrl: "https://mainnet.base.org",
+    explorer: "https://basescan.org",
+    symbol: "ETH",
+    tokens: [
+      {
+        symbol: "USDC",
+        name: "USD Coin",
+        address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        decimals: 6
+      },
+      {
+        symbol: "USDT",
+        name: "Tether USD",
+        address: "0xfde4c96c8593536e31f229ea8f37b2ada2699bb2",
+        decimals: 6
+      }
+    ]
+  },
+  {
+    id: "linea-mainnet",
+    name: "Linea",
+    type: "EVM",
+    chainId: 59144,
+    rpcUrl: "https://rpc.linea.build",
+    explorer: "https://lineascan.build",
+    symbol: "ETH",
+    tokens: [
+      {
+        symbol: "USDC",
+        name: "USD Coin",
+        address: "0x176211869ca2b568f2a7d4ee941e073a821ee1ff",
+        decimals: 6
+      },
+      {
+        symbol: "USDT",
+        name: "Tether USD",
+        address: "0xa219c472f33680876fd7c4740c8433c815188e08",
+        decimals: 6
+      }
+    ]
   },
   {
     id: "bsc-mainnet",
@@ -1980,7 +2044,21 @@ var CHAINS = [
     chainId: 56,
     rpcUrl: "https://bsc-dataseed.binance.org",
     explorer: "https://bscscan.com",
-    symbol: "BNB"
+    symbol: "BNB",
+    tokens: [
+      {
+        symbol: "USDT",
+        name: "Tether USD",
+        address: "0x55d398326f99059ff775485246999027b3197955",
+        decimals: 18
+      },
+      {
+        symbol: "USDC",
+        name: "USD Coin",
+        address: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+        decimals: 18
+      }
+    ]
   },
   {
     id: "polygon-mainnet",
@@ -1989,7 +2067,21 @@ var CHAINS = [
     chainId: 137,
     rpcUrl: "https://polygon-rpc.com",
     explorer: "https://polygonscan.com",
-    symbol: "MATIC"
+    symbol: "MATIC",
+    tokens: [
+      {
+        symbol: "USDT",
+        name: "Tether USD",
+        address: "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+        decimals: 6
+      },
+      {
+        symbol: "USDC",
+        name: "USD Coin",
+        address: "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+        decimals: 6
+      }
+    ]
   },
   {
     id: "solana-mainnet",
@@ -1998,7 +2090,8 @@ var CHAINS = [
     chainId: 101,
     rpcUrl: "https://api.mainnet-beta.solana.com",
     explorer: "https://solscan.io",
-    symbol: "SOL"
+    symbol: "SOL",
+    tokens: []
   },
   {
     id: "solana-devnet",
@@ -2007,7 +2100,8 @@ var CHAINS = [
     chainId: 103,
     rpcUrl: "https://api.devnet.solana.com",
     explorer: "https://solscan.io?cluster=devnet",
-    symbol: "SOL"
+    symbol: "SOL",
+    tokens: []
   }
 ];
 var SELECTED_KEY = "fuick_selected_chain";
@@ -2791,6 +2885,7 @@ function WalletHomePage() {
   const [balance, setBalance] = (0, import_react8.useState)("0.00");
   const [chain, setChain] = (0, import_react8.useState)(null);
   const [hideBalance, setHideBalance] = (0, import_react8.useState)(false);
+  const [tokenBalances, setTokenBalances] = (0, import_react8.useState)({});
   (0, import_react8.useEffect)(() => {
     loadWallet();
     (async () => {
@@ -2811,20 +2906,41 @@ function WalletHomePage() {
       fetchBalance();
     }
   }, [wallet?.address, chain?.id]);
-  const fetchBalance = () => {
+  const fetchBalance = async () => {
     if (!wallet) return;
     setBalance("Loading...");
     const rpc = chain?.rpcUrl || "https://sepolia.drpc.org";
     const addr = wallet.addresses?.[chain?.id || ""] || wallet.address;
     const chainType = chain?.type?.toLowerCase() || "evm";
-    WalletService.getBalance(rpc, addr, chainType).then((val) => {
+    try {
+      const val = await WalletService.getBalance(rpc, addr, chainType);
       try {
         const num = parseFloat(val);
         setBalance(num.toFixed(4));
       } catch {
         setBalance(val);
       }
-    }).catch((e) => setBalance("Error"));
+    } catch (e) {
+      setBalance("Error");
+    }
+    if (chain?.tokens) {
+      const newBalances = {};
+      for (const t of chain.tokens) {
+        try {
+          newBalances[t.symbol] = "...";
+          setTokenBalances((prev) => ({ ...prev, ...newBalances }));
+          const raw = await WalletService.getTokenBalance(rpc, t.address, addr, chainType);
+          const val = parseFloat(raw) / Math.pow(10, t.decimals);
+          newBalances[t.symbol] = val.toFixed(4);
+        } catch (e) {
+          console.error(`Failed to fetch ${t.symbol}`, e);
+          newBalances[t.symbol] = "0.0000";
+        }
+      }
+      setTokenBalances(newBalances);
+    } else {
+      setTokenBalances({});
+    }
   };
   const handleSwitchWallet = async () => {
     const result = await navigator.showModal("/wallet/list", {}, { maxHeight: 0.9 });
@@ -2927,7 +3043,7 @@ function WalletHomePage() {
         },
         padding: { top: 20, left: 20, right: 20 }
       },
-      /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { mainAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: "Assets", fontSize: 20, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { height: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SingleChildScrollView, null, /* @__PURE__ */ import_react8.default.createElement(Card, { padding: 16, margin: 12 }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { width: 40, height: 40, decoration: { color: Theme.colors.primaryLight, borderRadius: 20 }, alignment: "center" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: "E", color: "white", fontWeight: "bold" })), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Expanded, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: chain?.symbol || "ETH", fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: chain?.name || "Ethereum", color: Theme.colors.textSecondary, fontSize: 14 }))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "end" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: hideBalance ? "****" : balance, fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: "$0.00", color: Theme.colors.textSecondary, fontSize: 14 }))))))
+      /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { mainAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: "Assets", fontSize: 20, fontWeight: "bold", color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { height: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SingleChildScrollView, null, /* @__PURE__ */ import_react8.default.createElement(Card, { padding: 16, margin: 12 }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { width: 40, height: 40, decoration: { color: Theme.colors.primaryLight, borderRadius: 20 }, alignment: "center" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: (chain?.symbol || "E")[0], color: "white", fontWeight: "bold" })), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Expanded, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: chain?.symbol || "ETH", fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: chain?.name || "Ethereum", color: Theme.colors.textSecondary, fontSize: 14 }))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "end" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: hideBalance ? "****" : balance, fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: "$0.00", color: Theme.colors.textSecondary, fontSize: 14 })))), chain?.tokens?.map((t) => /* @__PURE__ */ import_react8.default.createElement(Card, { key: t.symbol, padding: 16, margin: 12 }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Row, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Container, { width: 40, height: 40, decoration: { color: Theme.colors.secondary, borderRadius: 20 }, alignment: "center" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: t.symbol[0], color: "white", fontWeight: "bold" })), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.SizedBox, { width: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Expanded, null, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: t.symbol, fontWeight: "bold", fontSize: 16 }), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: t.name, color: Theme.colors.textSecondary, fontSize: 14 }))), /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Column, { crossAxisAlignment: "end" }, /* @__PURE__ */ import_react8.default.createElement(import_fuickjs8.Text, { text: hideBalance ? "****" : tokenBalances[t.symbol] || "...", fontWeight: "bold", fontSize: 16 })))))))
     ))))
   );
 }

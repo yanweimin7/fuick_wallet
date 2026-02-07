@@ -12,6 +12,7 @@ export default function WalletHomePage() {
   const [balance, setBalance] = useState("0.00");
   const [chain, setChain] = useState<ChainConfig | null>(null);
   const [hideBalance, setHideBalance] = useState(false);
+  const [tokenBalances, setTokenBalances] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadWallet();
@@ -36,22 +37,45 @@ export default function WalletHomePage() {
     }
   }, [wallet?.address, chain?.id]);
 
-  const fetchBalance = () => {
+  const fetchBalance = async () => {
     if (!wallet) return;
     setBalance("Loading...");
     const rpc = chain?.rpcUrl || "https://sepolia.drpc.org";
     const addr = wallet.addresses?.[chain?.id || ""] || wallet.address;
     const chainType = chain?.type?.toLowerCase() || 'evm';
-    WalletService.getBalance(rpc, addr, chainType)
-      .then(val => {
+
+    try {
+      const val = await WalletService.getBalance(rpc, addr, chainType);
+      try {
+        const num = parseFloat(val);
+        setBalance(num.toFixed(4));
+      } catch {
+        setBalance(val);
+      }
+    } catch (e) {
+      setBalance("Error");
+    }
+
+    if (chain?.tokens) {
+      const newBalances: Record<string, string> = {};
+      for (const t of chain.tokens) {
         try {
-          const num = parseFloat(val);
-          setBalance(num.toFixed(4));
-        } catch {
-          setBalance(val);
+          // Default to loading/0
+          newBalances[t.symbol] = "...";
+          setTokenBalances(prev => ({ ...prev, ...newBalances }));
+
+          const raw = await WalletService.getTokenBalance(rpc, t.address, addr, chainType);
+          const val = parseFloat(raw) / Math.pow(10, t.decimals);
+          newBalances[t.symbol] = val.toFixed(4);
+        } catch (e) {
+          console.error(`Failed to fetch ${t.symbol}`, e);
+          newBalances[t.symbol] = "0.0000";
         }
-      })
-      .catch(e => setBalance("Error"));
+      }
+      setTokenBalances(newBalances);
+    } else {
+      setTokenBalances({});
+    }
   };
 
   const handleSwitchWallet = async () => {
@@ -213,11 +237,11 @@ export default function WalletHomePage() {
                 <Text text="Assets" fontSize={20} fontWeight="bold" color={Theme.colors.textPrimary} />
                 <SizedBox height={16} />
                 <SingleChildScrollView>
-                  {/* Mock Assets */}
+                  {/* Native Asset */}
                   <Card padding={16} margin={12}>
                     <Row>
                       <Container width={40} height={40} decoration={{ color: Theme.colors.primaryLight, borderRadius: 20 }} alignment="center">
-                        <Text text="E" color="white" fontWeight="bold" />
+                        <Text text={(chain?.symbol || "E")[0]} color="white" fontWeight="bold" />
                       </Container>
                       <SizedBox width={16} />
                       <Expanded>
@@ -232,6 +256,27 @@ export default function WalletHomePage() {
                       </Column>
                     </Row>
                   </Card>
+
+                  {/* Token Assets */}
+                  {chain?.tokens?.map(t => (
+                    <Card key={t.symbol} padding={16} margin={12}>
+                      <Row>
+                        <Container width={40} height={40} decoration={{ color: Theme.colors.secondary, borderRadius: 20 }} alignment="center">
+                          <Text text={t.symbol[0]} color="white" fontWeight="bold" />
+                        </Container>
+                        <SizedBox width={16} />
+                        <Expanded>
+                          <Column crossAxisAlignment="start">
+                            <Text text={t.symbol} fontWeight="bold" fontSize={16} />
+                            <Text text={t.name} color={Theme.colors.textSecondary} fontSize={14} />
+                          </Column>
+                        </Expanded>
+                        <Column crossAxisAlignment="end">
+                          <Text text={hideBalance ? "****" : (tokenBalances[t.symbol] || "...")} fontWeight="bold" fontSize={16} />
+                        </Column>
+                      </Row>
+                    </Card>
+                  ))}
                 </SingleChildScrollView>
               </Column>
             </Container>

@@ -146,11 +146,50 @@ class FuickWalletService extends BaseFuickService {
           } else {
             final client = Web3Client(rpcUrl, Client());
             try {
-              final etherAmount =
-                  await client.getBalance(EthereumAddress.fromHex(address));
+              final etherAmount = await client.getBalance(
+                  EthereumAddress.fromHex(address, enforceEip55: false));
               return etherAmount.getValueInUnit(EtherUnit.ether).toString();
             } catch (e) {
               print('EVM getBalance error: $e');
+              return "0";
+            } finally {
+              client.dispose();
+            }
+          }
+        }
+      }
+      return "0";
+    });
+
+    registerAsyncMethod('getTokenBalance', (args) async {
+      if (args is Map) {
+        final rpcUrl = args['rpcUrl'];
+        final contractAddress = args['contractAddress'];
+        final address = args['address'];
+        final chainType = args['chainType'] ?? 'evm';
+
+        if (rpcUrl != null && contractAddress != null && address != null) {
+          if (chainType == 'solana') {
+            // TODO: SPL token balance
+            return "0";
+          } else {
+            final client = Web3Client(rpcUrl, Client());
+            try {
+              final contract = DeployedContract(
+                ContractAbi.fromJson(
+                    '[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"}]',
+                    'ERC20'),
+                EthereumAddress.fromHex(contractAddress, enforceEip55: false),
+              );
+              final balanceOf = contract.function('balanceOf');
+              final balance = await client.call(
+                contract: contract,
+                function: balanceOf,
+                params: [EthereumAddress.fromHex(address, enforceEip55: false)],
+              );
+              return balance.first.toString();
+            } catch (e) {
+              print('Token balance error: $e');
               return "0";
             } finally {
               client.dispose();
@@ -181,7 +220,7 @@ class FuickWalletService extends BaseFuickService {
           final client = Web3Client(rpcUrl, Client());
           try {
             final credentials = EthPrivateKey.fromHex(privateKey);
-            final toAddress = EthereumAddress.fromHex(to);
+            final toAddress = EthereumAddress.fromHex(to, enforceEip55: false);
             final amountEther = EtherAmount.fromUnitAndValue(
                 EtherUnit.ether, double.parse(amount.toString()));
 
