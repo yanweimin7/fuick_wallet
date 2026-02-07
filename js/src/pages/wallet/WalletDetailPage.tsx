@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AppBar, AlertDialog, Column, Container, Icon, InkWell, Padding, Row, Scaffold, Text, useNavigator, SingleChildScrollView, Expanded, Center, SizedBox } from 'fuickjs';
+import { AppBar, AlertDialog, Column, Container, Icon, InkWell, Padding, Row, Scaffold, Text, useNavigator, SingleChildScrollView, Expanded, Center, SizedBox, ClipboardService } from 'fuickjs';
 import { ChainRegistry } from '../../services/ChainRegistry';
 import { WalletInfo, WalletManager, WalletSecret } from '../../services/WalletManager';
 import WalletDeleteDialog from './WalletDeleteDialog';
@@ -63,6 +63,21 @@ export default function WalletDetailPage({ walletId }: { walletId?: string }) {
     }
   };
 
+  const handleCopy = async (text: string) => {
+    await ClipboardService.setData(text);
+    navigator.showDialog(
+      <AlertDialog
+        title={<Text text="Copied" fontWeight="bold" fontSize={18} />}
+        content={<Text text={`Address copied to clipboard`} />}
+        actions={[
+          <InkWell onTap={() => navigator.pop()}>
+            <Container padding={{ horizontal: 16, vertical: 8 }}><Text text="OK" color={Theme.colors.primary} /></Container>
+          </InkWell>
+        ]}
+      />
+    );
+  };
+
   return (
     <Scaffold
       appBar={
@@ -112,7 +127,12 @@ export default function WalletDetailPage({ walletId }: { walletId?: string }) {
                         <Column key={chain.id}>
                           <Padding padding={16}>
                             <Column crossAxisAlignment="start">
-                              <Text text={chain.name} fontSize={14} color={Theme.colors.textSecondary} fontWeight="bold" />
+                              <Row mainAxisAlignment="spaceBetween" crossAxisAlignment="center">
+                                <Text text={chain.name} fontSize={14} color={Theme.colors.textSecondary} fontWeight="bold" />
+                                <InkWell onTap={() => handleCopy(wallet?.addresses?.[chain.id] || wallet?.address || '')}>
+                                  <Icon name="content_copy" size={16} color={Theme.colors.primary} />
+                                </InkWell>
+                              </Row>
                               <SizedBox height={4} />
                               <Text
                                 text={wallet?.addresses?.[chain.id] || wallet?.address || 'Not Generated'}

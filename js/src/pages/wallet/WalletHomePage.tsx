@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AppBar, Center, Column, Scaffold, Container, Text, Padding, Row, Icon, Expanded, useNavigator, InkWell, SizedBox, SingleChildScrollView } from "fuickjs";
+import { AppBar, Center, Column, Scaffold, Container, Text, Padding, Row, Icon, Expanded, useNavigator, InkWell, SizedBox, SingleChildScrollView, AlertDialog } from "fuickjs";
 import { WalletService } from "../../services/WalletService";
 import { WalletManager, WalletInfo } from "../../services/WalletManager";
 import { ChainConfig, getSelectedChain } from "../../services/ChainRegistry";
@@ -25,9 +25,17 @@ export default function WalletHomePage() {
   const loadWallet = () => {
     const wallets = WalletManager.getInstance().getWallets();
     if (wallets.length > 0) {
-      setWallet(wallets[0]);
+      const lastId = WalletManager.getInstance().getLastSelectedWalletId();
+      const lastWallet = lastId ? wallets.find(w => w.id === lastId) : null;
+      if (lastWallet) {
+        setWallet(lastWallet);
+      } else {
+        setWallet(wallets[0]);
+        WalletManager.getInstance().setLastSelectedWalletId(wallets[0].id);
+      }
     } else {
       setWallet(null);
+      WalletManager.getInstance().setLastSelectedWalletId(null);
     }
   };
 
@@ -83,14 +91,9 @@ export default function WalletHomePage() {
     const result = await navigator.showModal("/wallet/list", {}, { maxHeight: 0.9 });
     if (result && (result as any).id) {
       setWallet(result as WalletInfo);
-    } else {
-      const wallets = WalletManager.getInstance().getWallets();
-      if (wallet && !wallets.find(w => w.id === wallet.id)) {
-        setWallet(wallets.length > 0 ? wallets[0] : null);
-      } else if (!wallet && wallets.length > 0) {
-        setWallet(wallets[0]);
-      }
-    }
+      WalletManager.getInstance().setLastSelectedWalletId((result as WalletInfo).id);
+    } 
+      
   };
 
   const handleSwitchChain = async () => {
@@ -107,6 +110,29 @@ export default function WalletHomePage() {
   const formatAddress = (addr: string) => {
     if (!addr) return "";
     return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
+  };
+
+  const handleFaucet = () => {
+    if (chain?.faucetUrl) {
+      // Open in browser via native bridge or specialized webview
+      // Since we don't have a direct browser opener yet, we'll log it or use a dialog
+      console.log("Opening faucet:", chain.faucetUrl);
+      // For now, let's just show the URL in a dialog so user can copy, or assume we have a link opener
+      // Ideally: navigator.push("/webview", { url: chain.faucetUrl });
+      // But we don't have a webview page.
+      // Let's create a simple dialog for now.
+      navigator.showDialog(
+        <AlertDialog
+          title={<Text text="Get Test Tokens" fontWeight="bold" fontSize={18} />}
+          content={<Text text={`Go to: ${chain.faucetUrl}`} />}
+          actions={[
+            <InkWell onTap={() => navigator.pop()}>
+              <Container padding={{ horizontal: 16, vertical: 8 }}><Text text="Close" color={Theme.colors.primary} /></Container>
+            </InkWell>
+          ]}
+        />
+      );
+    }
   };
 
   const ActionButton = ({ icon, label, onTap }: { icon: string, label: string, onTap?: () => void }) => (
@@ -215,10 +241,14 @@ export default function WalletHomePage() {
           {/* Actions */}
           <Padding padding={{ horizontal: 20 }}>
             <Row mainAxisAlignment="spaceAround">
-              <ActionButton icon="arrow_upward" label="Send" />
+              <ActionButton icon="arrow_upward" label="Send" onTap={() => navigator.push("/wallet/send", { wallet })} />
               <ActionButton icon="arrow_downward" label="Receive" onTap={() => navigator.push("/wallet/receive", { wallet })} />
               <ActionButton icon="swap_vert" label="Swap" />
-              <ActionButton icon="history" label="History" />
+              {chain?.faucetUrl ? (
+                <ActionButton icon="water_drop" label="Faucet" onTap={handleFaucet} />
+              ) : (
+                <ActionButton icon="history" label="History" />
+              )}
             </Row>
           </Padding>
 

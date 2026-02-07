@@ -1848,8 +1848,8 @@ var require_qrcode = __commonJS({
 });
 
 // src/app.ts
-var import_react17 = __toESM(require_react());
-var import_fuickjs18 = __toESM(require_fuickjs());
+var import_react18 = __toESM(require_react());
+var import_fuickjs19 = __toESM(require_fuickjs());
 
 // src/pages/OnboardingPage.tsx
 var import_react = __toESM(require_react());
@@ -1997,6 +1997,25 @@ var CHAINS = [
     chainId: 11155111,
     rpcUrl: "https://sepolia.drpc.org",
     explorer: "https://sepolia.etherscan.io",
+    faucetUrl: "https://sepolia-faucet.pk910.de/",
+    symbol: "ETH",
+    tokens: [
+      {
+        symbol: "USDC",
+        name: "Sepolia USDC",
+        address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+        decimals: 6
+      }
+    ]
+  },
+  {
+    id: "eth-holesky",
+    name: "Holesky",
+    type: "EVM",
+    chainId: 17e3,
+    rpcUrl: "https://rpc.ankr.com/eth_holesky",
+    explorer: "https://holesky.etherscan.io",
+    faucetUrl: "https://cloud.google.com/application/web3/faucet/ethereum/holesky",
     symbol: "ETH",
     tokens: []
   },
@@ -2141,6 +2160,7 @@ async function setSelectedChain(chain) {
 var _WalletManager = class _WalletManager {
   constructor() {
     this.wallets = [];
+    this.lastSelectedWalletId = null;
   }
   static getInstance() {
     if (!_WalletManager.instance) {
@@ -2167,6 +2187,12 @@ var _WalletManager = class _WalletManager {
   }
   getWallet(id) {
     return this.wallets.find((w) => w.id === id);
+  }
+  setLastSelectedWalletId(id) {
+    this.lastSelectedWalletId = id;
+  }
+  getLastSelectedWalletId() {
+    return this.lastSelectedWalletId;
   }
   async createWallet(password, name, type = "mnemonic" /* Mnemonic */) {
     const { mnemonic } = await WalletService.createWallet();
@@ -3073,9 +3099,17 @@ function WalletHomePage() {
   const loadWallet = () => {
     const wallets = WalletManager.getInstance().getWallets();
     if (wallets.length > 0) {
-      setWallet(wallets[0]);
+      const lastId = WalletManager.getInstance().getLastSelectedWalletId();
+      const lastWallet = lastId ? wallets.find((w) => w.id === lastId) : null;
+      if (lastWallet) {
+        setWallet(lastWallet);
+      } else {
+        setWallet(wallets[0]);
+        WalletManager.getInstance().setLastSelectedWalletId(wallets[0].id);
+      }
     } else {
       setWallet(null);
+      WalletManager.getInstance().setLastSelectedWalletId(null);
     }
   };
   (0, import_react9.useEffect)(() => {
@@ -3123,13 +3157,7 @@ function WalletHomePage() {
     const result = await navigator.showModal("/wallet/list", {}, { maxHeight: 0.9 });
     if (result && result.id) {
       setWallet(result);
-    } else {
-      const wallets = WalletManager.getInstance().getWallets();
-      if (wallet && !wallets.find((w) => w.id === wallet.id)) {
-        setWallet(wallets.length > 0 ? wallets[0] : null);
-      } else if (!wallet && wallets.length > 0) {
-        setWallet(wallets[0]);
-      }
+      WalletManager.getInstance().setLastSelectedWalletId(result.id);
     }
   };
   const handleSwitchChain = async () => {
@@ -3144,6 +3172,23 @@ function WalletHomePage() {
   const formatAddress = (addr) => {
     if (!addr) return "";
     return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
+  };
+  const handleFaucet = () => {
+    if (chain?.faucetUrl) {
+      console.log("Opening faucet:", chain.faucetUrl);
+      navigator.showDialog(
+        /* @__PURE__ */ import_react9.default.createElement(
+          import_fuickjs9.AlertDialog,
+          {
+            title: /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: "Get Test Tokens", fontWeight: "bold", fontSize: 18 }),
+            content: /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: `Go to: ${chain.faucetUrl}` }),
+            actions: [
+              /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.InkWell, { onTap: () => navigator.pop() }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: "Close", color: Theme.colors.primary })))
+            ]
+          }
+        )
+      );
+    }
   };
   const ActionButton = ({ icon, label, onTap }) => /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.InkWell, { onTap }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Column, { mainAxisAlignment: "center", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react9.default.createElement(
     import_fuickjs9.Container,
@@ -3211,7 +3256,7 @@ function WalletHomePage() {
         },
         /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Row, { mainAxisSize: "min" }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Text, { text: formatAddress(wallet?.address || ""), color: "white", fontSize: 12 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { width: 4 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Icon, { name: "content_copy", color: "white", size: 12 }))
       ))
-    )), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Padding, { padding: { horizontal: 20 } }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Row, { mainAxisAlignment: "spaceAround" }, /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "arrow_upward", label: "Send" }), /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "arrow_downward", label: "Receive", onTap: () => navigator.push("/wallet/receive", { wallet }) }), /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "swap_vert", label: "Swap" }), /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "history", label: "History" }))), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { height: 30 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Expanded, null, /* @__PURE__ */ import_react9.default.createElement(
+    )), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Padding, { padding: { horizontal: 20 } }, /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Row, { mainAxisAlignment: "spaceAround" }, /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "arrow_upward", label: "Send", onTap: () => navigator.push("/wallet/send", { wallet }) }), /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "arrow_downward", label: "Receive", onTap: () => navigator.push("/wallet/receive", { wallet }) }), /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "swap_vert", label: "Swap" }), chain?.faucetUrl ? /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "water_drop", label: "Faucet", onTap: handleFaucet }) : /* @__PURE__ */ import_react9.default.createElement(ActionButton, { icon: "history", label: "History" }))), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.SizedBox, { height: 30 }), /* @__PURE__ */ import_react9.default.createElement(import_fuickjs9.Expanded, null, /* @__PURE__ */ import_react9.default.createElement(
       import_fuickjs9.Container,
       {
         decoration: {
@@ -3550,6 +3595,21 @@ function WalletDetailPage({ walletId }) {
       navigator.pop(true);
     }
   };
+  const handleCopy = async (text) => {
+    await import_fuickjs15.ClipboardService.setData(text);
+    navigator.showDialog(
+      /* @__PURE__ */ import_react15.default.createElement(
+        import_fuickjs15.AlertDialog,
+        {
+          title: /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Copied", fontWeight: "bold", fontSize: 18 }),
+          content: /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: `Address copied to clipboard` }),
+          actions: [
+            /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.InkWell, { onTap: () => navigator.pop() }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "OK", color: Theme.colors.primary })))
+          ]
+        }
+      )
+    );
+  };
   return /* @__PURE__ */ import_react15.default.createElement(
     import_fuickjs15.Scaffold,
     {
@@ -3573,7 +3633,7 @@ function WalletDetailPage({ walletId }) {
         margin: { right: 16 }
       },
       /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Icon, { name: "account_balance_wallet", color: Theme.colors.primary, size: 28 })
-    ), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Expanded, null, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: wallet.name, fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 4 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: wallet.address, color: Theme.colors.textSecondary, fontSize: 14, maxLines: 1, overflow: "ellipsis" }))))), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 24 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Multi-chain Addresses", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 12 }), /* @__PURE__ */ import_react15.default.createElement(Card, { padding: 0 }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, null, ChainRegistry.list().map((chain, index) => /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { key: chain.id }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Padding, { padding: 16 }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: chain.name, fontSize: 14, color: Theme.colors.textSecondary, fontWeight: "bold" }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 4 }), /* @__PURE__ */ import_react15.default.createElement(
+    ), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Expanded, null, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: wallet.name, fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 4 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: wallet.address, color: Theme.colors.textSecondary, fontSize: 14, maxLines: 1, overflow: "ellipsis" }))))), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 24 }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: "Multi-chain Addresses", fontWeight: "bold", fontSize: 18, color: Theme.colors.textPrimary }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 12 }), /* @__PURE__ */ import_react15.default.createElement(Card, { padding: 0 }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, null, ChainRegistry.list().map((chain, index) => /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { key: chain.id }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Padding, { padding: 16 }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Row, { mainAxisAlignment: "spaceBetween", crossAxisAlignment: "center" }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Text, { text: chain.name, fontSize: 14, color: Theme.colors.textSecondary, fontWeight: "bold" }), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.InkWell, { onTap: () => handleCopy(wallet?.addresses?.[chain.id] || wallet?.address || "") }, /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.Icon, { name: "content_copy", size: 16, color: Theme.colors.primary }))), /* @__PURE__ */ import_react15.default.createElement(import_fuickjs15.SizedBox, { height: 4 }), /* @__PURE__ */ import_react15.default.createElement(
       import_fuickjs15.Text,
       {
         text: wallet?.addresses?.[chain.id] || wallet?.address || "Not Generated",
@@ -3720,26 +3780,200 @@ function ReceivePage(props) {
   )), /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.SizedBox, { height: 20 }), /* @__PURE__ */ import_react16.default.createElement(import_fuickjs16.Text, { text: "Scan QR code to receive assets", color: Theme.colors.textSecondary, fontSize: 14 })))));
 }
 
+// src/pages/wallet/SendPage.tsx
+var import_react17 = __toESM(require_react());
+var import_fuickjs18 = __toESM(require_fuickjs());
+function SendPage({ wallet: initialWallet }) {
+  const navigator = (0, import_fuickjs18.useNavigator)();
+  const [wallet, setWallet] = (0, import_react17.useState)(initialWallet || null);
+  const [chain, setChain] = (0, import_react17.useState)(null);
+  const [toAddress, setToAddress] = (0, import_react17.useState)("");
+  const [amount, setAmount] = (0, import_react17.useState)("");
+  const [loading, setLoading] = (0, import_react17.useState)(false);
+  const [balance, setBalance] = (0, import_react17.useState)("0.00");
+  (0, import_react17.useEffect)(() => {
+    (async () => {
+      const c = await getSelectedChain();
+      setChain(c);
+      if (!wallet) {
+        const wallets = WalletManager.getInstance().getWallets();
+        if (wallets.length > 0) {
+          setWallet(wallets[0]);
+        }
+      }
+    })();
+  }, []);
+  (0, import_react17.useEffect)(() => {
+    if (wallet && chain) {
+      fetchBalance();
+    }
+  }, [wallet, chain]);
+  const fetchBalance = async () => {
+    if (!wallet || !chain) return;
+    const rpc = chain.rpcUrl;
+    const addr = wallet.addresses?.[chain.id] || wallet.address;
+    const chainType = chain.type.toLowerCase();
+    try {
+      const val = await WalletService.getBalance(rpc, addr, chainType);
+      try {
+        const num = parseFloat(val);
+        setBalance(num.toFixed(4));
+      } catch {
+        setBalance(val);
+      }
+    } catch (e) {
+      setBalance("Error");
+    }
+  };
+  const handleSend = async () => {
+    if (!wallet || !chain) return;
+    if (!toAddress || !amount) {
+      navigator.showDialog(
+        /* @__PURE__ */ import_react17.default.createElement(
+          import_fuickjs18.AlertDialog,
+          {
+            title: /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: "Error", fontWeight: "bold" }),
+            content: /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: "Please enter address and amount" }),
+            actions: [
+              /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.InkWell, { onTap: () => navigator.pop() }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: "OK", color: Theme.colors.primary })))
+            ]
+          }
+        )
+      );
+      return;
+    }
+    const password = await navigator.showDialog(/* @__PURE__ */ import_react17.default.createElement(VerifyPasswordDialog, null));
+    if (!password) return;
+    setLoading(true);
+    try {
+      const secret = await WalletManager.getInstance().getSecret(wallet.id, password);
+      if (!secret) {
+        throw new Error("Failed to decrypt wallet");
+      }
+      const chainType = chain.type.toLowerCase();
+      let privateKey = "";
+      if (secret.privateKeys && secret.privateKeys[chainType]) {
+        privateKey = secret.privateKeys[chainType];
+      } else if (chainType === "evm" && secret.privateKeys?.["evm"]) {
+        privateKey = secret.privateKeys["evm"];
+      } else {
+        throw new Error(`No private key found for ${chainType}`);
+      }
+      const rpc = chain.rpcUrl;
+      const txHash = await WalletService.transfer(rpc, privateKey, toAddress, amount, chainType);
+      setLoading(false);
+      navigator.showDialog(
+        /* @__PURE__ */ import_react17.default.createElement(
+          import_fuickjs18.AlertDialog,
+          {
+            title: /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: "Transaction Sent", fontWeight: "bold", color: Theme.colors.success }),
+            content: /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: "Successfully sent!" }), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.SizedBox, { height: 8 }), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: `Hash: ${txHash}`, fontSize: 12, color: Theme.colors.textSecondary })),
+            actions: [
+              /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.InkWell, { onTap: () => {
+                navigator.pop();
+                navigator.pop();
+              } }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: "Done", color: Theme.colors.primary, fontWeight: "bold" })))
+            ]
+          }
+        )
+      );
+    } catch (e) {
+      setLoading(false);
+      console.error(e);
+      navigator.showDialog(
+        /* @__PURE__ */ import_react17.default.createElement(
+          import_fuickjs18.AlertDialog,
+          {
+            title: /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: "Transaction Failed", fontWeight: "bold", color: Theme.colors.error }),
+            content: /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: e.message || "Unknown error" }),
+            actions: [
+              /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.InkWell, { onTap: () => navigator.pop() }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Container, { padding: { horizontal: 16, vertical: 8 } }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: "OK", color: Theme.colors.primary })))
+            ]
+          }
+        )
+      );
+    }
+  };
+  return /* @__PURE__ */ import_react17.default.createElement(
+    import_fuickjs18.Scaffold,
+    {
+      appBar: /* @__PURE__ */ import_react17.default.createElement(
+        import_fuickjs18.AppBar,
+        {
+          title: `Send ${chain?.symbol || ""}`,
+          backgroundColor: Theme.colors.surface,
+          elevation: 0,
+          centerTitle: true
+        }
+      )
+    },
+    /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Container, { color: Theme.colors.background }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.SingleChildScrollView, null, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Padding, { padding: 20 }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Column, null, /* @__PURE__ */ import_react17.default.createElement(
+      import_fuickjs18.Container,
+      {
+        padding: 16,
+        decoration: {
+          color: Theme.colors.surface,
+          borderRadius: Theme.borderRadius.l,
+          boxShadow: Theme.shadows.small
+        }
+      },
+      /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Column, { crossAxisAlignment: "start" }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: "From", color: Theme.colors.textSecondary, fontSize: 14 }), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.SizedBox, { height: 8 }), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Row, { crossAxisAlignment: "center" }, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Icon, { name: "account_balance_wallet", color: Theme.colors.primary, size: 24 }), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.SizedBox, { width: 12 }), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Column, null, /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: wallet?.name || "My Wallet", fontWeight: "bold" }), /* @__PURE__ */ import_react17.default.createElement(
+        import_fuickjs18.Text,
+        {
+          text: wallet?.addresses?.[chain?.id || ""] || wallet?.address || "...",
+          fontSize: 12,
+          color: Theme.colors.textSecondary,
+          maxLines: 1,
+          overflow: "ellipsis"
+        }
+      ))), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.SizedBox, { height: 12 }), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.Text, { text: `Balance: ${balance} ${chain?.symbol || ""}`, fontSize: 12, color: Theme.colors.textSecondary }))
+    ), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.SizedBox, { height: 24 }), /* @__PURE__ */ import_react17.default.createElement(
+      ThemeInput,
+      {
+        label: "To Address",
+        value: toAddress,
+        onChanged: setToAddress,
+        hint: "0x..."
+      }
+    ), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.SizedBox, { height: 16 }), /* @__PURE__ */ import_react17.default.createElement(
+      ThemeInput,
+      {
+        label: "Amount",
+        value: amount,
+        onChanged: setAmount,
+        hint: "0.0"
+      }
+    ), /* @__PURE__ */ import_react17.default.createElement(import_fuickjs18.SizedBox, { height: 40 }), /* @__PURE__ */ import_react17.default.createElement(
+      ThemeButton,
+      {
+        text: loading ? "Sending..." : "Send",
+        onTap: () => handleSend(),
+        loading
+      }
+    )))))
+  );
+}
+
 // src/app.ts
-var CustomErrorUI = (error) => import_react17.default.createElement(
-  import_fuickjs18.Container,
+var CustomErrorUI = (error) => import_react18.default.createElement(
+  import_fuickjs19.Container,
   { color: "#E0F7FA" },
-  import_react17.default.createElement(
-    import_fuickjs18.Column,
+  import_react18.default.createElement(
+    import_fuickjs19.Column,
     {
       mainAxisAlignment: "center",
       crossAxisAlignment: "center",
       padding: 30
     },
-    import_react17.default.createElement(import_fuickjs18.Text, {
+    import_react18.default.createElement(import_fuickjs19.Text, {
       text: "Oops! Something went wrong",
       fontSize: 22,
       color: "#006064",
       fontWeight: "bold",
       margin: { bottom: 16 }
     }),
-    import_react17.default.createElement(
-      import_fuickjs18.Container,
+    import_react18.default.createElement(
+      import_fuickjs19.Container,
       {
         padding: 12,
         decoration: {
@@ -3749,7 +3983,7 @@ var CustomErrorUI = (error) => import_react17.default.createElement(
         },
         margin: { bottom: 20 }
       },
-      import_react17.default.createElement(import_fuickjs18.Text, {
+      import_react18.default.createElement(import_fuickjs19.Text, {
         text: error?.message || "Unknown Error",
         fontSize: 14,
         color: "#00838F",
@@ -3757,7 +3991,7 @@ var CustomErrorUI = (error) => import_react17.default.createElement(
         overflow: "ellipsis"
       })
     ),
-    import_react17.default.createElement(import_fuickjs18.Button, {
+    import_react18.default.createElement(import_fuickjs19.Button, {
       text: "Retry",
       onTap: () => console.log("Retry...")
     })
@@ -3765,18 +3999,19 @@ var CustomErrorUI = (error) => import_react17.default.createElement(
 );
 function initApp() {
   try {
-    import_fuickjs18.Runtime.bindGlobals();
-    (0, import_fuickjs18.setGlobalErrorFallback)(CustomErrorUI);
-    import_fuickjs18.Router.register("/", (args) => import_react17.default.createElement(BootstrapPage, args));
-    import_fuickjs18.Router.register("/wallet/onboarding", (args) => import_react17.default.createElement(OnboardingPage, args));
-    import_fuickjs18.Router.register("/wallet/create", (args) => import_react17.default.createElement(CreateWalletPage, args));
-    import_fuickjs18.Router.register("/wallet/import", (args) => import_react17.default.createElement(ImportWalletPage, args));
-    import_fuickjs18.Router.register("/wallet/home", (args) => import_react17.default.createElement(MainTabsPage, args));
-    import_fuickjs18.Router.register("/wallet/list", (args) => import_react17.default.createElement(WalletListPage, args));
-    import_fuickjs18.Router.register("/_generic_dialog", (args) => import_react17.default.createElement(import_fuickjs18.GenericPage, args));
-    import_fuickjs18.Router.register("/wallet/detail", (args) => import_react17.default.createElement(WalletDetailPage, args));
-    import_fuickjs18.Router.register("/wallet/receive", (args) => import_react17.default.createElement(ReceivePage, args));
-    import_fuickjs18.Router.register("/wallet/chain_select", (args) => import_react17.default.createElement(ChainSelectPage, args));
+    import_fuickjs19.Runtime.bindGlobals();
+    (0, import_fuickjs19.setGlobalErrorFallback)(CustomErrorUI);
+    import_fuickjs19.Router.register("/", (args) => import_react18.default.createElement(BootstrapPage, args));
+    import_fuickjs19.Router.register("/wallet/onboarding", (args) => import_react18.default.createElement(OnboardingPage, args));
+    import_fuickjs19.Router.register("/wallet/create", (args) => import_react18.default.createElement(CreateWalletPage, args));
+    import_fuickjs19.Router.register("/wallet/import", (args) => import_react18.default.createElement(ImportWalletPage, args));
+    import_fuickjs19.Router.register("/wallet/home", (args) => import_react18.default.createElement(MainTabsPage, args));
+    import_fuickjs19.Router.register("/wallet/list", (args) => import_react18.default.createElement(WalletListPage, args));
+    import_fuickjs19.Router.register("/_generic_dialog", (args) => import_react18.default.createElement(import_fuickjs19.GenericPage, args));
+    import_fuickjs19.Router.register("/wallet/detail", (args) => import_react18.default.createElement(WalletDetailPage, args));
+    import_fuickjs19.Router.register("/wallet/receive", (args) => import_react18.default.createElement(ReceivePage, args));
+    import_fuickjs19.Router.register("/wallet/chain_select", (args) => import_react18.default.createElement(ChainSelectPage, args));
+    import_fuickjs19.Router.register("/wallet/send", (args) => import_react18.default.createElement(SendPage, args));
     console.log("Wallet App Initialized");
   } catch (e) {
     console.error("Failed to init app", e);

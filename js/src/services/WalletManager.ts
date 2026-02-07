@@ -24,6 +24,7 @@ export interface WalletSecret {
 export class WalletManager {
     private static instance: WalletManager;
     private wallets: WalletInfo[] = [];
+    private lastSelectedWalletId: string | null = null;
     private static readonly WALLET_LIST_KEY = "fuick_wallet_list_v2";
     private static readonly SECRET_PREFIX = "fuick_wallet_secret_";
 
@@ -57,6 +58,14 @@ export class WalletManager {
 
     getWallet(id: string): WalletInfo | undefined {
         return this.wallets.find(w => w.id === id);
+    }
+
+    setLastSelectedWalletId(id: string | null) {
+        this.lastSelectedWalletId = id;
+    }
+
+    getLastSelectedWalletId(): string | null {
+        return this.lastSelectedWalletId;
     }
 
     async createWallet(password: string, name?: string, type: WalletType = WalletType.Mnemonic): Promise<WalletInfo | null> {

@@ -14,6 +14,7 @@ export interface ChainConfig {
   chainId: number;
   rpcUrl: string;
   explorer?: string;
+  faucetUrl?: string;
   symbol?: string;
   tokens?: TokenConfig[];
 }
@@ -49,6 +50,25 @@ const CHAINS: ChainConfig[] = [
     chainId: 11155111,
     rpcUrl: 'https://sepolia.drpc.org',
     explorer: 'https://sepolia.etherscan.io',
+    faucetUrl: 'https://sepolia-faucet.pk910.de/',
+    symbol: 'ETH',
+    tokens: [
+      {
+        symbol: 'USDC',
+        name: 'Sepolia USDC',
+        address: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+        decimals: 6,
+      },
+    ],
+  },
+  {
+    id: 'eth-holesky',
+    name: 'Holesky',
+    type: 'EVM',
+    chainId: 17000,
+    rpcUrl: 'https://rpc.ankr.com/eth_holesky',
+    explorer: 'https://holesky.etherscan.io',
+    faucetUrl: 'https://cloud.google.com/application/web3/faucet/ethereum/holesky',
     symbol: 'ETH',
     tokens: [],
   },

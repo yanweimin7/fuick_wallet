@@ -272,8 +272,10 @@ class FuickWalletService extends BaseFuickService {
           try {
             final credentials = EthPrivateKey.fromHex(privateKey);
             final toAddress = EthereumAddress.fromHex(to, enforceEip55: false);
-            final amountEther = EtherAmount.fromUnitAndValue(
-                EtherUnit.ether, double.parse(amount.toString()));
+            final amountStr = amount.toString();
+            final amountWei =
+                BigInt.from((double.tryParse(amountStr) ?? 0) * 1e18);
+            final amountEther = EtherAmount.inWei(amountWei);
 
             final transaction = Transaction(
               to: toAddress,
@@ -281,13 +283,16 @@ class FuickWalletService extends BaseFuickService {
               maxGas: 21000,
             );
 
+            // Explicitly get chainId to avoid null check errors in web3dart
+            final chainId = await client.getChainId();
+
             // Send transaction
             // Note: In production you should estimate gas, get gas price etc.
             // For simple transfer, sendTransaction handles signing and broadcasting
             final txHash = await client.sendTransaction(
               credentials,
               transaction,
-              chainId: null, // Let the client figure it out or pass it if known
+              chainId: chainId.toInt(),
             );
             return txHash;
           } catch (e) {

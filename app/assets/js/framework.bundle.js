@@ -5328,6 +5328,7 @@ __export(src_exports, {
   Center: () => Center,
   Checkbox: () => Checkbox,
   CircularProgressIndicator: () => CircularProgressIndicator,
+  ClipboardService: () => ClipboardService,
   Column: () => Column,
   ConstrainedBox: () => ConstrainedBox,
   Container: () => Container,
@@ -8196,6 +8197,16 @@ var NativeEventImpl = class {
 };
 var NativeEvent = new NativeEventImpl();
 Fuick.expose("NativeEvent", NativeEvent);
+
+// ../../fuickjs_framework/fuickjs/src/services/ClipboardService.ts
+var ClipboardService = class {
+  static setData(text) {
+    return dartCallNativeAsync("Clipboard.setData", { text });
+  }
+  static getData() {
+    return dartCallNativeAsync("Clipboard.getData", {});
+  }
+};
 
 // src/framework_entry.ts
 globalThis.React = import_react74.default;
