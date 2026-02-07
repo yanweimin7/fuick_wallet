@@ -3102,6 +3102,7 @@ function MainTabsPage() {
     /* @__PURE__ */ import_react9.default.createElement(
       import_fuickjs9.PageView,
       {
+        physics: "never",
         ref: pageViewRef,
         onPageChanged: handlePageChanged,
         initialPage: 0

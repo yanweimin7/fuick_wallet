@@ -49,6 +49,7 @@ export default function MainTabsPage() {
       }
     >
       <PageView
+        physics='never'
         ref={pageViewRef}
         onPageChanged={handlePageChanged}
         initialPage={0}
