@@ -2,9 +2,8 @@ import React, { useEffect, useState } from "react";
 import { AppBar, Button, Center, Column, Scaffold, Container, Text, TextField, Padding, CircularProgressIndicator, Row, Icon, GestureDetector, Expanded, ListView, useNavigator } from "fuickjs";
 import { WalletService } from "../../services/WalletService";
 import { WalletManager, WalletInfo } from "../../services/WalletManager";
+import { ChainConfig, getSelectedChain } from "../../services/ChainRegistry";
 
-// Default RPC (Sepolia)
-const RPC_URL = "https://sepolia.drpc.org";
 
 export default function WalletHomePage() {
   const navigator = useNavigator();
@@ -14,9 +13,14 @@ export default function WalletHomePage() {
   const [amount, setAmount] = useState("");
   const [txHash, setTxHash] = useState("");
   const [loading, setLoading] = useState(false);
+  const [chain, setChain] = useState<ChainConfig | null>(null);
 
   useEffect(() => {
     loadWallet();
+    (async () => {
+      const c = await getSelectedChain();
+      setChain(c);
+    })();
   }, []);
 
   const loadWallet = () => {
@@ -30,15 +34,18 @@ export default function WalletHomePage() {
   };
 
   useEffect(() => {
-    if (wallet) {
+    if (wallet && chain) {
       fetchBalance();
     }
-  }, [wallet?.address]);
+  }, [wallet?.address, chain?.id]);
 
   const fetchBalance = () => {
     if (!wallet) return;
     setBalance("Loading...");
-    WalletService.getBalance(RPC_URL, wallet.address)
+    const rpc = chain?.rpcUrl || "https://sepolia.drpc.org";
+    const addr = wallet.addresses?.[chain?.id || ""] || wallet.address;
+    const chainType = chain?.type?.toLowerCase() || 'evm';
+    WalletService.getBalance(rpc, addr, chainType)
       .then(val => {
         // Format balance to 4 decimal places if possible, or just string
         try {
@@ -74,11 +81,20 @@ export default function WalletHomePage() {
     setTxHash("");
     try {
       const secret = await WalletManager.getInstance().getSecret(wallet.id);
-      if (!secret || !secret.privateKey) {
-        throw new Error("Private key not found");
+      if (!secret) {
+        throw new Error("Secret not found");
       }
 
-      const hash = await WalletService.transfer(RPC_URL, secret.privateKey, toAddress, amount);
+      const rpc = chain?.rpcUrl || "https://sepolia.drpc.org";
+      const chainType = chain?.type?.toLowerCase() || 'evm';
+
+      const privateKey = secret.privateKeys?.[chainType];
+
+      if (!privateKey) {
+        throw new Error(`Private key not found for ${chainType}`);
+      }
+
+      const hash = await WalletService.transfer(rpc, privateKey, toAddress, amount, chainType);
       setTxHash(hash);
       setLoading(false);
       fetchBalance();
@@ -169,9 +185,24 @@ export default function WalletHomePage() {
             </GestureDetector>
           }
           actions={[
-            <Container padding={{ right: 16 }} alignment="center">
+            <Container padding={{ right: 8 }} alignment="center">
               <Icon name="qr_code_scanner" color="black" />
-            </Container>
+            </Container>,
+            <GestureDetector onTap={async () => {
+              // @ts-ignore
+              const chosen = await navigator.showModal("/wallet/chain_select", {}, { maxHeight: 0.9 });
+              if (chosen && (chosen as any).id) {
+                setChain(chosen as ChainConfig);
+              }
+            }}>
+              <Container padding={{ right: 16 }} alignment="center">
+                <Row crossAxisAlignment="center">
+                  <Icon name="public" color="#006064" />
+                  <Container width={4} />
+                  <Text text={chain?.name || "网络"} color="#006064" />
+                </Row>
+              </Container>
+            </GestureDetector>
           ]}
         />
       }
@@ -191,9 +222,15 @@ export default function WalletHomePage() {
           {/* Actions */}
           <Row mainAxisAlignment="spaceBetween">
             <ActionButton icon="send" label="Transfer" onTap={() => { /* Show transfer modal/page */ }} />
-            <ActionButton icon="call_received" label="Receive" />
+            <ActionButton icon="call_received" label="Receive" onTap={() => {
+              // @ts-ignore
+              navigator.push("/wallet/receive", { wallet: wallet });
+            }} />
             <ActionButton icon="history" label="History" />
-            <ActionButton icon="more_horiz" label="More" />
+            <ActionButton icon="more_horiz" label="More" onTap={() => {
+              // @ts-ignore
+              navigator.push("/wallet/detail", { walletId: wallet?.id });
+            }} />
           </Row>
 
           <Container height={24} />

@@ -3,15 +3,22 @@ import { Scaffold, AppBar, ListView, Icon, useNavigator, Text, Container, InkWel
 import { WalletManager, WalletInfo } from '../../services/WalletManager';
 import WalletDeleteDialog from './WalletDeleteDialog';
 import WalletClearDialog from './WalletClearDialog';
+import { getSelectedChain } from '../../services/ChainRegistry';
 
 export default function WalletListPage(props: { onClose?: (wallet?: WalletInfo) => void, presentation?: string }) {
   const navigator = useNavigator();
+  const navigatorAny = navigator as any;
   const [wallets, setWallets] = useState<WalletInfo[]>([]);
+  const [chainId, setChainId] = useState<string>('');
 
   const isModal = props.onClose || props.presentation === 'bottomSheet';
 
   useEffect(() => {
     loadWallets();
+    (async () => {
+      const c = await getSelectedChain();
+      setChainId(c.id);
+    })();
   }, []);
 
   const loadWallets = () => {
@@ -53,7 +60,7 @@ export default function WalletListPage(props: { onClose?: (wallet?: WalletInfo) 
   };
 
   const handleClearAll = async () => {
-    const confirmed = await navigator.showDialog(<WalletClearDialog />);
+    const confirmed = await navigatorAny.showDialog(<WalletClearDialog />);
     if (confirmed) {
       await WalletManager.getInstance().clearAllWallets();
       loadWallets();
@@ -61,7 +68,7 @@ export default function WalletListPage(props: { onClose?: (wallet?: WalletInfo) 
   };
 
   const handleDeleteWallet = async (wallet: WalletInfo) => {
-    const confirmed = await navigator.showDialog(<WalletDeleteDialog wallet={wallet} />);
+    const confirmed = await navigatorAny.showDialog(<WalletDeleteDialog wallet={wallet} />);
     if (confirmed) {
       await WalletManager.getInstance().deleteWallet(wallet.id);
       loadWallets();
@@ -94,7 +101,12 @@ export default function WalletListPage(props: { onClose?: (wallet?: WalletInfo) 
                           <Text text={w.name} fontWeight="bold" fontSize={16} />
                           <Container height={4} />
                           <Text
-                            text={w.address.substring(0, 6) + "..." + w.address.substring(w.address.length - 4)}
+                            text={(() => {
+                              const addr = (w.addresses && chainId) ? (w.addresses[chainId] || w.address) : w.address;
+                              const head = addr.substring(0, 6);
+                              const tail = addr.substring(addr.length - 4);
+                              return head + "..." + tail;
+                            })()}
                             fontSize={14}
                             color="#666"
                           />
@@ -141,6 +153,24 @@ export default function WalletListPage(props: { onClose?: (wallet?: WalletInfo) 
                 <Icon name="add" color="white" />
                 <Container width={8} />
                 <Text text="Create New Wallet" color="white" fontWeight="bold" />
+              </Row>
+            </Container>
+          </InkWell>
+          <Container height={12} />
+          <InkWell onTap={handleImport}>
+            <Container
+              height={48}
+              decoration={{
+                color: "white",
+                borderRadius: 24,
+                border: { width: 1, color: "#2196F3" }
+              }}
+              alignment="center"
+            >
+              <Row mainAxisAlignment="center">
+                <Icon name="file_download" color="#2196F3" />
+                <Container width={8} />
+                <Text text="Import Wallet" color="#2196F3" fontWeight="bold" />
               </Row>
             </Container>
           </InkWell>

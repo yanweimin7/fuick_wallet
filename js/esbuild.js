@@ -43,7 +43,7 @@ async function build() {
       '.ts': 'ts',
       '.tsx': 'tsx',
     },
-    mainFields: ['module', 'main'],
+    mainFields: ['browser', 'module', 'main'],
     define: {
       'process.env.NODE_ENV': isProd ? '"production"' : '"development"',
       global: 'globalThis',
@@ -79,6 +79,9 @@ async function build() {
     entryPoints: ['src/index.ts'],
     outfile: 'dist/bundle.js',
     plugins: [globalsPlugin],
+    alias: {
+      'qrcode': path.resolve(__dirname, 'node_modules/qrcode/lib/core/qrcode.js'),
+    },
     // 不需要 external，由 globalsPlugin 处理 resolve 和 load
   });
 

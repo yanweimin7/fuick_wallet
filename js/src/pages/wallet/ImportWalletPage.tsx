@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AppBar, Button, Center, Column, Scaffold, useNavigator, Container, Text, TextField, Padding } from "fuickjs";
 import { WalletManager } from "../../services/WalletManager";
+import { ChainRegistry } from "../../services/ChainRegistry";
 
 export default function ImportWalletPage(props: { nextPath?: string }) {
   const navigator = useNavigator();
@@ -20,11 +21,12 @@ export default function ImportWalletPage(props: { nextPath?: string }) {
     WalletManager.getInstance().importWallet(name || undefined, mnemonic)
       .then(async wallet => {
         setLoading(false);
-        if (wallet && wallet.address) {
+        const hasAddresses = wallet && wallet.addresses && Object.keys(wallet.addresses).length > 0;
+        if (hasAddresses) {
           // Navigate to wallet home or show success
           console.log("Wallet imported:", wallet);
           if (props.nextPath) {
-            navigator.push(props.nextPath, wallet);
+            navigator.pushReplace(props.nextPath, wallet);
           } else {
             navigator.pop(false, wallet);
           }

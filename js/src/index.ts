@@ -1,3 +1,4 @@
+import "./polyfill";
 import { initApp } from "./app";
 
 // 将 initApp 挂载到全局，方便 Flutter 主动调用

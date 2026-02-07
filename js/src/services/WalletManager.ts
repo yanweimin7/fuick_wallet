@@ -1,5 +1,6 @@
 import { StorageService } from "./StorageService";
 import { WalletService, WalletAccount } from "./WalletService";
+import { ChainRegistry } from "./ChainRegistry";
 
 export enum WalletType {
     Mnemonic = 'mnemonic',
@@ -11,17 +12,18 @@ export interface WalletInfo {
     name: string;
     address: string;
     type: WalletType;
+    addresses?: Record<string, string>;
 }
 
 export interface WalletSecret {
     mnemonic?: string;
-    privateKey: string;
+    privateKeys?: Record<string, string>;
 }
 
 export class WalletManager {
     private static instance: WalletManager;
     private wallets: WalletInfo[] = [];
-    private static readonly WALLET_LIST_KEY = "fuick_wallet_list";
+    private static readonly WALLET_LIST_KEY = "fuick_wallet_list_v2";
     private static readonly SECRET_PREFIX = "fuick_wallet_secret_";
 
     private constructor() { }
@@ -57,33 +59,84 @@ export class WalletManager {
     }
 
     async createWallet(name?: string): Promise<WalletInfo> {
-        const account = await WalletService.createWallet();
-        return this._saveNewWallet(name, account, WalletType.Mnemonic);
+        const { mnemonic } = await WalletService.createWallet();
+        if (!mnemonic) throw new Error("Failed to create wallet");
+        return this._saveNewWallet(name, mnemonic, WalletType.Mnemonic);
     }
 
     async importWallet(name: string | undefined, mnemonic: string): Promise<WalletInfo> {
-        const account = await WalletService.importWallet(mnemonic);
-        return this._saveNewWallet(name, account, WalletType.Mnemonic);
+        const { mnemonic: validMnemonic } = await WalletService.importWallet(mnemonic);
+        if (!validMnemonic) throw new Error("Failed to import wallet");
+        return this._saveNewWallet(name, validMnemonic, WalletType.Mnemonic);
     }
 
     async importPrivateKeyWallet(name: string | undefined, privateKey: string): Promise<WalletInfo> {
         const account = await WalletService.importPrivateKey(privateKey);
-        return this._saveNewWallet(name, account, WalletType.PrivateKey);
+        // importPrivateKey still returns address/privateKey directly from native
+        return this._saveNewWallet(name, privateKey, WalletType.PrivateKey, account);
     }
 
-    private async _saveNewWallet(name: string | undefined, account: WalletAccount, type: WalletType): Promise<WalletInfo> {
+    private async _saveNewWallet(name: string | undefined, mnemonicOrPrivateKey: string, type: WalletType, privateKeyAccount?: WalletAccount): Promise<WalletInfo> {
         const id = this._generateId();
         const finalName = name || `Wallet ${id}`;
+
+        const addresses: Record<string, string> = {};
+        const privateKeys: Record<string, string> = {};
+        let primaryAddress = "";
+
+        if (type === WalletType.Mnemonic) {
+            const mnemonic = mnemonicOrPrivateKey;
+            // Get unique protocols
+            const protocols = Array.from(new Set(ChainRegistry.list().map(c => c.type.toLowerCase())));
+
+            for (const protocol of protocols) {
+                try {
+                    const acc = await WalletService.getAccount(mnemonic, protocol);
+                    if (acc.address) {
+                        // Assign to all chains of this protocol
+                        ChainRegistry.list().filter(c => c.type.toLowerCase() === protocol).forEach(c => {
+                            addresses[c.id] = acc.address!;
+                        });
+
+                        if (acc.privateKey) {
+                            privateKeys[protocol] = acc.privateKey;
+                        }
+
+                        // Set primary (prefer EVM)
+                        if (protocol === 'evm') {
+                            primaryAddress = acc.address;
+                        } else if (!primaryAddress) {
+                            primaryAddress = acc.address;
+                        }
+                    }
+                } catch (e) {
+                    console.error(`Failed to get account for protocol ${protocol}`, e);
+                }
+            }
+        } else if (type === WalletType.PrivateKey && privateKeyAccount) {
+            // Assume EVM for imported private key
+            const account = privateKeyAccount;
+            if (account.address && account.privateKey) {
+                primaryAddress = account.address;
+                privateKeys['evm'] = account.privateKey;
+
+                ChainRegistry.list().filter(c => c.type.toLowerCase() === 'evm').forEach(c => {
+                    addresses[c.id] = account.address!;
+                });
+            }
+        }
+
         const info: WalletInfo = {
             id,
             name: finalName,
-            address: account.address,
+            address: primaryAddress,
             type,
+            addresses,
         };
 
         const secret: WalletSecret = {
-            mnemonic: account.mnemonic,
-            privateKey: account.privateKey,
+            mnemonic: type === WalletType.Mnemonic ? mnemonicOrPrivateKey : undefined,
+            privateKeys: privateKeys
         };
 
         // 1. Save secret first (safest)
@@ -145,5 +198,11 @@ export class WalletManager {
 
         const maxId = Math.max(...ids);
         return (maxId + 1).toString();
+    }
+
+    getAddressForChain(id: string, chainId: string): string | undefined {
+        const w = this.getWallet(id);
+        if (!w) return undefined;
+        return (w.addresses && w.addresses[chainId]) || w.address;
     }
 }

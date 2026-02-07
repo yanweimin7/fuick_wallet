@@ -16,6 +16,9 @@ import ImportWalletPage from "./pages/wallet/ImportWalletPage";
 import WalletHomePage from "./pages/wallet/WalletHomePage";
 import MainTabsPage from "./pages/wallet/MainTabsPage";
 import WalletListPage from "./pages/wallet/WalletListPage";
+import ChainSelectPage from "./pages/wallet/ChainSelectPage";
+import WalletDetailPage from "./pages/wallet/WalletDetailPage";
+import ReceivePage from "./pages/wallet/ReceivePage";
 
 // Custom Global Error UI
 const CustomErrorUI = (error: Error) =>
@@ -85,7 +88,11 @@ export function initApp() {
     // @ts-ignore
     Router.register("/_generic_dialog", (args) => React.createElement(GenericPage, args as any));
     // @ts-ignore
-    Router.register("/wallet/detail", (args) => React.createElement(WalletHomePage, args as any));
+    Router.register("/wallet/detail", (args) => React.createElement(WalletDetailPage, args as any));
+    // @ts-ignore
+    Router.register("/wallet/receive", (args) => React.createElement(ReceivePage, args as any));
+    // @ts-ignore
+    Router.register("/wallet/chain_select", (args) => React.createElement(ChainSelectPage, args as any));
 
     console.log("Wallet App Initialized");
   } catch (e) {
