@@ -2137,48 +2137,6 @@ async function setSelectedChain(chain) {
   await StorageService.setItem(SELECTED_KEY, { id: chain.id });
 }
 
-// src/services/PasswordService.ts
-var PasswordService = class {
-  // Cache plain password for session
-  static async isPasswordSet() {
-    if (this.cachedHash) return true;
-    const hash = await StorageService.getItem(this.PASSWORD_KEY);
-    if (hash && typeof hash === "string" && hash.length > 0) {
-      this.cachedHash = hash;
-      return true;
-    }
-    return false;
-  }
-  static async setPassword(password) {
-    const hash = await WalletService.computeHash(password);
-    await StorageService.setItem(this.PASSWORD_KEY, hash);
-    this.cachedHash = hash;
-    this.cachedPassword = password;
-  }
-  static async verifyPassword(password) {
-    const hash = await WalletService.computeHash(password);
-    if (this.cachedHash) {
-      if (this.cachedHash === hash) {
-        this.cachedPassword = password;
-        return true;
-      }
-      return false;
-    }
-    const stored = await StorageService.getItem(this.PASSWORD_KEY);
-    if (stored === hash) {
-      this.cachedPassword = password;
-      return true;
-    }
-    return false;
-  }
-  static getCachedPassword() {
-    return this.cachedPassword;
-  }
-};
-PasswordService.PASSWORD_KEY = "fuick_wallet_local_password_hash";
-PasswordService.cachedHash = null;
-PasswordService.cachedPassword = null;
-
 // src/services/WalletManager.ts
 var _WalletManager = class _WalletManager {
   constructor() {
@@ -2210,21 +2168,21 @@ var _WalletManager = class _WalletManager {
   getWallet(id) {
     return this.wallets.find((w) => w.id === id);
   }
-  async createWallet(name, type = "mnemonic" /* Mnemonic */) {
+  async createWallet(password, name, type = "mnemonic" /* Mnemonic */) {
     const { mnemonic } = await WalletService.createWallet();
     if (!mnemonic) throw new Error("Failed to create wallet");
-    return this._saveNewWallet(name, mnemonic, "mnemonic" /* Mnemonic */);
+    return this._saveNewWallet(name, mnemonic, "mnemonic" /* Mnemonic */, password);
   }
-  async importWallet(name, mnemonic) {
+  async importWallet(name, mnemonic, password) {
     const { mnemonic: validMnemonic } = await WalletService.importWallet(mnemonic);
     if (!validMnemonic) throw new Error("Failed to import wallet");
-    return this._saveNewWallet(name, validMnemonic, "mnemonic" /* Mnemonic */);
+    return this._saveNewWallet(name, validMnemonic, "mnemonic" /* Mnemonic */, password);
   }
-  async importPrivateKeyWallet(name, privateKey) {
+  async importPrivateKeyWallet(name, privateKey, password) {
     const account = await WalletService.importPrivateKey(privateKey);
-    return this._saveNewWallet(name, privateKey, "privateKey" /* PrivateKey */, account);
+    return this._saveNewWallet(name, privateKey, "privateKey" /* PrivateKey */, password, account);
   }
-  async _saveNewWallet(name, mnemonicOrPrivateKey, type, privateKeyAccount) {
+  async _saveNewWallet(name, mnemonicOrPrivateKey, type, password, privateKeyAccount) {
     const id = this._generateId();
     const finalName = name || `Wallet ${id}`;
     const addresses = {};
@@ -2274,7 +2232,7 @@ var _WalletManager = class _WalletManager {
       mnemonic: type === "mnemonic" /* Mnemonic */ ? mnemonicOrPrivateKey : void 0,
       privateKeys
     };
-    await this.saveSecret(id, secret);
+    await this.saveSecret(id, secret, password);
     this.wallets.push(info);
     await this._saveWalletsList();
     return info;
@@ -2293,16 +2251,11 @@ var _WalletManager = class _WalletManager {
     this.wallets = [];
     await StorageService.removeItem(_WalletManager.WALLET_LIST_KEY);
   }
-  async getSecret(walletId) {
+  async getSecret(walletId, password) {
     try {
       const raw = await StorageService.getItem(_WalletManager.SECRET_PREFIX + walletId);
       if (!raw) return null;
       if (raw.includes(":")) {
-        const password = PasswordService.getCachedPassword();
-        if (!password) {
-          console.error("Cannot decrypt secret: No cached password");
-          return null;
-        }
         try {
           const decrypted = await WalletService.aesDecrypt(raw, password);
           return JSON.parse(decrypted);
@@ -2317,10 +2270,9 @@ var _WalletManager = class _WalletManager {
       return null;
     }
   }
-  async saveSecret(walletId, secret) {
+  async saveSecret(walletId, secret, password) {
     try {
       const content = JSON.stringify(secret);
-      const password = PasswordService.getCachedPassword();
       if (password) {
         const encrypted = await WalletService.aesEncrypt(content, password);
         await StorageService.setItem(_WalletManager.SECRET_PREFIX + walletId, encrypted);
@@ -2508,15 +2460,40 @@ var ThemeInput = ({ label, value, onChanged, hint, maxLines = 1, secure = false 
       onChanged,
       maxLines,
       obscureText: secure,
-      decoration: {
-        hintText: hint,
-        hintStyle: { color: Theme.colors.textHint },
-        border: { width: 0, color: "transparent" }
-        // Remove default border
-      }
+      textInputAction: "none",
+      hintText: hint,
+      border: "none"
     }
   )
 ));
+
+// src/services/PasswordService.ts
+var PasswordService = class {
+  static async isPasswordSet() {
+    if (this.cachedHash) return true;
+    const hash = await StorageService.getItem(this.PASSWORD_KEY);
+    if (hash && typeof hash === "string" && hash.length > 0) {
+      this.cachedHash = hash;
+      return true;
+    }
+    return false;
+  }
+  static async setPassword(password) {
+    const hash = await WalletService.computeHash(password);
+    await StorageService.setItem(this.PASSWORD_KEY, hash);
+    this.cachedHash = hash;
+  }
+  static async verifyPassword(password) {
+    const hash = await WalletService.computeHash(password);
+    if (this.cachedHash) {
+      return this.cachedHash === hash;
+    }
+    const stored = await StorageService.getItem(this.PASSWORD_KEY);
+    return stored === hash;
+  }
+};
+PasswordService.PASSWORD_KEY = "fuick_wallet_local_password_hash";
+PasswordService.cachedHash = null;
 
 // src/components/PasswordDialogs.tsx
 var import_react4 = __toESM(require_react());
@@ -2536,7 +2513,7 @@ function SetPasswordDialog() {
       return;
     }
     await PasswordService.setPassword(password);
-    navigator.pop(true);
+    navigator.pop(password);
   };
   return /* @__PURE__ */ import_react4.default.createElement(
     import_fuickjs4.AlertDialog,
@@ -2575,7 +2552,7 @@ function VerifyPasswordDialog() {
   const handleSubmit = async () => {
     const isValid = await PasswordService.verifyPassword(password);
     if (isValid) {
-      navigator.pop(true);
+      navigator.pop(password);
     } else {
       setError("Incorrect password");
     }
@@ -2610,21 +2587,24 @@ function CreateWalletPage(props) {
     WalletService.ping().then((res) => console.log("Wallet Service Ping:", res)).catch((e) => console.error("Wallet Service Ping Failed:", e));
     const createAndNavigate = async () => {
       try {
+        let password = "";
         const isSet = await PasswordService.isPasswordSet();
         if (!isSet) {
-          const set = await navigator.showDialog(/* @__PURE__ */ import_react5.default.createElement(SetPasswordDialog, null));
-          if (!set) {
+          const res = await navigator.showDialog(/* @__PURE__ */ import_react5.default.createElement(SetPasswordDialog, null));
+          if (!res) {
             navigator.pop();
             return;
           }
-        } else if (!PasswordService.getCachedPassword()) {
-          const verified = await navigator.showDialog(/* @__PURE__ */ import_react5.default.createElement(VerifyPasswordDialog, null));
-          if (!verified) {
+          password = res;
+        } else {
+          const res = await navigator.showDialog(/* @__PURE__ */ import_react5.default.createElement(VerifyPasswordDialog, null));
+          if (!res) {
             navigator.pop();
             return;
           }
+          password = res;
         }
-        const w = await WalletManager.getInstance().createWallet();
+        const w = await WalletManager.getInstance().createWallet(password);
         if (w) {
           if (props.nextPath) {
             navigator.pushReplace(props.nextPath, w);
@@ -2670,17 +2650,20 @@ function ImportWalletPage(props) {
       setError("Please enter a mnemonic phrase");
       return;
     }
+    let password = "";
     const isSet = await PasswordService.isPasswordSet();
     if (!isSet) {
-      const set = await navigator.showDialog(/* @__PURE__ */ import_react6.default.createElement(SetPasswordDialog, null));
-      if (!set) return;
-    } else if (!PasswordService.getCachedPassword()) {
-      const verified = await navigator.showDialog(/* @__PURE__ */ import_react6.default.createElement(VerifyPasswordDialog, null));
-      if (!verified) return;
+      const res = await navigator.showDialog(/* @__PURE__ */ import_react6.default.createElement(SetPasswordDialog, null));
+      if (!res) return;
+      password = res;
+    } else {
+      const res = await navigator.showDialog(/* @__PURE__ */ import_react6.default.createElement(VerifyPasswordDialog, null));
+      if (!res) return;
+      password = res;
     }
     setLoading(true);
     setError("");
-    WalletManager.getInstance().importWallet(name || void 0, mnemonic).then(async (wallet) => {
+    WalletManager.getInstance().importWallet(name || void 0, mnemonic, password).then(async (wallet) => {
       setLoading(false);
       const hasAddresses = wallet && wallet.addresses && Object.keys(wallet.addresses).length > 0;
       if (hasAddresses) {
@@ -3536,20 +3519,23 @@ function WalletDetailPage({ walletId }) {
     setWallet(info || null);
   }, [walletId]);
   const confirmReveal = async (type) => {
+    let password = "";
     const isSet = await PasswordService.isPasswordSet();
     if (isSet) {
-      const verified = await navigator.showDialog(/* @__PURE__ */ import_react15.default.createElement(VerifyPasswordDialog, null));
-      if (!verified) return;
+      const res = await navigator.showDialog(/* @__PURE__ */ import_react15.default.createElement(VerifyPasswordDialog, null));
+      if (!res) return;
+      password = res;
     } else {
-      const set = await navigator.showDialog(/* @__PURE__ */ import_react15.default.createElement(SetPasswordDialog, null));
-      if (!set) return;
+      const res = await navigator.showDialog(/* @__PURE__ */ import_react15.default.createElement(SetPasswordDialog, null));
+      if (!res) return;
+      password = res;
     }
     const ok = await navigator.showDialog(
       import_react15.default.createElement(RiskRevealDialog, { type })
     );
     if (!ok) return;
     if (!wallet) return;
-    const s = await WalletManager.getInstance().getSecret(wallet.id);
+    const s = await WalletManager.getInstance().getSecret(wallet.id, password);
     setSecret(s);
     if (type === "mnemonic") setShowMnemonic(true);
     if (type === "privateKey") setShowPrivateKey(true);

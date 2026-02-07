@@ -127,11 +127,9 @@ export const ThemeInput = ({ label, value, onChanged, hint, maxLines = 1, secure
         onChanged={onChanged}
         maxLines={maxLines}
         obscureText={secure}
-        decoration={{
-          hintText: hint,
-          hintStyle: { color: Theme.colors.textHint },
-          border: { width: 0, color: 'transparent' }, // Remove default border
-        }}
+        textInputAction='none'
+        hintText={hint}
+        border='none'
       />
     </Container>
   </Column>

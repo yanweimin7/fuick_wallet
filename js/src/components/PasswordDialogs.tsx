@@ -21,7 +21,7 @@ export function SetPasswordDialog() {
     }
     await PasswordService.setPassword(password);
     // @ts-ignore
-    navigator.pop(true);
+    navigator.pop(password);
   };
 
   return (
@@ -74,7 +74,7 @@ export function VerifyPasswordDialog() {
     const isValid = await PasswordService.verifyPassword(password);
     if (isValid) {
       // @ts-ignore
-      navigator.pop(true);
+      navigator.pop(password);
     } else {
       setError("Incorrect password");
     }

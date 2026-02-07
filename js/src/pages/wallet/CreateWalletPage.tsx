@@ -17,25 +17,28 @@ export default function CreateWalletPage(props: { nextPath?: string }) {
 
     const createAndNavigate = async () => {
       try {
+        let password = "";
         const isSet = await PasswordService.isPasswordSet();
         if (!isSet) {
           // @ts-ignore
-          const set = await navigator.showDialog(<SetPasswordDialog />);
-          if (!set) {
+          const res = await navigator.showDialog(<SetPasswordDialog />);
+          if (!res) {
             navigator.pop();
             return;
           }
-        } else if (!PasswordService.getCachedPassword()) {
-          // Password set but not cached (not verified in this session)
+          password = res as string;
+        } else {
+          // Always ask for password since we don't cache it
           // @ts-ignore
-          const verified = await navigator.showDialog(<VerifyPasswordDialog />);
-          if (!verified) {
+          const res = await navigator.showDialog(<VerifyPasswordDialog />);
+          if (!res) {
             navigator.pop();
             return;
           }
+          password = res as string;
         }
 
-        const w = await WalletManager.getInstance().createWallet();
+        const w = await WalletManager.getInstance().createWallet(password);
         if (w) {
           // 延迟一点跳转，让用户看到完成状态（可选，或者直接跳）
           if (props.nextPath) {

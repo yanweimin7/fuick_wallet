@@ -20,21 +20,24 @@ export default function ImportWalletPage(props: { nextPath?: string }) {
       return;
     }
 
+    let password = "";
     const isSet = await PasswordService.isPasswordSet();
     if (!isSet) {
       // @ts-ignore
-      const set = await navigator.showDialog(<SetPasswordDialog />);
-      if (!set) return;
-    } else if (!PasswordService.getCachedPassword()) {
+      const res = await navigator.showDialog(<SetPasswordDialog />);
+      if (!res) return;
+      password = res as string;
+    } else {
       // @ts-ignore
-      const verified = await navigator.showDialog(<VerifyPasswordDialog />);
-      if (!verified) return;
+      const res = await navigator.showDialog(<VerifyPasswordDialog />);
+      if (!res) return;
+      password = res as string;
     }
 
     setLoading(true);
     setError("");
 
-    WalletManager.getInstance().importWallet(name || undefined, mnemonic)
+    WalletManager.getInstance().importWallet(name || undefined, mnemonic, password)
       .then(async wallet => {
         setLoading(false);
         const hasAddresses = wallet && wallet.addresses && Object.keys(wallet.addresses).length > 0;

@@ -24,16 +24,19 @@ export default function WalletDetailPage({ walletId }: { walletId?: string }) {
   }, [walletId]);
 
   const confirmReveal = async (type: 'mnemonic' | 'privateKey') => {
+    let password = "";
     // Check local password
     const isSet = await PasswordService.isPasswordSet();
     if (isSet) {
       // @ts-ignore
-      const verified = await navigator.showDialog(<VerifyPasswordDialog />);
-      if (!verified) return;
+      const res = await navigator.showDialog(<VerifyPasswordDialog />);
+      if (!res) return;
+      password = res as string;
     } else {
       // @ts-ignore
-      const set = await navigator.showDialog(<SetPasswordDialog />);
-      if (!set) return;
+      const res = await navigator.showDialog(<SetPasswordDialog />);
+      if (!res) return;
+      password = res as string;
     }
 
     // @ts-ignore
@@ -42,7 +45,7 @@ export default function WalletDetailPage({ walletId }: { walletId?: string }) {
     );
     if (!ok) return;
     if (!wallet) return;
-    const s = await WalletManager.getInstance().getSecret(wallet.id);
+    const s = await WalletManager.getInstance().getSecret(wallet.id, password);
     setSecret(s);
     if (type === 'mnemonic') setShowMnemonic(true);
     if (type === 'privateKey') setShowPrivateKey(true);

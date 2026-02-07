@@ -59,25 +59,25 @@ export class WalletManager {
         return this.wallets.find(w => w.id === id);
     }
 
-    async createWallet(name?: string, type: WalletType = WalletType.Mnemonic): Promise<WalletInfo | null> {
+    async createWallet(password: string, name?: string, type: WalletType = WalletType.Mnemonic): Promise<WalletInfo | null> {
         const { mnemonic } = await WalletService.createWallet();
         if (!mnemonic) throw new Error("Failed to create wallet");
-        return this._saveNewWallet(name, mnemonic, WalletType.Mnemonic);
+        return this._saveNewWallet(name, mnemonic, WalletType.Mnemonic, password);
     }
 
-    async importWallet(name: string | undefined, mnemonic: string): Promise<WalletInfo> {
+    async importWallet(name: string | undefined, mnemonic: string, password: string): Promise<WalletInfo> {
         const { mnemonic: validMnemonic } = await WalletService.importWallet(mnemonic);
         if (!validMnemonic) throw new Error("Failed to import wallet");
-        return this._saveNewWallet(name, validMnemonic, WalletType.Mnemonic);
+        return this._saveNewWallet(name, validMnemonic, WalletType.Mnemonic, password);
     }
 
-    async importPrivateKeyWallet(name: string | undefined, privateKey: string): Promise<WalletInfo> {
+    async importPrivateKeyWallet(name: string | undefined, privateKey: string, password: string): Promise<WalletInfo> {
         const account = await WalletService.importPrivateKey(privateKey);
         // importPrivateKey still returns address/privateKey directly from native
-        return this._saveNewWallet(name, privateKey, WalletType.PrivateKey, account);
+        return this._saveNewWallet(name, privateKey, WalletType.PrivateKey, password, account);
     }
 
-    private async _saveNewWallet(name: string | undefined, mnemonicOrPrivateKey: string, type: WalletType, privateKeyAccount?: WalletAccount): Promise<WalletInfo> {
+    private async _saveNewWallet(name: string | undefined, mnemonicOrPrivateKey: string, type: WalletType, password: string, privateKeyAccount?: WalletAccount): Promise<WalletInfo> {
         const id = this._generateId();
         const finalName = name || `Wallet ${id}`;
 
@@ -141,7 +141,7 @@ export class WalletManager {
         };
 
         // 1. Save secret first (safest)
-        await this.saveSecret(id, secret);
+        await this.saveSecret(id, secret, password);
 
         // 2. Add to list and save list
         this.wallets.push(info);
@@ -173,7 +173,7 @@ export class WalletManager {
         await StorageService.removeItem(WalletManager.WALLET_LIST_KEY);
     }
 
-    async getSecret(walletId: string): Promise<WalletSecret | null> {
+    async getSecret(walletId: string, password: string): Promise<WalletSecret | null> {
         try {
             const raw = await StorageService.getItem(WalletManager.SECRET_PREFIX + walletId);
             if (!raw) return null;
@@ -181,11 +181,6 @@ export class WalletManager {
             // Try to detect if encrypted (simple check for now, e.g. contains :)
             // In production, we should flag this in wallet metadata
             if (raw.includes(':')) {
-                const password = PasswordService.getCachedPassword();
-                if (!password) {
-                    console.error("Cannot decrypt secret: No cached password");
-                    return null;
-                }
                 try {
                     const decrypted = await WalletService.aesDecrypt(raw, password);
                     return JSON.parse(decrypted);
@@ -202,10 +197,9 @@ export class WalletManager {
         }
     }
 
-    async saveSecret(walletId: string, secret: WalletSecret) {
+    async saveSecret(walletId: string, secret: WalletSecret, password: string) {
         try {
             const content = JSON.stringify(secret);
-            const password = PasswordService.getCachedPassword();
 
             if (password) {
                 const encrypted = await WalletService.aesEncrypt(content, password);
