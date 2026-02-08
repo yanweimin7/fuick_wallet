@@ -17,14 +17,25 @@ export class WalletService {
         return dartCallNativeAsync('Wallet.createWallet', {});
     }
 
+    static normalizeMnemonic(mnemonic: string): string {
+        if (!mnemonic) return "";
+        return mnemonic
+            .trim()
+            .toLowerCase()
+            .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "") // Remove punctuation
+            .replace(/\s+/g, " "); // Replace multiple spaces/newlines with single space
+    }
+
     static importWallet(mnemonic: string): Promise<WalletAccount> {
+        const normalized = this.normalizeMnemonic(mnemonic);
         // @ts-ignore
-        return dartCallNativeAsync('Wallet.importWallet', { mnemonic });
+        return dartCallNativeAsync('Wallet.importWallet', { mnemonic: normalized });
     }
 
     static getAccount(mnemonic: string, chainType: string): Promise<WalletAccount> {
+        const normalized = this.normalizeMnemonic(mnemonic);
         // @ts-ignore
-        return dartCallNativeAsync('Wallet.getAccount', { mnemonic, chainType });
+        return dartCallNativeAsync('Wallet.getAccount', { mnemonic: normalized, chainType });
     }
 
     static importPrivateKey(privateKey: string): Promise<WalletAccount> {

@@ -10,17 +10,34 @@ import 'package:encrypt/encrypt.dart' as encrypt;
 
 // Top-level function for compute
 Future<String> _createMnemonicTask(String? mnemonic) async {
-  final validMnemonic = mnemonic ?? bip39.generateMnemonic();
-  // Validate mnemonic if provided
-  if (mnemonic != null && !bip39.validateMnemonic(mnemonic)) {
+  if (mnemonic == null) {
+    return bip39.generateMnemonic();
+  }
+
+  // Normalize mnemonic: trim, lowercase, remove punctuation, remove extra spaces
+  final normalized = mnemonic
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[.,\/#!$%\^&\*;:{}=\-_`~()]'), '')
+      .replaceAll(RegExp(r'\s+'), ' ');
+
+  // Validate mnemonic
+  if (!bip39.validateMnemonic(normalized)) {
     throw Exception("Invalid mnemonic");
   }
-  return validMnemonic;
+  return normalized;
 }
 
 Future<Map<String, String>> _getAccountTask(Map<String, dynamic> args) async {
-  final mnemonic = args['mnemonic'] as String;
+  var mnemonic = args['mnemonic'] as String;
   final chainType = args['chainType'] as String? ?? 'evm';
+
+  // Normalize mnemonic
+  mnemonic = mnemonic
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[.,\/#!$%\^&\*;:{}=\-_`~()]'), '')
+      .replaceAll(RegExp(r'\s+'), ' ');
 
   ChainHandler handler =
       chainType == 'solana' ? SolanaChainHandler() : EvmChainHandler();
