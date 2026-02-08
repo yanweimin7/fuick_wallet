@@ -20023,7 +20023,7 @@ XsetPlaybackSpeed(speed) {
     return _ComponentStore.instance;
   }
   register(component) {
-    const id = `cmp_${++this.counter}_${Date.now()}`;
+    const id = `cmp_${Date.now()}_${this.counter++}`;
     this.components.set(id, component);
     return id;
   }
@@ -20039,9 +20039,9 @@ XsetPlaybackSpeed(speed) {
       _ComponentStore.instance = new _ComponentStore();
     }
     return _ComponentStore.instance;
-  }B   IÃ  Ü
- 0  Ãb  '  C]   »C%  êD%  ƒ  9û   CÑ  $  $ À»B$  CC   c  ”$ c  (∆÷<⁄V&Q9(Üregister(component) {
-    const id = `cmp_${++this.counter}_${Date.now()}`;
+  }B   IÃ  Ü
+ 0  Ãb  '  C]   9û   CÑ  $  ƒ  »C%  íD%  $ À»B$  CC   c  ”$ c  (∆÷<Ä2Ä-9(Üregister(component) {
+    const id = `cmp_${Date.now()}_${this.counter++}`;
     this.components.set(id, component);
     return id;
   }B   Ü

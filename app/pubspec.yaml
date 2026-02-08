@@ -23,6 +23,7 @@ dependencies:
   solana: ^0.32.0
   crypto: ^3.0.7
   encrypt: ^5.0.3
+  bs58: ^1.0.2
 
 dev_dependencies:
   flutter_test:

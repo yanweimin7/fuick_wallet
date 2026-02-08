@@ -2116,7 +2116,7 @@ var CHAINS = [
     name: "Solana",
     type: "Solana",
     chainId: 101,
-    rpcUrl: "https://api.mainnet-beta.solana.com",
+    rpcUrl: "https://rpc.ankr.com/solana",
     explorer: "https://solscan.io",
     symbol: "SOL",
     tokens: []
@@ -2128,6 +2128,7 @@ var CHAINS = [
     chainId: 103,
     rpcUrl: "https://api.devnet.solana.com",
     explorer: "https://solscan.io?cluster=devnet",
+    faucetUrl: "https://faucet.solana.com/",
     symbol: "SOL",
     tokens: []
   }
@@ -2281,16 +2282,13 @@ var _WalletManager = class _WalletManager {
     try {
       const raw = await StorageService.getItem(_WalletManager.SECRET_PREFIX + walletId);
       if (!raw) return null;
-      if (raw.includes(":")) {
-        try {
-          const decrypted = await WalletService.aesDecrypt(raw, password);
-          return JSON.parse(decrypted);
-        } catch (e) {
-          console.error("Decryption failed", e);
-          return null;
-        }
+      try {
+        const decrypted = await WalletService.aesDecrypt(raw, password);
+        return JSON.parse(decrypted);
+      } catch (e) {
+        console.error("Decryption failed", e);
+        return null;
       }
-      return JSON.parse(raw);
     } catch (e) {
       console.error("Failed to load secret:", e);
       return null;

@@ -186,20 +186,13 @@ export class WalletManager {
         try {
             const raw = await StorageService.getItem(WalletManager.SECRET_PREFIX + walletId);
             if (!raw) return null;
-
-            // Try to detect if encrypted (simple check for now, e.g. contains :)
-            // In production, we should flag this in wallet metadata
-            if (raw.includes(':')) {
-                try {
-                    const decrypted = await WalletService.aesDecrypt(raw, password);
-                    return JSON.parse(decrypted);
-                } catch (e) {
-                    console.error("Decryption failed", e);
-                    return null;
-                }
+            try {
+                const decrypted = await WalletService.aesDecrypt(raw, password);
+                return JSON.parse(decrypted);
+            } catch (e) {
+                console.error("Decryption failed", e);
+                return null;
             }
-
-            return JSON.parse(raw);
         } catch (e) {
             console.error("Failed to load secret:", e);
             return null;

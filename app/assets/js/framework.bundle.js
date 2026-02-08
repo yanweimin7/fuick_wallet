@@ -7764,7 +7764,7 @@ var ComponentStore = class _ComponentStore {
     return _ComponentStore.instance;
   }
   register(component) {
-    const id = `cmp_${++this.counter}_${Date.now()}`;
+    const id = `cmp_${Date.now()}_${this.counter++}`;
     this.components.set(id, component);
     return id;
   }

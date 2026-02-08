@@ -1,11 +1,9 @@
-import 'package:bip32/bip32.dart' as bip32;
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/foundation.dart';
 import 'package:fuickjs_flutter/core/service/BaseFuickService.dart';
-import 'package:hex/hex.dart';
-import 'package:http/http.dart';
-import 'package:web3dart/web3dart.dart';
-import 'package:solana/solana.dart' as solana;
+import 'package:fuick_wallet/service/chain/chain_handler.dart';
+import 'package:fuick_wallet/service/chain/evm_chain_handler.dart';
+import 'package:fuick_wallet/service/chain/solana_chain_handler.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
@@ -22,47 +20,35 @@ Future<String> _createMnemonicTask(String? mnemonic) async {
 
 Future<Map<String, String>> _getAccountTask(Map<String, dynamic> args) async {
   final mnemonic = args['mnemonic'] as String;
-  final chainType = args['chainType'] as String;
+  final chainType = args['chainType'] as String? ?? 'evm';
 
-  if (chainType == 'solana') {
-    final solanaKeyPair = await solana.Ed25519HDKeyPair.fromMnemonic(mnemonic);
-    return {
-      'address': solanaKeyPair.address,
-      // Solana private key handling can be added here if needed
-    };
-  } else {
-    // Default EVM
-    final seed = bip39.mnemonicToSeed(mnemonic);
-    // Use BIP32 for standard Ethereum derivation path
-    final root = bip32.BIP32.fromSeed(seed);
-    // m/44'/60'/0'/0/0
-    final child = root.derivePath("m/44'/60'/0'/0/0");
-    final privateKeyList = child.privateKey!;
-
-    final privateKey = EthPrivateKey(privateKeyList);
-    final address = privateKey.address;
-    final evmPrivateKey = HEX.encode(privateKeyList);
-
-    return {
-      'address': address.hex,
-      'privateKey': evmPrivateKey,
-    };
-  }
+  ChainHandler handler =
+      chainType == 'solana' ? SolanaChainHandler() : EvmChainHandler();
+  return handler.getAccountFromMnemonic(mnemonic);
 }
 
-Future<Map<String, String>> _importPrivateKeyTask(String privateKeyStr) async {
-  final privateKey = EthPrivateKey.fromHex(privateKeyStr);
-  final address = privateKey.address;
+Future<Map<String, String>> _importPrivateKeyTask(
+    Map<String, dynamic> args) async {
+  final privateKeyStr = args['privateKey'] as String;
+  final chainType = args['chainType'] as String? ?? 'evm';
 
-  return {
-    'address': address.hex,
-    'privateKey': privateKeyStr,
-  };
+  ChainHandler handler =
+      chainType == 'solana' ? SolanaChainHandler() : EvmChainHandler();
+  return handler.getAccountFromPrivateKey(privateKeyStr);
 }
 
 class FuickWalletService extends BaseFuickService {
   @override
   String get name => "Wallet";
+
+  final Map<String, ChainHandler> _chainHandlers = {
+    'evm': EvmChainHandler(),
+    'solana': SolanaChainHandler(),
+  };
+
+  ChainHandler _getHandler(String? chainType) {
+    return _chainHandlers[chainType ?? 'evm'] ?? _chainHandlers['evm']!;
+  }
 
   FuickWalletService() {
     registerAsyncMethod('ping', (args) async {
@@ -165,10 +151,13 @@ class FuickWalletService extends BaseFuickService {
     registerAsyncMethod('importPrivateKey', (args) async {
       if (args is Map) {
         final privateKey = args['privateKey'];
+        final chainType = args['chainType'];
         try {
           // Run in a separate isolate
-          final result = await compute<String, Map<String, String>>(
-              _importPrivateKeyTask, privateKey);
+          final result =
+              await compute<Map<String, dynamic>, Map<String, String>>(
+                  _importPrivateKeyTask,
+                  {'privateKey': privateKey, 'chainType': chainType});
           return result;
         } catch (e, stack) {
           print(stack);
@@ -182,31 +171,10 @@ class FuickWalletService extends BaseFuickService {
       if (args is Map) {
         final rpcUrl = args['rpcUrl'];
         final address = args['address'];
-        final chainType = args['chainType'] ?? 'evm';
+        final chainType = args['chainType'];
 
         if (rpcUrl != null && address != null) {
-          if (chainType == 'solana') {
-            try {
-              final client = solana.RpcClient(rpcUrl);
-              final balance = await client.getBalance(address);
-              return (balance.value / 1000000000).toString();
-            } catch (e) {
-              print('Solana getBalance error: $e');
-              return "0";
-            }
-          } else {
-            final client = Web3Client(rpcUrl, Client());
-            try {
-              final etherAmount = await client.getBalance(
-                  EthereumAddress.fromHex(address, enforceEip55: false));
-              return etherAmount.getValueInUnit(EtherUnit.ether).toString();
-            } catch (e) {
-              print('EVM getBalance error: $e');
-              return "0";
-            } finally {
-              client.dispose();
-            }
-          }
+          return _getHandler(chainType).getBalance(rpcUrl, address);
         }
       }
       return "0";
@@ -217,35 +185,11 @@ class FuickWalletService extends BaseFuickService {
         final rpcUrl = args['rpcUrl'];
         final contractAddress = args['contractAddress'];
         final address = args['address'];
-        final chainType = args['chainType'] ?? 'evm';
+        final chainType = args['chainType'];
 
         if (rpcUrl != null && contractAddress != null && address != null) {
-          if (chainType == 'solana') {
-            // TODO: SPL token balance
-            return "0";
-          } else {
-            final client = Web3Client(rpcUrl, Client());
-            try {
-              final contract = DeployedContract(
-                ContractAbi.fromJson(
-                    '[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"}]',
-                    'ERC20'),
-                EthereumAddress.fromHex(contractAddress, enforceEip55: false),
-              );
-              final balanceOf = contract.function('balanceOf');
-              final balance = await client.call(
-                contract: contract,
-                function: balanceOf,
-                params: [EthereumAddress.fromHex(address, enforceEip55: false)],
-              );
-              return balance.first.toString();
-            } catch (e) {
-              print('Token balance error: $e');
-              return "0";
-            } finally {
-              client.dispose();
-            }
-          }
+          return _getHandler(chainType)
+              .getTokenBalance(rpcUrl, contractAddress, address);
         }
       }
       return "0";
@@ -257,50 +201,14 @@ class FuickWalletService extends BaseFuickService {
         final privateKey = args['privateKey'];
         final to = args['to'];
         final amount = args['amount'];
-        final chainType = args['chainType'] ?? 'evm';
+        final chainType = args['chainType'];
 
         if (rpcUrl != null &&
             privateKey != null &&
             to != null &&
             amount != null) {
-          if (chainType == 'solana') {
-            // TODO: Implement Solana transfer
-            throw UnimplementedError("Solana transfer not implemented");
-          }
-
-          final client = Web3Client(rpcUrl, Client());
-          try {
-            final credentials = EthPrivateKey.fromHex(privateKey);
-            final toAddress = EthereumAddress.fromHex(to, enforceEip55: false);
-            final amountStr = amount.toString();
-            final amountWei =
-                BigInt.from((double.tryParse(amountStr) ?? 0) * 1e18);
-            final amountEther = EtherAmount.inWei(amountWei);
-
-            final transaction = Transaction(
-              to: toAddress,
-              value: amountEther,
-              maxGas: 21000,
-            );
-
-            // Explicitly get chainId to avoid null check errors in web3dart
-            final chainId = await client.getChainId();
-
-            // Send transaction
-            // Note: In production you should estimate gas, get gas price etc.
-            // For simple transfer, sendTransaction handles signing and broadcasting
-            final txHash = await client.sendTransaction(
-              credentials,
-              transaction,
-              chainId: chainId.toInt(),
-            );
-            return txHash;
-          } catch (e) {
-            print("Transfer error: $e");
-            rethrow;
-          } finally {
-            client.dispose();
-          }
+          return _getHandler(chainType)
+              .transfer(rpcUrl, privateKey, to, amount);
         }
       }
       return null;
