@@ -14,6 +14,9 @@ class FuickStorageService extends BaseFuickService {
       // Use standard accessibility
       accessibility: KeychainAccessibility.first_unlock,
     ),
+    aOptions: AndroidOptions(
+      resetOnError: true,
+    ),
   );
 
   bool _useFallback = Platform.isMacOS;

@@ -28,10 +28,9 @@ export default function WalletDetailPage({ walletId }: { walletId?: string }) {
     // Check local password
     const isSet = await PasswordService.isPasswordSet();
     if (isSet) {
-      // @ts-ignore
-      const res = await navigator.showDialog(<VerifyPasswordDialog />);
+      const res = await PasswordService.getPassword(navigator);
       if (!res) return;
-      password = res as string;
+      password = res;
     } else {
       // @ts-ignore
       const res = await navigator.showDialog(<SetPasswordDialog />);

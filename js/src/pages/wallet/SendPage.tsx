@@ -20,7 +20,7 @@ import { ThemeButton, ThemeInput } from '../../components/common';
 import { WalletInfo, WalletManager } from '../../services/WalletManager';
 import { ChainConfig, getSelectedChain } from '../../services/ChainRegistry';
 import { WalletService } from '../../services/WalletService';
-import { VerifyPasswordDialog } from '../../components/PasswordDialogs';
+import { PasswordService } from '../../services/PasswordService';
 
 export default function SendPage({ wallet: initialWallet }: { wallet?: WalletInfo }) {
   const navigator = useNavigator();
@@ -89,9 +89,8 @@ export default function SendPage({ wallet: initialWallet }: { wallet?: WalletInf
       return;
     }
 
-    // 1. Get Password
-    // @ts-ignore
-    const password = await navigator.showDialog(<VerifyPasswordDialog />);
+    // 1. Get Password (封装后的流程：指纹优先 -> 密码对话框)
+    const password = await PasswordService.getPassword(navigator);
     if (!password) return;
 
     setLoading(true);

@@ -29,13 +29,12 @@ export default function CreateWalletPage(props: { nextPath?: string }) {
           password = res as string;
         } else {
           // Always ask for password since we don't cache it
-          // @ts-ignore
-          const res = await navigator.showDialog(<VerifyPasswordDialog />);
+          const res = await PasswordService.getPassword(navigator);
           if (!res) {
             navigator.pop();
             return;
           }
-          password = res as string;
+          password = res;
         }
 
         const w = await WalletManager.getInstance().createWallet(password);

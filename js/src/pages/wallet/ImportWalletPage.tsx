@@ -28,10 +28,9 @@ export default function ImportWalletPage(props: { nextPath?: string }) {
       if (!res) return;
       password = res as string;
     } else {
-      // @ts-ignore
-      const res = await navigator.showDialog(<VerifyPasswordDialog />);
+      const res = await PasswordService.getPassword(navigator);
       if (!res) return;
-      password = res as string;
+      password = res;
     }
 
     setLoading(true);
