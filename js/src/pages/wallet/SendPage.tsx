@@ -107,6 +107,9 @@ export default function SendPage({ wallet: initialWallet }: { wallet?: WalletInf
 
       if (secret.privateKeys && secret.privateKeys[chainType]) {
         privateKey = secret.privateKeys[chainType];
+      } else if (secret.mnemonic) {
+        // Fallback to mnemonic if specific private key is missing (e.g. older wallets)
+        privateKey = secret.mnemonic;
       } else if (chainType === 'evm' && secret.privateKeys?.['evm']) {
         privateKey = secret.privateKeys['evm'];
       } else {

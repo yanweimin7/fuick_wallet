@@ -2116,7 +2116,7 @@ var CHAINS = [
     name: "Solana",
     type: "Solana",
     chainId: 101,
-    rpcUrl: "https://rpc.ankr.com/solana",
+    rpcUrl: "https://solana-rpc.publicnode.com",
     explorer: "https://solscan.io",
     symbol: "SOL",
     tokens: []
@@ -2126,7 +2126,7 @@ var CHAINS = [
     name: "Solana Devnet",
     type: "Solana",
     chainId: 103,
-    rpcUrl: "https://api.devnet.solana.com",
+    rpcUrl: "https://solana-devnet.api.onfinality.io/public",
     explorer: "https://solscan.io?cluster=devnet",
     faucetUrl: "https://faucet.solana.com/",
     symbol: "SOL",
@@ -3852,6 +3852,8 @@ function SendPage({ wallet: initialWallet }) {
       let privateKey = "";
       if (secret.privateKeys && secret.privateKeys[chainType]) {
         privateKey = secret.privateKeys[chainType];
+      } else if (secret.mnemonic) {
+        privateKey = secret.mnemonic;
       } else if (chainType === "evm" && secret.privateKeys?.["evm"]) {
         privateKey = secret.privateKeys["evm"];
       } else {
