@@ -1936,11 +1936,17 @@ var WalletService = class {
   static createWallet() {
     return dartCallNativeAsync("Wallet.createWallet", {});
   }
+  static normalizeMnemonic(mnemonic) {
+    if (!mnemonic) return "";
+    return mnemonic.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").replace(/\s+/g, " ");
+  }
   static importWallet(mnemonic) {
-    return dartCallNativeAsync("Wallet.importWallet", { mnemonic });
+    const normalized = this.normalizeMnemonic(mnemonic);
+    return dartCallNativeAsync("Wallet.importWallet", { mnemonic: normalized });
   }
   static getAccount(mnemonic, chainType) {
-    return dartCallNativeAsync("Wallet.getAccount", { mnemonic, chainType });
+    const normalized = this.normalizeMnemonic(mnemonic);
+    return dartCallNativeAsync("Wallet.getAccount", { mnemonic: normalized, chainType });
   }
   static importPrivateKey(privateKey) {
     return dartCallNativeAsync("Wallet.importPrivateKey", { privateKey });

@@ -5305,7 +5305,7 @@ var require_react_reconciler_production_min = __commonJS({
 });
 
 // src/framework_entry.ts
-var import_react74 = __toESM(require_react_production_min());
+var import_react75 = __toESM(require_react_production_min());
 
 // ../../fuickjs_framework/fuickjs/src/index.ts
 var src_exports = {};
@@ -5361,6 +5361,7 @@ __export(src_exports, {
   PageContext: () => PageContext,
   PageView: () => PageView,
   Positioned: () => Positioned,
+  RepaintBoundary: () => RepaintBoundary,
   RotationTransition: () => RotationTransition,
   Router: () => Router,
   Row: () => Row,
@@ -7563,16 +7564,24 @@ var FittedBox = class extends import_react66.default.Component {
   }
 };
 
-// ../../fuickjs_framework/fuickjs/src/widgets/Visibility.tsx
+// ../../fuickjs_framework/fuickjs/src/widgets/RepaintBoundary.tsx
 var import_react67 = __toESM(require_react_production_min());
-var Visibility = class extends import_react67.default.Component {
+var RepaintBoundary = class extends import_react67.default.Component {
   render() {
-    return import_react67.default.createElement("Visibility", { ...this.props });
+    return import_react67.default.createElement("RepaintBoundary", { ...this.props, isBoundary: true });
+  }
+};
+
+// ../../fuickjs_framework/fuickjs/src/widgets/Visibility.tsx
+var import_react68 = __toESM(require_react_production_min());
+var Visibility = class extends import_react68.default.Component {
+  render() {
+    return import_react68.default.createElement("Visibility", { ...this.props });
   }
 };
 
 // ../../fuickjs_framework/fuickjs/src/widgets/CustomPaint.tsx
-var import_react68 = __toESM(require_react_production_min());
+var import_react69 = __toESM(require_react_production_min());
 var controllerIdCounter = 1;
 var CustomPainter = class {
   constructor(paintCallback) {
@@ -7684,7 +7693,7 @@ var CustomPaint = class extends BaseWidget {
     }
     const painterCommands = painter?.serialize();
     const foregroundPainterCommands = foregroundPainter?.serialize();
-    return import_react68.default.createElement(
+    return import_react69.default.createElement(
       "CustomPaint",
       {
         ...rest,
@@ -7700,7 +7709,7 @@ var CustomPaint = class extends BaseWidget {
 };
 
 // ../../fuickjs_framework/fuickjs/src/widgets/VideoPlayer.tsx
-var import_react69 = __toESM(require_react_production_min());
+var import_react70 = __toESM(require_react_production_min());
 var VideoPlayer = class extends BaseWidget {
   get widgetType() {
     return "VideoPlayer";
@@ -7727,7 +7736,7 @@ var VideoPlayer = class extends BaseWidget {
     this.callNativeCommand("setPlaybackSpeed", { speed });
   }
   render() {
-    return import_react69.default.createElement("VideoPlayer", {
+    return import_react70.default.createElement("VideoPlayer", {
       ...this.props,
       refId: this.scopedRefId
     });
@@ -7735,13 +7744,13 @@ var VideoPlayer = class extends BaseWidget {
 };
 
 // ../../fuickjs_framework/fuickjs/src/widgets/VisibilityDetector.tsx
-var import_react70 = __toESM(require_react_production_min());
+var import_react71 = __toESM(require_react_production_min());
 var VisibilityDetector = class extends BaseWidget {
   get widgetType() {
     return "VisibilityDetector";
   }
   render() {
-    return import_react70.default.createElement("VisibilityDetector", {
+    return import_react71.default.createElement("VisibilityDetector", {
       ...this.props,
       refId: this.scopedRefId
     }, this.props.children);
@@ -7749,7 +7758,7 @@ var VisibilityDetector = class extends BaseWidget {
 };
 
 // ../../fuickjs_framework/fuickjs/src/widgets/GenericPage.tsx
-var import_react71 = __toESM(require_react_production_min());
+var import_react72 = __toESM(require_react_production_min());
 
 // ../../fuickjs_framework/fuickjs/src/services/ComponentStore.ts
 var ComponentStore = class _ComponentStore {
@@ -7781,7 +7790,7 @@ var ComponentStore_default = ComponentStore;
 function GenericPage(props) {
   const { componentId } = props;
   const component = ComponentStore_default.getInstance().get(componentId);
-  (0, import_react71.useEffect)(() => {
+  (0, import_react72.useEffect)(() => {
     return () => {
       if (componentId) {
         ComponentStore_default.getInstance().remove(componentId);
@@ -7789,9 +7798,9 @@ function GenericPage(props) {
     };
   }, [componentId]);
   if (!component) {
-    return /* @__PURE__ */ import_react71.default.createElement(Container, { alignment: "center" }, /* @__PURE__ */ import_react71.default.createElement(Text, { text: "Content not found" }));
+    return /* @__PURE__ */ import_react72.default.createElement(Container, { alignment: "center" }, /* @__PURE__ */ import_react72.default.createElement(Text, { text: "Content not found" }));
   }
-  return /* @__PURE__ */ import_react71.default.createElement(import_react71.default.Fragment, null, component);
+  return /* @__PURE__ */ import_react72.default.createElement(import_react72.default.Fragment, null, component);
 }
 
 // ../../fuickjs_framework/fuickjs/src/services/ConsoleService.ts
@@ -7860,8 +7869,19 @@ var nextTimerId = 1;
 var timerMap = /* @__PURE__ */ new Map();
 function setTimeout2(fn, ms) {
   const id = nextTimerId++;
-  timerMap.set(id, { fn, type: "timeout" });
   const delay = ms || 0;
+  if (delay === 0) {
+    Promise.resolve().then(() => {
+      try {
+        fn();
+      } catch (e) {
+        console.error(`[Timer] Error in microtask timeout callback:`, e);
+        ErrorHandler.notify(e, "timer", { id });
+      }
+    });
+    return id;
+  }
+  timerMap.set(id, { fn, type: "timeout" });
   try {
     TimerService.createTimer(id, delay, false);
   } catch {
@@ -8003,10 +8023,10 @@ function setupPolyfills() {
 }
 
 // ../../fuickjs_framework/fuickjs/src/hooks.ts
-var import_react73 = __toESM(require_react_production_min());
+var import_react74 = __toESM(require_react_production_min());
 
 // ../../fuickjs_framework/fuickjs/src/services/NavigatorService.ts
-var import_react72 = __toESM(require_react_production_min());
+var import_react73 = __toESM(require_react_production_min());
 var NavigatorService = class {
   static push(path, params, pageId, rootNavigator) {
     return dartCallNative("Navigator.push", { path, params, pageId, rootNavigator });
@@ -8024,7 +8044,7 @@ var NavigatorService = class {
     return this.push(path, finalParams, pageId, rootNavigator);
   }
   static showDialog(pathOrComponent, params, pageId, rootNavigator) {
-    if (import_react72.default.isValidElement(pathOrComponent) || typeof pathOrComponent !== "string") {
+    if (import_react73.default.isValidElement(pathOrComponent) || typeof pathOrComponent !== "string") {
       return this.showComponentDialog("/_generic_dialog", pathOrComponent, params, pageId, rootNavigator);
     }
     const finalParams = {
@@ -8049,7 +8069,7 @@ var NavigatorService = class {
 
 // ../../fuickjs_framework/fuickjs/src/hooks.ts
 function usePageId() {
-  const { pageId } = (0, import_react73.useContext)(PageContext);
+  const { pageId } = (0, import_react74.useContext)(PageContext);
   return pageId;
 }
 function useNavigator() {
@@ -8066,8 +8086,8 @@ function useNavigator() {
   };
 }
 function useVisible(callback) {
-  const { pageId } = (0, import_react73.useContext)(PageContext);
-  (0, import_react73.useEffect)(() => {
+  const { pageId } = (0, import_react74.useContext)(PageContext);
+  (0, import_react74.useEffect)(() => {
     const container = getContainer(pageId);
     if (container) {
       container.registerVisibleCallback(callback);
@@ -8081,8 +8101,8 @@ function useVisible(callback) {
   }, [pageId, callback]);
 }
 function useInvisible(callback) {
-  const { pageId } = (0, import_react73.useContext)(PageContext);
-  (0, import_react73.useEffect)(() => {
+  const { pageId } = (0, import_react74.useContext)(PageContext);
+  (0, import_react74.useEffect)(() => {
     const container = getContainer(pageId);
     if (container) {
       container.registerInvisibleCallback(callback);
@@ -8209,7 +8229,7 @@ var ClipboardService = class {
 };
 
 // src/framework_entry.ts
-globalThis.React = import_react74.default;
+globalThis.React = import_react75.default;
 globalThis.FuickFramework = src_exports;
 /*! Bundled license information:
 
