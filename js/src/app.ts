@@ -10,7 +10,6 @@ import {
   GenericPage,
 } from "fuickjs";
 import OnboardingPage from "./pages/OnboardingPage";
-import BootstrapPage from "./pages/BootstrapPage";
 import CreateWalletPage from "./pages/wallet/CreateWalletPage";
 import ImportWalletPage from "./pages/wallet/ImportWalletPage";
 import WalletHomePage from "./pages/wallet/WalletHomePage";
@@ -20,6 +19,7 @@ import ChainSelectPage from "./pages/wallet/ChainSelectPage";
 import WalletDetailPage from "./pages/wallet/WalletDetailPage";
 import ReceivePage from "./pages/wallet/ReceivePage";
 import SendPage from "./pages/wallet/SendPage";
+import { WalletManager } from "./services/WalletManager";
 
 // Custom Global Error UI
 const CustomErrorUI = (error: Error) =>
@@ -66,16 +66,23 @@ const CustomErrorUI = (error: Error) =>
     ),
   );
 
-export function initApp() {
+export async function initApp() {
   try {
     Runtime.bindGlobals();
 
     // Set global error fallback during initialization
     setGlobalErrorFallback(CustomErrorUI);
 
+    // Initialize WalletManager
+    await WalletManager.getInstance().init();
+    const hasWallet = WalletManager.getInstance().getWallets().length > 0;
+
+    // Expose hasWallet to global scope for Flutter to access
+    (globalThis as any).hasWallet = hasWallet;
+
     // Router Registration
     // @ts-ignore
-    Router.register("/", (args) => React.createElement(BootstrapPage, args as any));
+    Router.register("/", (args) => React.createElement(MainTabsPage, args as any));
     // @ts-ignore
     Router.register("/wallet/onboarding", (args) => React.createElement(OnboardingPage, args as any));
     // @ts-ignore
@@ -98,6 +105,7 @@ export function initApp() {
     Router.register("/wallet/send", (args) => React.createElement(SendPage, args as any));
 
     console.log("Wallet App Initialized");
+    (globalThis as any).isAppReady = true;
   } catch (e) {
     console.error("Failed to init app", e);
   }
