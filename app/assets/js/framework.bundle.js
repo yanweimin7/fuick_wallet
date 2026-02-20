@@ -5305,7 +5305,7 @@ var require_react_reconciler_production_min = __commonJS({
 });
 
 // src/framework_entry.ts
-var import_react75 = __toESM(require_react_production_min());
+var import_react76 = __toESM(require_react_production_min());
 
 // ../../fuickjs_framework/fuickjs/src/index.ts
 var src_exports = {};
@@ -5360,6 +5360,7 @@ __export(src_exports, {
   Padding: () => Padding,
   PageContext: () => PageContext,
   PageView: () => PageView,
+  PointerListener: () => PointerListener,
   Positioned: () => Positioned,
   RepaintBoundary: () => RepaintBoundary,
   RotationTransition: () => RotationTransition,
@@ -5950,9 +5951,18 @@ var IncrementalStrategy = class {
     }
     const processed = this.container.processProps(node.id, props, node.type);
     this.mutationQueue.push({ type: 1, id: node.id, props: processed });
+    const flutterProps = this.getFlutterPropsAncestor(node);
+    if (flutterProps) {
+      this.recordHostUpdateFromFlutterProps(flutterProps);
+    }
     this.enqueueBoundaryRefresh(node);
   }
   recordInsert(parent, child, index) {
+    const flutterProps = this.getFlutterPropsAncestor(parent);
+    if (flutterProps) {
+      this.recordHostUpdateFromFlutterProps(flutterProps);
+      return;
+    }
     if (child.type === "FlutterProps" || child.type === "flutter-props") {
       this.recordHostUpdateFromFlutterProps(child);
       return;
@@ -5972,6 +5982,11 @@ var IncrementalStrategy = class {
     this.enqueueBoundaryRefresh(parent);
   }
   recordRemoval(parent, child) {
+    const flutterProps = this.getFlutterPropsAncestor(parent);
+    if (flutterProps) {
+      this.recordHostUpdateFromFlutterProps(flutterProps);
+      return;
+    }
     if (child.type === "FlutterProps" || child.type === "flutter-props") {
       this.recordHostUpdateFromFlutterProps(child);
       return;
@@ -5982,6 +5997,17 @@ var IncrementalStrategy = class {
     }
     this.mutationQueue.push({ type: 3, parentId: parent.id, childId: child.id });
     this.enqueueBoundaryRefresh(parent);
+  }
+  ///如果是属性节点，要找到最近的非props节点，比如 appbar的title属性，要找到appbar节点
+  getFlutterPropsAncestor(node) {
+    let current = node;
+    while (current) {
+      if (current.type === "FlutterProps" || current.type === "flutter-props") {
+        return current;
+      }
+      current = current.parent || null;
+    }
+    return null;
   }
   clear() {
     this.mutationQueue = [];
@@ -5997,7 +6023,13 @@ var IncrementalStrategy = class {
         const key = String(op.id);
         const prevIndex = lastUpdateIndexById.get(key);
         if (prevIndex !== void 0) {
-          optimizedOps[prevIndex] = null;
+          const prevOp = optimizedOps[prevIndex];
+          if (prevOp && prevOp.type === 1) {
+            const prevProps = prevOp.props || {};
+            const nextProps = op.props || {};
+            prevOp.props = { ...prevProps, ...nextProps };
+            continue;
+          }
         }
         lastUpdateIndexById.set(key, optimizedOps.length);
         optimizedOps.push(op);
@@ -6037,6 +6069,50 @@ var IncrementalStrategy = class {
       this.mutationQueue.push({ type: 1, id: boundary.id, props: {} });
     }
   }
+  /**
+     * 在 fuickjs 的架构中， 依次（递归）触发刷新 是确保 DSL 数据一致性 和 Flutter 组件状态同步 的核心机制。以下是为什么要这么做的深度解析：
+  
+  ### 1. 维护 DSL 的层级一致性
+  在 Flutter 侧，像 AppBar 这样的组件并不是作为 Scaffold 的子节点（Children）存在的，而是作为 Scaffold 的一个 属性（Property） 。
+  
+  当你在 JS 层嵌套组件时，结构如下：
+  
+  - Scaffold (Host A)
+    - FlutterProps (key: 'appBar')
+      - AppBar (Host B)
+        - FlutterProps (key: 'title')
+          - Text (Node C)
+  如果不递归更新：
+  
+  1. 当 Text (Node C) 变化时，如果只更新 AppBar (Host B) 的 title 属性。
+  2. Scaffold (Host A) 里的 props['appBar'] 仍然保存着 AppBar 的 旧版本 DSL 。
+  3. 一旦 Scaffold 触发任何重绘（比如背景色变了），它会重新解析自己的 props 。此时它拿到旧的 appBar DSL 并传给 Flutter，Flutter 会根据旧 DSL 还原 AppBar ，导致你之前的 title 更新被 覆盖（回滚） 。
+  递归更新的作用： 通过递归调用 recordHostUpdateFromFlutterProps ，我们确保了：
+  
+  - AppBar 的 title 属性更新了。
+  - Scaffold 的 appBar 属性也同步更新为包含新标题的 AppBar DSL。
+  - 整个路径上的所有祖先节点都持有最新的数据镜像。
+  ### 2. 触发正确的重绘边界 (Boundary)
+  Flutter 端的 FuickNode 只有在被标记为 isBoundary 时才会有对应的 StatefulWidget 和 setState 能力。
+  
+  - 很多时候，内部的小组件（如 Text ）并不是 Boundary。
+  - 真正持有刷新能力的是外层的 AppBar 或 Scaffold （它们在 AppBar.tsx 和 Scaffold.tsx 中都被标记了 isBoundary: true ）。
+  依次触发刷新 确保了更新信号能从最底层的变更点，一直传递到最近的那个 有能力执行刷新的祖先节点 。
+  
+  ### 3. 解决 Flutter 属性节点的特殊性
+  在 Flutter 中， appBar 属性通常要求是一个 PreferredSizeWidget 。在 scaffold_parser.dart 中可以看到，它是通过 factory.build 实时构建的。
+  
+  如果祖先节点（Scaffold）不知道其属性内部发生了变化，它就不会重新调用 build 来生成新的 appBar 实例，导致 UI 停留在旧状态。
+  
+  ### 总结
+  依次触发刷新是为了：
+  
+  1. 防丢失 ：防止父组件重绘时用旧 DSL 覆盖子组件的新状态。
+  2. 通信号 ：确保更新信号能触达到最近的 Boundary 节点。
+  3. 准同步 ：保证 Flutter 侧属性注入（Property Injection）逻辑能获取到最新的组件快照。
+     * @param flutterPropsNode 
+     * @returns 
+     */
   recordHostUpdateFromFlutterProps(flutterPropsNode) {
     const host = flutterPropsNode.parent;
     if (!host) return;
@@ -6087,7 +6163,16 @@ var IncrementalStrategy = class {
       id: host.id,
       props: { [propsKey]: finalValue }
     });
-    this.enqueueBoundaryRefresh(host);
+    if (host.parent) {
+      const parentFlutterProps = this.getFlutterPropsAncestor(host.parent);
+      if (parentFlutterProps) {
+        this.recordHostUpdateFromFlutterProps(parentFlutterProps);
+      } else {
+        this.enqueueBoundaryRefresh(host);
+      }
+    } else {
+      this.enqueueBoundaryRefresh(host);
+    }
   }
 };
 
@@ -6388,8 +6473,15 @@ var PageContainer = class {
     child.destroy();
   }
   commitTextUpdate(node, text) {
-    node.props.text = String(text);
-    this.markChanged(node);
+    const oldText = node.props.text;
+    const newText = String(text);
+    if (oldText === newText) return;
+    node.props.text = newText;
+    if (this.incrementalMode) {
+      this.recordUpdate(node, ["text", newText]);
+    } else {
+      this.markChanged(node);
+    }
   }
   commit() {
     try {
@@ -6659,15 +6751,22 @@ function createRenderer() {
   return {
     update(element, pageId) {
       const root = ensureRoot(pageId);
+      let retryCount = 0;
+      const maxRetries = 100;
       const performUpdate = () => {
         try {
           reconciler.updateContainer(element, root, null, () => {
           });
+          retryCount = 0;
         } catch (e) {
           const msg = e.message || String(e);
-          if (msg.includes("327") || msg.includes("working")) {
+          if ((msg.includes("327") || msg.includes("working")) && retryCount < maxRetries) {
+            retryCount++;
             globalThis.setTimeout(performUpdate, 16);
           } else {
+            if (retryCount >= maxRetries) {
+              console.error(`[Renderer] Max retries exceeded for page ${pageId}`);
+            }
             console.error(`[Renderer] Error updating page ${pageId}:`, e);
             ErrorHandler.notify(e, "render", { pageId });
           }
@@ -6678,6 +6777,8 @@ function createRenderer() {
     destroy(pageId) {
       const root = roots[pageId];
       if (root) {
+        let retryCount = 0;
+        const maxRetries = 100;
         const performDestroy = () => {
           try {
             reconciler.updateContainer(null, root, null, () => {
@@ -6687,9 +6788,13 @@ function createRenderer() {
             delete containers[pageId];
           } catch (e) {
             const msg = e.message || String(e);
-            if (msg.includes("327") || msg.includes("working")) {
+            if ((msg.includes("327") || msg.includes("working")) && retryCount < maxRetries) {
+              retryCount++;
               globalThis.setTimeout(performDestroy, 16);
             } else {
+              if (retryCount >= maxRetries) {
+                console.error(`[Renderer] Max retries exceeded for destroying page ${pageId}`);
+              }
               console.error(`[Renderer] Error destroying page ${pageId}:`, e);
               ErrorHandler.notify(e, "render", { pageId });
               delete roots[pageId];
@@ -7341,12 +7446,12 @@ var SliverAppBar = class extends BaseWidget {
       "SliverAppBar",
       {
         ...rest,
-        isBoundary: true,
-        title,
-        leading,
-        actions,
-        bottom
+        isBoundary: true
       },
+      title && import_react44.default.createElement(FlutterProps, { propsKey: "title" }, title),
+      leading && import_react44.default.createElement(FlutterProps, { propsKey: "leading" }, leading),
+      actions && actions.map((action, index) => /* @__PURE__ */ import_react44.default.createElement(FlutterProps, { key: `action-${index}`, propsKey: "actions" }, action)),
+      bottom && import_react44.default.createElement(FlutterProps, { propsKey: "bottom" }, bottom),
       children
     );
   }
@@ -7803,6 +7908,14 @@ function GenericPage(props) {
   return /* @__PURE__ */ import_react72.default.createElement(import_react72.default.Fragment, null, component);
 }
 
+// ../../fuickjs_framework/fuickjs/src/widgets/PointerListener.tsx
+var import_react73 = __toESM(require_react_production_min());
+var PointerListener = class extends import_react73.default.Component {
+  render() {
+    return import_react73.default.createElement("PointerListener", { ...this.props, isBoundary: false });
+  }
+};
+
 // ../../fuickjs_framework/fuickjs/src/services/ConsoleService.ts
 var ConsoleService = class {
   static log(message) {
@@ -7820,8 +7933,21 @@ var ConsoleService = class {
 };
 
 // ../../fuickjs_framework/fuickjs/src/ex/console.ts
+function formatArg(arg) {
+  if (arg instanceof Error) {
+    const stack = arg.stack || "";
+    const msg = arg.message || String(arg);
+    const name = arg.name || "Error";
+    if (stack.indexOf(msg) !== -1) {
+      return stack;
+    }
+    return `${name}: ${msg}
+${stack}`;
+  }
+  return String(arg);
+}
 function log(...args) {
-  const message = args.map((a) => String(a)).join(" ");
+  const message = args.map(formatArg).join(" ");
   try {
     ConsoleService.log(message);
   } catch {
@@ -7832,7 +7958,7 @@ function log(...args) {
   }
 }
 function warn(...args) {
-  const message = args.map((a) => String(a)).join(" ");
+  const message = args.map(formatArg).join(" ");
   try {
     ConsoleService.warn(message);
   } catch {
@@ -7843,7 +7969,7 @@ function warn(...args) {
   }
 }
 function error(...args) {
-  const message = args.map((a) => String(a)).join(" ");
+  const message = args.map(formatArg).join(" ");
   try {
     ConsoleService.error(message);
   } catch {
@@ -8023,10 +8149,10 @@ function setupPolyfills() {
 }
 
 // ../../fuickjs_framework/fuickjs/src/hooks.ts
-var import_react74 = __toESM(require_react_production_min());
+var import_react75 = __toESM(require_react_production_min());
 
 // ../../fuickjs_framework/fuickjs/src/services/NavigatorService.ts
-var import_react73 = __toESM(require_react_production_min());
+var import_react74 = __toESM(require_react_production_min());
 var NavigatorService = class {
   static push(path, params, pageId, rootNavigator) {
     return dartCallNative("Navigator.push", { path, params, pageId, rootNavigator });
@@ -8044,7 +8170,7 @@ var NavigatorService = class {
     return this.push(path, finalParams, pageId, rootNavigator);
   }
   static showDialog(pathOrComponent, params, pageId, rootNavigator) {
-    if (import_react73.default.isValidElement(pathOrComponent) || typeof pathOrComponent !== "string") {
+    if (import_react74.default.isValidElement(pathOrComponent) || typeof pathOrComponent !== "string") {
       return this.showComponentDialog("/_generic_dialog", pathOrComponent, params, pageId, rootNavigator);
     }
     const finalParams = {
@@ -8069,7 +8195,7 @@ var NavigatorService = class {
 
 // ../../fuickjs_framework/fuickjs/src/hooks.ts
 function usePageId() {
-  const { pageId } = (0, import_react74.useContext)(PageContext);
+  const { pageId } = (0, import_react75.useContext)(PageContext);
   return pageId;
 }
 function useNavigator() {
@@ -8086,8 +8212,8 @@ function useNavigator() {
   };
 }
 function useVisible(callback) {
-  const { pageId } = (0, import_react74.useContext)(PageContext);
-  (0, import_react74.useEffect)(() => {
+  const { pageId } = (0, import_react75.useContext)(PageContext);
+  (0, import_react75.useEffect)(() => {
     const container = getContainer(pageId);
     if (container) {
       container.registerVisibleCallback(callback);
@@ -8101,8 +8227,8 @@ function useVisible(callback) {
   }, [pageId, callback]);
 }
 function useInvisible(callback) {
-  const { pageId } = (0, import_react74.useContext)(PageContext);
-  (0, import_react74.useEffect)(() => {
+  const { pageId } = (0, import_react75.useContext)(PageContext);
+  (0, import_react75.useEffect)(() => {
     const container = getContainer(pageId);
     if (container) {
       container.registerInvisibleCallback(callback);
@@ -8229,7 +8355,7 @@ var ClipboardService = class {
 };
 
 // src/framework_entry.ts
-globalThis.React = import_react75.default;
+globalThis.React = import_react76.default;
 globalThis.FuickFramework = src_exports;
 /*! Bundled license information:
 

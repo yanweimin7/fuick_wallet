@@ -1,6 +1,6 @@
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/foundation.dart';
-import 'package:fuickjs_flutter/core/service/BaseFuickService.dart';
+import 'package:fuickjs_flutter/core/service/base_fuick_service.dart';
 import 'package:fuick_wallet/service/chain/chain_handler.dart';
 import 'package:fuick_wallet/service/chain/evm_chain_handler.dart';
 import 'package:fuick_wallet/service/chain/solana_chain_handler.dart';
