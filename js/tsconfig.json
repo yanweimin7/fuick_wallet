@@ -21,6 +21,7 @@
     }
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "../../fuickjs_framework/fuickjs/src/types.d.ts"
   ]
 }

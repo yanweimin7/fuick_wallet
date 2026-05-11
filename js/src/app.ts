@@ -1,17 +1,23 @@
-import React from "react";
 import {
   Router,
   Runtime,
   setGlobalErrorFallback,
+  Container,
   Column,
   Text,
-  Container,
   Button,
 } from "fuickjs";
-import WalletEntryPage from "./pages/wallet/WalletEntryPage";
+import OnboardingPage from "./pages/OnboardingPage";
+import HomeProxyPage from "./pages/HomeProxyPage";
 import CreateWalletPage from "./pages/wallet/CreateWalletPage";
 import ImportWalletPage from "./pages/wallet/ImportWalletPage";
-import WalletHomePage from "./pages/wallet/WalletHomePage";
+import MainTabsPage from "./pages/wallet/MainTabsPage";
+import WalletListPage from "./pages/wallet/WalletListPage";
+import ChainSelectPage from "./pages/wallet/ChainSelectPage";
+import WalletDetailPage from "./pages/wallet/WalletDetailPage";
+import ReceivePage from "./pages/wallet/ReceivePage";
+import SendPage from "./pages/wallet/SendPage";
+import React from "react";
 
 // Custom Global Error UI
 const CustomErrorUI = (error: Error) =>
@@ -58,24 +64,48 @@ const CustomErrorUI = (error: Error) =>
     ),
   );
 
-export function initApp() {
+export async function initApp() {
   try {
+    Runtime.configure({ prewarm: true, prewarmMs: 50, debug: true });
     Runtime.bindGlobals();
 
     // Set global error fallback during initialization
     setGlobalErrorFallback(CustomErrorUI);
 
-    // Router Registration
-    // @ts-ignore
-    Router.register("/", (args) => React.createElement(WalletEntryPage, args as any));
-    // @ts-ignore
-    Router.register("/wallet/entry", (args) => React.createElement(WalletEntryPage, args as any));
-    // @ts-ignore
-    Router.register("/wallet/create", (args) => React.createElement(CreateWalletPage, args as any));
-    // @ts-ignore
-    Router.register("/wallet/import", (args) => React.createElement(ImportWalletPage, args as any));
-    // @ts-ignore
-    Router.register("/wallet/home", (args) => React.createElement(WalletHomePage, args as any));
+    // Router Registration - MUST register synchronously before any Flutter render call
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cast = (args: unknown) => (args || {}) as any;
+
+    Router.register("/", (args) => {
+      return React.createElement(HomeProxyPage, cast(args));
+    });
+    Router.register("/wallet/onboarding", (args) =>
+      React.createElement(OnboardingPage, cast(args)),
+    );
+    Router.register("/wallet/create", (args) =>
+      React.createElement(CreateWalletPage, cast(args)),
+    );
+    Router.register("/wallet/import", (args) =>
+      React.createElement(ImportWalletPage, cast(args)),
+    );
+    Router.register("/wallet/home", (args) =>
+      React.createElement(MainTabsPage, cast(args)),
+    );
+    Router.register("/wallet/list", (args) =>
+      React.createElement(WalletListPage, cast(args)),
+    );
+    Router.register("/wallet/detail", (args) =>
+      React.createElement(WalletDetailPage, cast(args)),
+    );
+    Router.register("/wallet/receive", (args) =>
+      React.createElement(ReceivePage, cast(args)),
+    );
+    Router.register("/wallet/send", (args) =>
+      React.createElement(SendPage, cast(args)),
+    );
+    Router.register("/wallet/chain_select", (args) =>
+      React.createElement(ChainSelectPage, cast(args)),
+    );
 
     console.log("Wallet App Initialized");
   } catch (e) {

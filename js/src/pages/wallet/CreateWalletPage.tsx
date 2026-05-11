@@ -1,84 +1,237 @@
 import React, { useEffect, useState } from "react";
-import { AppBar, Button, Center, Column, Scaffold, useNavigator, Container, Text, CircularProgressIndicator, Padding } from "fuickjs";
-import { WalletService, WalletAccount } from "../../services/WalletService";
+import {
+  AppBar,
+  Center,
+  Column,
+  Scaffold,
+  useNavigator,
+  Container,
+  Text,
+  CircularProgressIndicator,
+  Padding,
+  SizedBox,
+  Expanded,
+} from "fuickjs";
+import { WalletManager } from "../../services/WalletManager";
+import { Theme } from "../../theme";
+import { ThemeButton, Card } from "../../components/common";
+import { PasswordService } from "../../services/PasswordService";
 
-export default function CreateWalletPage() {
+export default function CreateWalletPage(props: { nextPath?: string }) {
   const navigator = useNavigator();
-  const [wallet, setWallet] = useState<WalletAccount | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [status, setStatus] = useState<"verifying" | "creating" | "">("");
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Debug: Check connectivity
-    WalletService.ping().then(res => console.log("Wallet Service Ping:", res)).catch(e => console.error("Wallet Service Ping Failed:", e));
+    // 确保组件已挂载
+    setIsReady(true);
 
-    WalletService.createWallet().then(w => {
-      if (w) {
-        setWallet(w);
-      } else {
-        setError("Wallet creation returned null");
+    const createAndNavigate = async () => {
+      try {
+        let encryptionKey: string | null = null;
+        const isSet = await PasswordService.isPasswordSet();
+        console.log("[CreateWallet] isPasswordSet:", isSet);
+
+        if (!isSet) {
+          // 首次创建钱包，需要设置密码
+          const password = await PasswordService.setPassword(navigator);
+          if (!password) {
+            navigator.pop();
+            return;
+          }
+          // 设置密码后，开始显示创建中
+          setStatus("creating");
+          encryptionKey = await PasswordService.initEncryptionKey(password);
+          if (!encryptionKey) {
+            setError("初始化加密密钥失败");
+            return;
+          }
+        } else {
+          // 已有钱包，先验证密码（不显示创建中）
+          encryptionKey = await PasswordService.getEncryptionKey(navigator);
+          if (!encryptionKey) {
+            navigator.pop();
+            return;
+          }
+          // 验证完成后，开始显示创建中
+          setStatus("creating");
+        }
+
+        const w = await WalletManager.getInstance().createWallet(encryptionKey);
+        if (w) {
+          if (props.nextPath) {
+            navigator.pushReplace(props.nextPath, w);
+          } else {
+            navigator.pop(w);
+          }
+        } else {
+          setError("创建钱包失败");
+        }
+      } catch (e: any) {
+        console.error("Failed to create wallet", e);
+        setError("Failed: " + (e.message || e.toString()));
       }
-      setLoading(false);
-    }).catch(e => {
-      console.error("Failed to create wallet", e);
-      setError("Failed: " + (e.message || e.toString()));
-      setLoading(false);
-    });
+    };
+
+    // 延迟执行以确保渲染完成
+    const timer = setTimeout(() => {
+      createAndNavigate();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
-  if (loading) {
+  // 初始加载状态
+  if (!isReady) {
     return (
-      <Scaffold appBar={<AppBar title="Create Wallet" />}>
-        <Center>
-          <CircularProgressIndicator />
-          <Container height={20} />
-          <Text text="Generating Wallet..." />
-        </Center>
+      <Scaffold
+        backgroundColor={Theme.colors.background}
+        appBar={
+          <AppBar
+            title="创建钱包"
+            backgroundColor={Theme.colors.surface}
+            foregroundColor={Theme.colors.textPrimary}
+          />
+        }
+      >
+        <Column mainAxisAlignment="center" crossAxisAlignment="center">
+          <Expanded>
+            <Center>
+              <CircularProgressIndicator color={Theme.colors.primary} />
+              <SizedBox height={Theme.spacing.l} />
+              <Text
+                text="加载中..."
+                color={Theme.colors.textSecondary}
+                fontSize={14}
+              />
+            </Center>
+          </Expanded>
+        </Column>
       </Scaffold>
     );
   }
 
   if (error) {
     return (
-      <Scaffold appBar={<AppBar title="Error" />}>
-        <Center>
-          <Text text={error} color="red" />
-          <Container height={20} />
-          <Button text="Retry" onTap={() => navigator.pop()} />
-        </Center>
+      <Scaffold
+        backgroundColor={Theme.colors.background}
+        appBar={
+          <AppBar
+            title="Error"
+            backgroundColor={Theme.colors.surface}
+            foregroundColor={Theme.colors.textPrimary}
+          />
+        }
+      >
+        <Column mainAxisAlignment="center" crossAxisAlignment="center">
+          <Expanded>
+            <Center>
+              <Padding padding={Theme.spacing.l}>
+                <Column mainAxisAlignment="center" crossAxisAlignment="center">
+                  <Container
+                    width={64}
+                    height={64}
+                    decoration={{
+                      color: Theme.colors.error + "1A",
+                      borderRadius: 32,
+                    }}
+                    alignment="center"
+                  >
+                    <Text
+                      text="!"
+                      color={Theme.colors.error}
+                      fontSize={32}
+                      fontWeight="bold"
+                    />
+                  </Container>
+                  <SizedBox height={Theme.spacing.m} />
+                  <Text
+                    text={error}
+                    color={Theme.colors.error}
+                    textAlign="center"
+                  />
+                  <SizedBox height={Theme.spacing.l} />
+                  <ThemeButton
+                    text="返回"
+                    onTap={() => navigator.pop()}
+                    variant="secondary"
+                  />
+                </Column>
+              </Padding>
+            </Center>
+          </Expanded>
+        </Column>
       </Scaffold>
     );
   }
 
-  return (
-    <Scaffold appBar={<AppBar title="New Wallet Created" />}>
-      <Padding padding={20}>
-        <Column crossAxisAlignment="start">
-          <Text text="Mnemonic (Keep Secret!):" fontWeight="bold" />
-          <Container padding={10} color="#eeeeee">
-            <Text text={wallet?.mnemonic || ""} />
-          </Container>
-
-          <Container height={20} />
-
-          <Text text="Address:" fontWeight="bold" />
-          <Text text={wallet?.address || ""} />
-
-          <Container height={20} />
-
-          <Text text="Private Key:" fontWeight="bold" />
-          <Text text={wallet?.privateKey || ""} />
-
-          <Container height={40} />
-
-          <Center>
-            <Button
-              text="Go to Wallet Home"
-              onTap={() => navigator.push("/wallet/home", { ...wallet })}
-            />
-          </Center>
+  // 验证密码阶段 - 显示空白或简单提示
+  if (status === "") {
+    console.log("[CreateWallet] Rendering status=empty, showing preparing UI");
+    return (
+      <Scaffold
+        backgroundColor={Theme.colors.background}
+        appBar={
+          <AppBar
+            title="创建钱包"
+            backgroundColor={Theme.colors.surface}
+            foregroundColor={Theme.colors.textPrimary}
+          />
+        }
+      >
+        <Column mainAxisAlignment="center" crossAxisAlignment="center">
+          <Expanded>
+            <Center>
+              <Column mainAxisAlignment="center" crossAxisAlignment="center">
+                <CircularProgressIndicator color={Theme.colors.primary} />
+                <SizedBox height={Theme.spacing.l} />
+                <Text
+                  text="准备中..."
+                  color={Theme.colors.textSecondary}
+                  fontSize={14}
+                />
+              </Column>
+            </Center>
+          </Expanded>
         </Column>
-      </Padding>
+      </Scaffold>
+    );
+  }
+
+  // 创建钱包阶段
+  return (
+    <Scaffold
+      backgroundColor={Theme.colors.background}
+      appBar={
+        <AppBar
+          title="创建钱包"
+          backgroundColor={Theme.colors.surface}
+          foregroundColor={Theme.colors.textPrimary}
+        />
+      }
+    >
+      <Column mainAxisAlignment="center" crossAxisAlignment="center">
+        <Expanded>
+          <Center>
+            <Column mainAxisAlignment="center" crossAxisAlignment="center">
+              <CircularProgressIndicator color={Theme.colors.primary} />
+              <SizedBox height={Theme.spacing.l} />
+              <Text
+                text="正在创建安全钱包..."
+                color={Theme.colors.textPrimary}
+                fontSize={16}
+              />
+              <SizedBox height={Theme.spacing.s} />
+              <Text
+                text="请稍候"
+                color={Theme.colors.textSecondary}
+                fontSize={14}
+              />
+            </Column>
+          </Center>
+        </Expanded>
+      </Column>
     </Scaffold>
   );
 }

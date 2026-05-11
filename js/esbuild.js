@@ -1,115 +1,115 @@
-const esbuild = require('esbuild');
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const esbuild = require("esbuild");
+const fs = require("fs");
+const path = require("path");
+const { execSync } = require("child_process");
 
-const watch = process.argv.includes('--watch');
+const watch = process.argv.includes("--watch");
 
-// qjsc path
-const QJSC_PATH = path.resolve(__dirname, '../../fuickjs_engine/src/main/jni/quickjs/build/qjsc');
-
-const globalsPlugin = {
-  name: 'globals',
-  setup(build) {
-    build.onResolve({ filter: /^react$/ }, args => ({ path: args.path, namespace: 'globals' }))
-    build.onResolve({ filter: /^fuickjs$/ }, args => ({ path: args.path, namespace: 'globals' }))
-    build.onLoad({ filter: /.*/, namespace: 'globals' }, args => {
-      if (args.path === 'react') return { contents: 'module.exports = globalThis.React', loader: 'js' }
-      if (args.path === 'fuickjs') return { contents: 'module.exports = globalThis.FuickFramework', loader: 'js' }
-    })
-  },
-}
+const QJSC_PATH = path.resolve(
+  __dirname,
+  "../../fuickjs_engine/src/main/jni/quickjs/build/qjsc",
+);
 
 async function build() {
   const isProd = !watch;
   const reactPath = isProd
-    ? 'node_modules/react/cjs/react.production.min.js'
-    : 'node_modules/react/cjs/react.development.js';
+    ? "node_modules/react/cjs/react.production.min.js"
+    : "node_modules/react/cjs/react.development.js";
   const reconcilerPath = isProd
-    ? 'node_modules/react-reconciler/cjs/react-reconciler.production.min.js'
-    : 'node_modules/react-reconciler/cjs/react-reconciler.development.js';
+    ? "node_modules/react-reconciler/cjs/react-reconciler.production.min.js"
+    : "node_modules/react-reconciler/cjs/react-reconciler.development.js";
   const schedulerPath = isProd
-    ? 'node_modules/scheduler/cjs/scheduler.production.min.js'
-    : 'node_modules/scheduler/cjs/scheduler.development.js';
+    ? "node_modules/scheduler/cjs/scheduler.production.min.js"
+    : "node_modules/scheduler/cjs/scheduler.development.js";
 
-  const commonOptions = {
+  const options = {
     bundle: true,
-    platform: 'neutral',
-    format: 'esm',
-    target: 'es2020',
-    minify: false,
+    platform: "browser",
+    format: "esm",
+    target: "es2020",
+    minify: true,
     sourcemap: !isProd,
     loader: {
-      '.ts': 'ts',
-      '.tsx': 'tsx',
+      ".ts": "ts",
+      ".tsx": "tsx",
     },
-    mainFields: ['module', 'main'],
+    conditions: ["browser"],
+    mainFields: ["browser", "module", "main"],
     define: {
-      'process.env.NODE_ENV': isProd ? '"production"' : '"development"',
-      global: 'globalThis',
+      "process.env.NODE_ENV": isProd ? '"production"' : '"development"',
+      global: "globalThis",
     },
-    banner: {
-      js: `var process=process||{env:{NODE_ENV:\"${isProd ? 'production' : 'development'}\"}};if(typeof console===\"undefined\"){globalThis.console={log:function(){if(typeof print==='function')print([].slice.call(arguments).join(' '));},error:function(){if(typeof print==='function')print('[ERROR] '+[].slice.call(arguments).join(' '));},warn:function(){if(typeof print==='function')print('[WARN] '+[].slice.call(arguments).join(' '));},debug:function(){if(typeof print==='function')print('[DEBUG] '+[].slice.call(arguments).join(' '));}};}`,
+    alias: {
+      react: path.resolve(__dirname, reactPath),
+      "react-reconciler": path.resolve(__dirname, reconcilerPath),
+      scheduler: path.resolve(__dirname, schedulerPath),
+      fuickjs: path.resolve(
+        __dirname,
+        "../../fuickjs_framework/fuickjs/src/index.ts",
+      ),
+      ethers: path.resolve(__dirname, "node_modules/ethers/dist/ethers.js"),
+      "@solana/web3.js": path.resolve(
+        __dirname,
+        "node_modules/@solana/web3.js/lib/index.browser.esm.js",
+      ),
+      stream: path.resolve(
+        __dirname,
+        "node_modules/stream-browserify/index.js",
+      ),
+      events: path.resolve(__dirname, "node_modules/events/events.js"),
+      buffer: path.resolve(__dirname, "node_modules/buffer"),
+      "crypto-js": path.resolve(__dirname, "node_modules/crypto-js"),
     },
   };
 
-  const destDir = path.resolve(__dirname, '../app/assets/js');
+  const destDir = path.resolve(__dirname, "../app/assets/js");
   if (!fs.existsSync(destDir)) {
     fs.mkdirSync(destDir, { recursive: true });
   }
 
-  // 1. Build Framework
-  console.log('Building framework bundle...');
+  console.log("Building bundle...");
   await esbuild.build({
-    ...commonOptions,
-    entryPoints: ['src/framework_entry.ts'],
-    outfile: 'dist/framework.bundle.js',
-    alias: {
-      'react': path.resolve(__dirname, reactPath),
-      'react-reconciler': path.resolve(__dirname, reconcilerPath),
-      'scheduler': path.resolve(__dirname, schedulerPath),
-      'fuickjs': path.resolve(__dirname, '../../fuickjs_framework/fuickjs/dist/index.js'),
-    },
+    ...options,
+    entryPoints: ["src/index.ts"],
+    outfile: "dist/bundle.js",
   });
 
-  // 2. Build Business
-  console.log('Building business bundle...');
-  await esbuild.build({
-    ...commonOptions,
-    entryPoints: ['src/index.ts'],
-    outfile: 'dist/bundle.js',
-    plugins: [globalsPlugin],
-    // 不需要 external，由 globalsPlugin 处理 resolve 和 load
-  });
+  const src = path.resolve(__dirname, "dist/bundle.js");
+  const dest = path.join(destDir, "bundle.js");
+  const destBin = path.join(destDir, "bundle.qjc");
 
-  const bundles = [
-    { name: 'framework.bundle', src: 'dist/framework.bundle.js' },
-    { name: 'bundle', src: 'dist/bundle.js' },
-  ];
+  fs.copyFileSync(src, dest);
+  console.log(`Copied bundle to ${dest}`);
 
-  for (const b of bundles) {
-    const src = path.resolve(__dirname, b.src);
-    const dest = path.join(destDir, `${b.name}.js`);
-    const destBin = path.join(destDir, `${b.name}.qjc`);
+  if (fs.existsSync(QJSC_PATH)) {
+    console.log(`Compiling bundle to QuickJS bytecode...`);
+    execSync(`${QJSC_PATH} -b -o ${destBin} ${src}`);
+    console.log(`Compiled to ${destBin}`);
+  }
 
-    fs.copyFileSync(src, dest);
-    console.log(`Copied ${b.name} to ${dest}`);
-
-    if (fs.existsSync(QJSC_PATH)) {
-      console.log(`Compiling ${b.name} to QuickJS bytecode...`);
-      execSync(`${QJSC_PATH} -b -o ${destBin} ${src}`);
-      console.log(`Compiled to ${destBin}`);
+  const demoDestDir = path.resolve(
+    __dirname,
+    "../../fuickjs_demo/app/assets/js",
+  );
+  if (fs.existsSync(demoDestDir)) {
+    const demoDest = path.join(demoDestDir, "wallet_bundle.js");
+    const demoDestBin = path.join(demoDestDir, "wallet_bundle.qjc");
+    fs.copyFileSync(src, demoDest);
+    console.log(`Copied bundle to ${demoDest}`);
+    if (fs.existsSync(destBin)) {
+      fs.copyFileSync(destBin, demoDestBin);
+      console.log(`Copied bytecode to ${demoDestBin}`);
     }
   }
 
   if (watch) {
-    console.log('Watching...');
+    console.log("Watching...");
   } else {
-    console.log('Build complete.');
+    console.log("Build complete.");
   }
 }
 
-build().catch(err => {
+build().catch((err) => {
   console.error(err);
   process.exit(1);
 });
