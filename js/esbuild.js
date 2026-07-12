@@ -13,13 +13,13 @@ const QJSC_PATH = path.resolve(
 async function build() {
   const isProd = !watch;
   const reactPath = isProd
-    ? "node_modules/react/cjs/react.production.min.js"
+    ? "node_modules/react/cjs/react.production.js"
     : "node_modules/react/cjs/react.development.js";
   const reconcilerPath = isProd
-    ? "node_modules/react-reconciler/cjs/react-reconciler.production.min.js"
+    ? "node_modules/react-reconciler/cjs/react-reconciler.production.js"
     : "node_modules/react-reconciler/cjs/react-reconciler.development.js";
   const schedulerPath = isProd
-    ? "node_modules/scheduler/cjs/scheduler.production.min.js"
+    ? "node_modules/scheduler/cjs/scheduler.production.js"
     : "node_modules/scheduler/cjs/scheduler.development.js";
 
   const options = {
