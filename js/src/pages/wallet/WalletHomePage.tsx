@@ -47,20 +47,32 @@ export default function WalletHomePage() {
     })();
   }, []);
 
-  const loadWallet = () => {
+  const loadWallet = async () => {
     const wallets = WalletManager.getInstance().getWallets();
+    const lastId = WalletManager.getInstance().getLastSelectedWalletId();
+    console.log(
+      "[WalletHomePage] loadWallet: walletCount=",
+      wallets.length,
+      "restoredLastId=",
+      lastId,
+      "walletIds=",
+      wallets.map((w) => w.id),
+    );
     if (wallets.length > 0) {
-      const lastId = WalletManager.getInstance().getLastSelectedWalletId();
-      const lastWallet = lastId ? wallets.find((w) => w.id === lastId) : null;
+      const lastWallet = lastId != null
+        ? wallets.find((w) => String(w.id) === String(lastId))
+        : null;
       if (lastWallet) {
         setWallet(lastWallet);
       } else {
         setWallet(wallets[0]);
-        WalletManager.getInstance().setLastSelectedWalletId(wallets[0].id);
+        await WalletManager.getInstance().setLastSelectedWalletId(
+          wallets[0].id,
+        );
       }
     } else {
       setWallet(null);
-      WalletManager.getInstance().setLastSelectedWalletId(null);
+      await WalletManager.getInstance().setLastSelectedWalletId(null);
     }
   };
 
@@ -120,7 +132,7 @@ export default function WalletHomePage() {
           newBalances[key] = formatAmount(val);
         } catch (e) {
           console.error(`Failed to fetch ${t.symbol}`, e);
-          newBalances[key] = "0";
+          newBalances[key] = "—";
         }
       }
       setTokenBalances(newBalances);
@@ -200,7 +212,7 @@ export default function WalletHomePage() {
     );
     if (result && (result as any).id) {
       setWallet(result as WalletInfo);
-      WalletManager.getInstance().setLastSelectedWalletId(
+      await WalletManager.getInstance().setLastSelectedWalletId(
         (result as WalletInfo).id,
       );
     }
@@ -364,9 +376,12 @@ export default function WalletHomePage() {
     >
       <Container color={Theme.colors.background}>
         <Column>
-          <Padding padding={20}>
-            {/* Balance Card */}
-            <Container
+          <Expanded>
+            <SingleChildScrollView>
+              <Column>
+                <Padding padding={20}>
+                  {/* Balance Card */}
+                  <Container
               width={Infinity}
               padding={24}
               decoration={{
@@ -468,18 +483,18 @@ export default function WalletHomePage() {
           <SizedBox height={30} />
 
           {/* Assets List */}
-          <Expanded>
-            <Container
-              decoration={{
-                color: Theme.colors.surface,
-                borderRadius: {
-                  topLeft: Theme.borderRadius.xl,
-                  topRight: Theme.borderRadius.xl,
-                },
-              }}
-              padding={{ top: 20, left: 20, right: 20 }}
-            >
-              <Column mainAxisAlignment="start">
+          <Container
+            decoration={{
+              color: Theme.colors.surface,
+              borderRadius: {
+                topLeft: Theme.borderRadius.xl,
+                topRight: Theme.borderRadius.xl,
+              },
+            }}
+            margin={{ top: 10 }}
+            padding={{ top: 20, bottom: 24, left: 20, right: 20 }}
+          >
+            <Column mainAxisAlignment="start">
                 <Row
                   mainAxisAlignment="spaceBetween"
                   crossAxisAlignment="center"
@@ -517,8 +532,7 @@ export default function WalletHomePage() {
                   </InkWell>
                 </Row>
                 <SizedBox height={16} />
-                <SingleChildScrollView>
-                  {/* Native Asset */}
+                {/* Native Asset */}
                   <Card padding={16} margin={12}>
                     <Row>
                       <Container
@@ -643,11 +657,12 @@ export default function WalletHomePage() {
                         </GestureDetector>
                       );
                     }
-                    return cardContent;
-                  })}
-                </SingleChildScrollView>
+                     return cardContent;
+                   })}
               </Column>
             </Container>
+          </Column>
+          </SingleChildScrollView>
           </Expanded>
         </Column>
       </Container>

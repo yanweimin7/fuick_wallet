@@ -47,12 +47,19 @@ export class WalletManager {
       }
 
       // 恢复上次选中的钱包（仅当该钱包仍存在）
+      // 注意：桥接层可能把标量 "3" 反序列化为数字 3，而钱包 id 是字符串，
+      // 因此比较时统一转成字符串，避免 "3" === 3 失败导致恢复被跳过。
       const lastId = await StorageService.getItem(
         WalletManager.LAST_SELECTED_KEY,
       );
-      if (lastId && this.wallets.some((w) => w.id === lastId)) {
-        this.lastSelectedWalletId = lastId;
+      if (lastId != null && this.wallets.some((w) => String(w.id) === String(lastId))) {
+        this.lastSelectedWalletId = String(lastId);
       }
+
+      console.log(
+        "[WalletManager] restored lastSelectedWalletId:",
+        this.lastSelectedWalletId,
+      );
 
       console.log(
         "WalletManager initialized, wallets loaded:",
@@ -72,12 +79,18 @@ export class WalletManager {
     return this.wallets.find((w) => w.id === id);
   }
 
-  setLastSelectedWalletId(id: string | null) {
+  async setLastSelectedWalletId(id: string | null) {
     this.lastSelectedWalletId = id;
-    if (id) {
-      StorageService.setItem(WalletManager.LAST_SELECTED_KEY, id);
-    } else {
-      StorageService.removeItem(WalletManager.LAST_SELECTED_KEY);
+    try {
+      if (id) {
+        await StorageService.setItem(WalletManager.LAST_SELECTED_KEY, id);
+        console.log("[WalletManager] persisted lastSelectedWalletId:", id);
+      } else {
+        await StorageService.removeItem(WalletManager.LAST_SELECTED_KEY);
+        console.log("[WalletManager] cleared lastSelectedWalletId");
+      }
+    } catch (e) {
+      console.error("Failed to persist last selected wallet:", e);
     }
   }
 
