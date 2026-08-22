@@ -272,6 +272,20 @@ export default function AddTokenPage({
 
               <SizedBox height={24} />
 
+              <ThemeButton
+                text="扫描有余额的代币"
+                variant="outline"
+                fullWidth
+                onTap={() =>
+                  navigator.push("/wallet/scan_tokens", {
+                    walletId,
+                    chainId,
+                  })
+                }
+              />
+
+              <SizedBox height={24} />
+
               <ThemeInput
                 label="合约地址"
                 value={address}

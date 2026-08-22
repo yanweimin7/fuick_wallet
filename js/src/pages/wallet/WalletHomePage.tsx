@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   AppBar,
   Column,
@@ -18,11 +18,20 @@ import {
   ClipboardService,
   ToastService,
   Icon,
+  RefreshIndicator,
+  useVisible,
 } from "fuickjs";
 import { WalletManager, WalletInfo } from "../../services/WalletManager";
 import WalletListPage from "./WalletListPage";
-import { ChainServiceManager } from "../../services/ChainServiceManager";
-import { ChainConfig, TokenConfig, getSelectedChain } from "../../services/ChainRegistry";
+import {
+  ChainConfig,
+  TokenConfig,
+  getSelectedChain,
+} from "../../services/ChainRegistry";
+import {
+  BalanceService,
+  BalanceCacheEntry,
+} from "../../services/BalanceService";
 import { CustomTokenService } from "../../services/CustomTokenService";
 import { formatAmount } from "../../utils/format";
 import { Theme } from "../../theme";
@@ -31,13 +40,12 @@ import { Icons, ChainIcons, TokenIcons } from "../../assets/icons";
 
 export default function WalletHomePage() {
   const navigator = useNavigator();
+  const refreshRef = useRef<RefreshIndicator>(null);
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
-  const [balance, setBalance] = useState("0.00");
   const [chain, setChain] = useState<ChainConfig | null>(null);
   const [hideBalance, setHideBalance] = useState(false);
-  const [tokenBalances, setTokenBalances] = useState<Record<string, string>>(
-    {},
-  );
+  const [entry, setEntry] = useState<BalanceCacheEntry | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [customTokens, setCustomTokens] = useState<TokenConfig[]>([]);
 
   useEffect(() => {
@@ -52,9 +60,10 @@ export default function WalletHomePage() {
     const wallets = WalletManager.getInstance().getWallets();
     const lastId = WalletManager.getInstance().getLastSelectedWalletId();
     if (wallets.length > 0) {
-      const lastWallet = lastId != null
-        ? wallets.find((w) => String(w.id) === String(lastId))
-        : null;
+      const lastWallet =
+        lastId != null
+          ? wallets.find((w) => String(w.id) === String(lastId))
+          : null;
       if (lastWallet) {
         setWallet(lastWallet);
       } else {
@@ -79,60 +88,72 @@ export default function WalletHomePage() {
     loadCustomTokens();
   }, [wallet?.id, chain?.id]);
 
+  // 从「添加代币 / 扫描代币」页返回时（无论通过 pop(result) 还是手动返回），
+  // 重新拉取自定义代币列表并刷新余额，避免新增代币不显示。
+  useVisible(() => {
+    loadCustomTokens();
+  });
+
   useEffect(() => {
     if (wallet && chain) {
-      fetchBalance();
+      load(false);
     }
+    // 钱包地址/链变化或自定义代币加载完成后都触发加载：
+    // 首次进入时自定义代币可能尚未加载完，缓存补齐逻辑会补拉缺失代币余额。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wallet?.addresses?.[chain?.id || ""], chain?.id, customTokens]);
 
-  const fetchBalance = async () => {
+  // 全局缓存余额：仅首次进入(缓存未命中)/切换钱包链/下拉刷新时才会真正发起接口调用
+  const allTokens = (() => [...(chain?.tokens || []), ...customTokens])();
+
+  const load = async (force: boolean) => {
     if (!wallet || !chain) return;
-    setBalance("Loading...");
+    setLoadError(false);
     const addr = wallet.addresses?.[chain.id] || wallet.address;
-
-    const manager = ChainServiceManager.getInstance();
-    const service = await manager.getService(chain.id);
-
+    console.log(
+      "[WalletHomePage] load balance, chain=",
+      chain.id,
+      "addr=",
+      addr,
+    );
     try {
-      if (!service) {
-        throw new Error("Service not available");
-      }
-      const val = await service.getBalance(addr);
-      const num = parseFloat(val);
-      setBalance(formatAmount(num));
+      const e = await BalanceService.ensure({
+        chain,
+        address: addr,
+        tokenList: allTokens,
+        force,
+      });
+      setEntry(e);
     } catch (e) {
-      console.error("Failed to fetch balance:", e);
-      setBalance("Error");
-    }
-
-    const allTokens: TokenConfig[] = [
-      ...(chain.tokens || []),
-      ...customTokens,
-    ];
-    if (allTokens.length > 0) {
-      const newBalances: Record<string, string> = {};
-      for (const t of allTokens) {
-        const key = t.address.toLowerCase();
-        try {
-          newBalances[key] = "...";
-          setTokenBalances((prev) => ({ ...prev, ...newBalances }));
-
-          if (!service) {
-            throw new Error("Service not available");
-          }
-          const raw = await service.getTokenBalance(t.address, addr);
-          const val = parseFloat(raw) / Math.pow(10, t.decimals);
-          newBalances[key] = formatAmount(val);
-        } catch (e) {
-          console.error(`Failed to fetch ${t.symbol}`, e);
-          newBalances[key] = "—";
-        }
-      }
-      setTokenBalances(newBalances);
-    } else {
-      setTokenBalances({});
+      console.error("[WalletHomePage] load balance failed:", e);
+      setLoadError(true);
     }
   };
+
+  const handleRefresh = async () => {
+    // Flutter 端 RefreshIndicator 只有在收到 complete 指令后才会收起动画，
+    // 它不会等待 onRefresh 返回的 Promise，因此必须手动调用组件的 complete()。
+    try {
+      await load(true);
+    } finally {
+      refreshRef.current?.complete();
+    }
+  };
+
+  const displayBalance = loadError
+    ? "Error"
+    : entry
+      ? formatAmount(entry.native)
+      : "Loading...";
+  const tokenBalances: Record<string, string> = (() => {
+    const m: Record<string, string> = {};
+    for (const t of allTokens) {
+      const key = t.address.toLowerCase();
+      const v = entry?.tokens.get(key);
+      m[key] = v !== undefined ? formatAmount(v) : "0.00";
+    }
+    return m;
+  })();
 
   const handleAddToken = async () => {
     if (!wallet || !chain) return;
@@ -151,10 +172,7 @@ export default function WalletHomePage() {
         title={<Text text="移除代币" fontWeight="bold" fontSize={18} />}
         content={<Text text={`确定从列表移除 ${token.symbol} 吗？`} />}
         actions={[
-          <GestureDetector
-            key="cancel"
-            onTap={() => navigator.pop()}
-          >
+          <GestureDetector key="cancel" onTap={() => navigator.pop()}>
             <Container padding={{ horizontal: 16, vertical: 8 }}>
               <Text text="取消" color={Theme.colors.textSecondary} />
             </Container>
@@ -169,21 +187,11 @@ export default function WalletHomePage() {
                 chain.id,
                 token.address,
               );
-              const key = token.address.toLowerCase();
-              setTokenBalances((prev) => {
-                const next = { ...prev };
-                delete next[key];
-                return next;
-              });
               await loadCustomTokens();
             }}
           >
             <Container padding={{ horizontal: 16, vertical: 8 }}>
-              <Text
-                text="移除"
-                color={Theme.colors.error}
-                fontWeight="bold"
-              />
+              <Text text="移除" color={Theme.colors.error} fontWeight="bold" />
             </Container>
           </GestureDetector>,
         ]}
@@ -482,229 +490,279 @@ export default function WalletHomePage() {
       <Container color={Theme.colors.background}>
         <Column>
           <Expanded>
-            <SingleChildScrollView>
-              <Padding padding={16}>
-                {/* Hero Balance Card */}
-                <Container
-                  width={Infinity}
-                  padding={24}
-                  decoration={{
-                    gradient: Theme.colors.heroGradient,
-                    borderRadius: Theme.borderRadius.xl,
-                    boxShadow: Theme.shadows.glow,
-                  }}
-                >
-                  <Column crossAxisAlignment="start">
-                    <Row
-                      mainAxisAlignment="spaceBetween"
-                      crossAxisAlignment="center"
-                    >
+            <RefreshIndicator
+              ref={refreshRef}
+              onRefresh={handleRefresh}
+              color={Theme.colors.primary}
+            >
+              <SingleChildScrollView>
+                <Padding padding={16}>
+                  {/* Hero Balance Card */}
+                  <Container
+                    width={Infinity}
+                    padding={24}
+                    decoration={{
+                      gradient: Theme.colors.heroGradient,
+                      borderRadius: Theme.borderRadius.xl,
+                      boxShadow: Theme.shadows.glow,
+                    }}
+                  >
+                    <Column crossAxisAlignment="start">
+                      <Row
+                        mainAxisAlignment="spaceBetween"
+                        crossAxisAlignment="center"
+                      >
+                        <Text
+                          text="总资产 (Est.)"
+                          color="#FFFFFFCC"
+                          fontSize={14}
+                        />
+                        <InkWell onTap={() => setHideBalance(!hideBalance)}>
+                          <Container
+                            padding={6}
+                            decoration={{
+                              color: "#FFFFFF1F",
+                              borderRadius: Theme.borderRadius.full,
+                            }}
+                          >
+                            <Image
+                              url={
+                                hideBalance
+                                  ? Icons.visibilityOff
+                                  : Icons.visibility
+                              }
+                              width={18}
+                              height={18}
+                              fit="contain"
+                            />
+                          </Container>
+                        </InkWell>
+                      </Row>
+                      <SizedBox height={10} />
                       <Text
-                        text="总资产 (Est.)"
-                        color="#FFFFFFCC"
-                        fontSize={14}
+                        text={
+                          hideBalance
+                            ? "••••••"
+                            : `${displayBalance} ${chain?.symbol || "ETH"}`
+                        }
+                        color="white"
+                        fontSize={36}
+                        fontWeight="bold"
                       />
-                      <InkWell onTap={() => setHideBalance(!hideBalance)}>
+                      <SizedBox height={4} />
+                      <Text
+                        text={`≈ $${(parseFloat(displayBalance) || 0).toFixed(2)} · ${chain?.name || ""}`}
+                        color="#FFFFFF99"
+                        fontSize={13}
+                      />
+                      <SizedBox height={18} />
+                      <InkWell onTap={copyAddress}>
                         <Container
-                          padding={6}
+                          padding={{ horizontal: 14, vertical: 8 }}
                           decoration={{
                             color: "#FFFFFF1F",
                             borderRadius: Theme.borderRadius.full,
+                            border: { color: "#FFFFFF33", width: 1 },
                           }}
                         >
-                          <Image
-                            url={
-                              hideBalance ? Icons.visibilityOff : Icons.visibility
-                            }
-                            width={18}
-                            height={18}
-                            fit="contain"
-                          />
+                          <Row mainAxisSize="min" crossAxisAlignment="center">
+                            <Image
+                              url={Icons.copy}
+                              width={14}
+                              height={14}
+                              fit="contain"
+                            />
+                            <SizedBox width={8} />
+                            <Text
+                              text={formatAddress(fullAddress)}
+                              color="white"
+                              fontSize={13}
+                              fontWeight="500"
+                            />
+                          </Row>
                         </Container>
                       </InkWell>
+                      {entry?.source && (
+                        <Container
+                          margin={{ top: 12 }}
+                          padding={{ horizontal: 10, vertical: 4 }}
+                          decoration={{
+                            color:
+                              entry.source === "chainbase"
+                                ? "#3B82F633"
+                                : "#F59E0B33",
+                            borderRadius: Theme.borderRadius.full,
+                            border: {
+                              color:
+                                entry.source === "chainbase"
+                                  ? "#3B82F6"
+                                  : "#F59E0B",
+                              width: 1,
+                            },
+                          }}
+                        >
+                          <Text
+                            text={`数据来源: ${
+                              entry.source === "chainbase" ? "Chainbase" : "RPC"
+                            }`}
+                            color={
+                              entry.source === "chainbase"
+                                ? "#93C5FD"
+                                : "#FCD34D"
+                            }
+                            fontSize={11}
+                            fontWeight="600"
+                          />
+                        </Container>
+                      )}
+                    </Column>
+                  </Container>
+                </Padding>
+
+                {/* Actions */}
+                <Padding padding={{ horizontal: 16 }}>
+                  <Container
+                    padding={{ vertical: 18, horizontal: 8 }}
+                    decoration={{
+                      color: Theme.colors.surface,
+                      borderRadius: Theme.borderRadius.l,
+                      border: { color: Theme.colors.border, width: 1 },
+                      boxShadow: Theme.shadows.small,
+                    }}
+                  >
+                    <Row mainAxisAlignment="spaceAround">
+                      <ActionButton
+                        icon="north_east"
+                        label="发送"
+                        color={Theme.colors.primary}
+                        onTap={() => navigator.push("/wallet/send", { wallet })}
+                      />
+                      <ActionButton
+                        icon="south_west"
+                        label="接收"
+                        color={Theme.colors.success}
+                        onTap={() =>
+                          navigator.push("/wallet/receive", { wallet })
+                        }
+                      />
+                      <ActionButton
+                        icon="swap_horiz"
+                        label="兑换"
+                        color={Theme.colors.accent}
+                      />
+                      {chain?.faucetUrl ? (
+                        <ActionButton
+                          icon="opacity"
+                          label="水龙头"
+                          color={Theme.colors.info}
+                          onTap={handleFaucet}
+                        />
+                      ) : (
+                        <ActionButton
+                          icon="history"
+                          label="记录"
+                          color={Theme.colors.textSecondary}
+                        />
+                      )}
                     </Row>
-                    <SizedBox height={10} />
+                  </Container>
+                </Padding>
+
+                <SizedBox height={24} />
+
+                {/* Assets List */}
+                <Container
+                  padding={{ top: 4, bottom: 24, left: 16, right: 16 }}
+                >
+                  <Row
+                    mainAxisAlignment="spaceBetween"
+                    crossAxisAlignment="center"
+                    margin={{ top: 8, bottom: 16 }}
+                  >
                     <Text
-                      text={
-                        hideBalance
-                          ? "••••••"
-                          : `${balance} ${chain?.symbol || "ETH"}`
-                      }
-                      color="white"
-                      fontSize={36}
+                      text="资产"
+                      fontSize={20}
                       fontWeight="bold"
+                      color={Theme.colors.textPrimary}
                     />
-                    <SizedBox height={4} />
-                    <Text
-                      text={`≈ $${(parseFloat(balance) || 0).toFixed(2)} · ${chain?.name || ""}`}
-                      color="#FFFFFF99"
-                      fontSize={13}
-                    />
-                    <SizedBox height={18} />
-                    <InkWell onTap={copyAddress}>
+                    <InkWell onTap={handleAddToken}>
                       <Container
-                        padding={{ horizontal: 14, vertical: 8 }}
+                        padding={{ horizontal: 12, vertical: 6 }}
                         decoration={{
-                          color: "#FFFFFF1F",
+                          color: Theme.colors.primary + "1F",
                           borderRadius: Theme.borderRadius.full,
-                          border: { color: "#FFFFFF33", width: 1 },
+                          border: {
+                            color: Theme.colors.primary + "55",
+                            width: 1,
+                          },
                         }}
                       >
-                        <Row mainAxisSize="min" crossAxisAlignment="center">
-                          <Image
-                            url={Icons.copy}
-                            width={14}
-                            height={14}
-                            fit="contain"
+                        <Row crossAxisAlignment="center">
+                          <Icon
+                            name="add"
+                            color={Theme.colors.primary}
+                            size={16}
                           />
-                          <SizedBox width={8} />
+                          <SizedBox width={4} />
                           <Text
-                            text={formatAddress(fullAddress)}
-                            color="white"
+                            text="添加代币"
+                            color={Theme.colors.primary}
+                            fontWeight="bold"
                             fontSize={13}
-                            fontWeight="500"
                           />
                         </Row>
                       </Container>
                     </InkWell>
-                  </Column>
-                </Container>
-              </Padding>
-
-              {/* Actions */}
-              <Padding padding={{ horizontal: 16 }}>
-                <Container
-                  padding={{ vertical: 18, horizontal: 8 }}
-                  decoration={{
-                    color: Theme.colors.surface,
-                    borderRadius: Theme.borderRadius.l,
-                    border: { color: Theme.colors.border, width: 1 },
-                    boxShadow: Theme.shadows.small,
-                  }}
-                >
-                  <Row mainAxisAlignment="spaceAround">
-                    <ActionButton
-                      icon="north_east"
-                      label="发送"
-                      color={Theme.colors.primary}
-                      onTap={() => navigator.push("/wallet/send", { wallet })}
-                    />
-                    <ActionButton
-                      icon="south_west"
-                      label="接收"
-                      color={Theme.colors.success}
-                      onTap={() => navigator.push("/wallet/receive", { wallet })}
-                    />
-                    <ActionButton
-                      icon="swap_horiz"
-                      label="兑换"
-                      color={Theme.colors.accent}
-                    />
-                    {chain?.faucetUrl ? (
-                      <ActionButton
-                        icon="opacity"
-                        label="水龙头"
-                        color={Theme.colors.info}
-                        onTap={handleFaucet}
-                      />
-                    ) : (
-                      <ActionButton
-                        icon="history"
-                        label="记录"
-                        color={Theme.colors.textSecondary}
-                      />
-                    )}
                   </Row>
-                </Container>
-              </Padding>
 
-              <SizedBox height={24} />
-
-              {/* Assets List */}
-              <Container
-                padding={{ top: 4, bottom: 24, left: 16, right: 16 }}
-              >
-                <Row
-                  mainAxisAlignment="spaceBetween"
-                  crossAxisAlignment="center"
-                  margin={{ top: 8, bottom: 16 }}
-                >
-                  <Text
-                    text="资产"
-                    fontSize={20}
-                    fontWeight="bold"
-                    color={Theme.colors.textPrimary}
+                  {/* Native Asset */}
+                  <AssetRow
+                    iconUrl={
+                      ChainIcons[chain?.icon || "ethereum"] ||
+                      ChainIcons.ethereum
+                    }
+                    symbol={chain?.symbol || "ETH"}
+                    name={chain?.name || "Ethereum"}
+                    amount={hideBalance ? "••••" : displayBalance}
+                    accent={Theme.colors.primary}
                   />
-                  <InkWell onTap={handleAddToken}>
-                    <Container
-                      padding={{ horizontal: 12, vertical: 6 }}
-                      decoration={{
-                        color: Theme.colors.primary + "1F",
-                        borderRadius: Theme.borderRadius.full,
-                        border: { color: Theme.colors.primary + "55", width: 1 },
-                      }}
-                    >
-                      <Row crossAxisAlignment="center">
-                        <Icon
-                          name="add"
-                          color={Theme.colors.primary}
-                          size={16}
-                        />
-                        <SizedBox width={4} />
-                        <Text
-                          text="添加代币"
-                          color={Theme.colors.primary}
-                          fontWeight="bold"
-                          fontSize={13}
-                        />
-                      </Row>
-                    </Container>
-                  </InkWell>
-                </Row>
 
-                {/* Native Asset */}
-                <AssetRow
-                  iconUrl={
-                    ChainIcons[chain?.icon || "ethereum"] ||
-                    ChainIcons.ethereum
-                  }
-                  symbol={chain?.symbol || "ETH"}
-                  name={chain?.name || "Ethereum"}
-                  amount={hideBalance ? "••••" : balance}
-                  accent={Theme.colors.primary}
-                />
-
-                {/* Token Assets */}
-                {[
-                  ...(chain?.tokens || []).map((t) => ({
-                    ...t,
-                    isCustom: false,
-                  })),
-                  ...customTokens.map((t) => ({ ...t, isCustom: true })),
-                ].map((t) => {
-                  const balanceKey = t.address.toLowerCase();
-                  return (
-                    <AssetRow
-                      key={balanceKey}
-                      iconUrl={
-                        TokenIcons[t.symbol.toLowerCase()] || TokenIcons.usdt
-                      }
-                      symbol={t.symbol}
-                      name={t.name}
-                      amount={
-                        hideBalance
-                          ? "••••"
-                          : tokenBalances[balanceKey] || "..."
-                      }
-                      accent={t.isCustom ? Theme.colors.textHint : Theme.colors.accent}
-                      onLongPress={
-                        t.isCustom ? () => handleRemoveToken(t) : undefined
-                      }
-                    />
-                  );
-                })}
-              </Container>
-            </SingleChildScrollView>
+                  {/* Token Assets */}
+                  {[
+                    ...(chain?.tokens || []).map((t) => ({
+                      ...t,
+                      isCustom: false,
+                    })),
+                    ...customTokens.map((t) => ({ ...t, isCustom: true })),
+                  ].map((t) => {
+                    const balanceKey = t.address.toLowerCase();
+                    return (
+                      <AssetRow
+                        key={balanceKey}
+                        iconUrl={
+                          TokenIcons[t.symbol.toLowerCase()] || TokenIcons.usdt
+                        }
+                        symbol={t.symbol}
+                        name={t.name}
+                        amount={
+                          hideBalance
+                            ? "••••"
+                            : tokenBalances[balanceKey] || "..."
+                        }
+                        accent={
+                          t.isCustom
+                            ? Theme.colors.textHint
+                            : Theme.colors.accent
+                        }
+                        onLongPress={
+                          t.isCustom ? () => handleRemoveToken(t) : undefined
+                        }
+                      />
+                    );
+                  })}
+                </Container>
+              </SingleChildScrollView>
+            </RefreshIndicator>
           </Expanded>
         </Column>
       </Container>
