@@ -79,6 +79,29 @@ export class EvmService {
     return balance.toString();
   }
 
+  async getTokenMetadata(
+    tokenAddress: string,
+  ): Promise<{ name: string; symbol: string; decimals: number } | null> {
+    if (!this.provider) return null;
+    const abi = [
+      "function name() view returns (string)",
+      "function symbol() view returns (string)",
+      "function decimals() view returns (uint8)",
+    ];
+    try {
+      const contract = new ethers.Contract(tokenAddress, abi, this.provider);
+      const [name, symbol, decimals] = await Promise.all([
+        contract.name(),
+        contract.symbol(),
+        contract.decimals(),
+      ]);
+      return { name, symbol, decimals: Number(decimals) };
+    } catch (e) {
+      console.error("[EvmService] getTokenMetadata failed:", e);
+      return null;
+    }
+  }
+
   async getBlockNumber(): Promise<number> {
     if (!this.provider) {
       throw new Error("EvmService not initialized");

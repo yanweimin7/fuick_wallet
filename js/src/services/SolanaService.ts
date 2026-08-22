@@ -81,6 +81,25 @@ export class SolanaService {
     return balance;
   }
 
+  async getTokenMetadata(
+    tokenAddress: string,
+  ): Promise<{ name: string; symbol: string; decimals: number } | null> {
+    if (!this.connection) return null;
+    try {
+      const mint = new PublicKey(tokenAddress);
+      const info = await this.connection.getParsedAccountInfo(mint);
+      // @ts-ignore - parsed mint account carries decimals
+      const decimals = info.value?.data?.parsed?.info?.decimals;
+      if (typeof decimals !== "string" && typeof decimals !== "number") {
+        return null;
+      }
+      return { name: "", symbol: "", decimals: Number(decimals) };
+    } catch (e) {
+      console.error("[SolanaService] getTokenMetadata failed:", e);
+      return null;
+    }
+  }
+
   async getBlockNumber(): Promise<number> {
     if (!this.connection) {
       throw new Error("SolanaService not initialized");

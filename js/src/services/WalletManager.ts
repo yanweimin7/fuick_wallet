@@ -26,6 +26,7 @@ export class WalletManager {
   private lastSelectedWalletId: string | null = null;
   private static readonly WALLET_LIST_KEY = "fuick_wallet_list_v2";
   private static readonly SECRET_PREFIX = "fuick_wallet_secret_";
+  private static readonly LAST_SELECTED_KEY = "fuick_last_selected_wallet";
 
   private constructor() {}
 
@@ -44,6 +45,15 @@ export class WalletManager {
       } else {
         this.wallets = [];
       }
+
+      // 恢复上次选中的钱包（仅当该钱包仍存在）
+      const lastId = await StorageService.getItem(
+        WalletManager.LAST_SELECTED_KEY,
+      );
+      if (lastId && this.wallets.some((w) => w.id === lastId)) {
+        this.lastSelectedWalletId = lastId;
+      }
+
       console.log(
         "WalletManager initialized, wallets loaded:",
         this.wallets.length,
@@ -64,6 +74,11 @@ export class WalletManager {
 
   setLastSelectedWalletId(id: string | null) {
     this.lastSelectedWalletId = id;
+    if (id) {
+      StorageService.setItem(WalletManager.LAST_SELECTED_KEY, id);
+    } else {
+      StorageService.removeItem(WalletManager.LAST_SELECTED_KEY);
+    }
   }
 
   getLastSelectedWalletId(): string | null {
@@ -224,6 +239,10 @@ export class WalletManager {
 
     // 2. Remove from list
     this.wallets.splice(index, 1);
+    if (this.lastSelectedWalletId === id) {
+      this.lastSelectedWalletId = null;
+      await StorageService.removeItem(WalletManager.LAST_SELECTED_KEY);
+    }
     await this._saveWalletsList();
 
     // 3. Remove secret
@@ -238,7 +257,9 @@ export class WalletManager {
 
     // 2. Remove list
     this.wallets = [];
+    this.lastSelectedWalletId = null;
     await StorageService.removeItem(WalletManager.WALLET_LIST_KEY);
+    await StorageService.removeItem(WalletManager.LAST_SELECTED_KEY);
   }
 
   async getSecret(

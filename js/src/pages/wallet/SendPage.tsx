@@ -25,6 +25,8 @@ import {
 } from "../../services/ChainRegistry";
 import { PasswordService } from "../../services/PasswordService";
 import { ChainServiceManager } from "../../services/ChainServiceManager";
+import { CustomTokenService } from "../../services/CustomTokenService";
+import { formatAmount } from "../../utils/format";
 import { Icons } from "../../assets/icons";
 
 export default function SendPage({
@@ -42,6 +44,7 @@ export default function SendPage({
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [balance, setBalance] = useState("0.00");
+  const [customTokens, setCustomTokens] = useState<TokenConfig[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -57,6 +60,15 @@ export default function SendPage({
       }
     })();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      if (wallet && chain) {
+        const list = await CustomTokenService.getTokens(wallet.id, chain.id);
+        setCustomTokens(list);
+      }
+    })();
+  }, [wallet, chain]);
 
   useEffect(() => {
     if (wallet && chain) {
@@ -84,7 +96,7 @@ export default function SendPage({
         val = await service.getBalance(addr);
       }
       const num = parseFloat(val);
-      setBalance(isNaN(num) ? "0.0000" : num.toFixed(4));
+      setBalance(isNaN(num) ? "0" : formatAmount(num));
     } catch (e) {
       setBalance("错误");
     }
@@ -316,8 +328,9 @@ export default function SendPage({
 
               <SizedBox height={24} />
 
-              {/* 资产选择器：原生 + 各链代币 */}
-              {chain && chain.tokens && chain.tokens.length > 0 && (
+              {/* 资产选择器：原生 + 各链代币 + 自定义代币 */}
+              {chain &&
+                [...(chain.tokens || []), ...customTokens].length > 0 && (
                 <Column crossAxisAlignment="start">
                   <Text
                     text="资产"
@@ -327,18 +340,26 @@ export default function SendPage({
                   <SizedBox height={8} />
                   <SingleChildScrollView scrollDirection="horizontal">
                     <Row crossAxisAlignment="center">
-                      {[null, ...chain.tokens].map((t) => {
+                      {[
+                        null,
+                        ...(chain.tokens || []),
+                        ...customTokens,
+                      ].map((t) => {
                         const isNative = t === null;
                         const sym = isNative
                           ? chain.symbol || "Native"
-                          : t.symbol;
+                          : (t as TokenConfig).symbol;
                         const selected = isNative
                           ? selectedToken === null
-                          : selectedToken?.symbol === t.symbol;
+                          : selectedToken?.address
+                            ? selectedToken.address ===
+                              (t as TokenConfig).address
+                            : selectedToken?.symbol ===
+                              (t as TokenConfig).symbol;
                         return (
                           <InkWell
                             key={sym}
-                            onTap={() => setSelectedToken(t)}
+                            onTap={() => setSelectedToken(t as TokenConfig | null)}
                           >
                             <Container
                               margin={{ right: 8 }}

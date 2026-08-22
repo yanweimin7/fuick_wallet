@@ -17,6 +17,7 @@ import ChainSelectPage from "./pages/wallet/ChainSelectPage";
 import WalletDetailPage from "./pages/wallet/WalletDetailPage";
 import ReceivePage from "./pages/wallet/ReceivePage";
 import SendPage from "./pages/wallet/SendPage";
+import AddTokenPage from "./pages/wallet/AddTokenPage";
 import React from "react";
 
 // Custom Global Error UI
@@ -105,6 +106,9 @@ export async function initApp() {
     );
     Router.register("/wallet/chain_select", (args) =>
       React.createElement(ChainSelectPage, cast(args)),
+    );
+    Router.register("/wallet/add_token", (args) =>
+      React.createElement(AddTokenPage, cast(args)),
     );
 
     console.log("Wallet App Initialized");

@@ -21,7 +21,9 @@ import {
 import { WalletManager, WalletInfo } from "../../services/WalletManager";
 import WalletListPage from "./WalletListPage";
 import { ChainServiceManager } from "../../services/ChainServiceManager";
-import { ChainConfig, getSelectedChain } from "../../services/ChainRegistry";
+import { ChainConfig, TokenConfig, getSelectedChain } from "../../services/ChainRegistry";
+import { CustomTokenService } from "../../services/CustomTokenService";
+import { formatAmount } from "../../utils/format";
 import { Theme } from "../../theme";
 import { Card } from "../../components/common";
 import { Icons, ChainIcons, TokenIcons } from "../../assets/icons";
@@ -35,6 +37,7 @@ export default function WalletHomePage() {
   const [tokenBalances, setTokenBalances] = useState<Record<string, string>>(
     {},
   );
+  const [customTokens, setCustomTokens] = useState<TokenConfig[]>([]);
 
   useEffect(() => {
     loadWallet();
@@ -61,11 +64,21 @@ export default function WalletHomePage() {
     }
   };
 
+  const loadCustomTokens = async () => {
+    if (!wallet || !chain) return;
+    const list = await CustomTokenService.getTokens(wallet.id, chain.id);
+    setCustomTokens(list);
+  };
+
+  useEffect(() => {
+    loadCustomTokens();
+  }, [wallet?.id, chain?.id]);
+
   useEffect(() => {
     if (wallet && chain) {
       fetchBalance();
     }
-  }, [wallet?.addresses?.[chain?.id || ""], chain?.id]);
+  }, [wallet?.addresses?.[chain?.id || ""], chain?.id, customTokens]);
 
   const fetchBalance = async () => {
     if (!wallet || !chain) return;
@@ -81,17 +94,22 @@ export default function WalletHomePage() {
       }
       const val = await service.getBalance(addr);
       const num = parseFloat(val);
-      setBalance(num.toFixed(4));
+      setBalance(formatAmount(num));
     } catch (e) {
       console.error("Failed to fetch balance:", e);
       setBalance("Error");
     }
 
-    if (chain.tokens) {
+    const allTokens: TokenConfig[] = [
+      ...(chain.tokens || []),
+      ...customTokens,
+    ];
+    if (allTokens.length > 0) {
       const newBalances: Record<string, string> = {};
-      for (const t of chain.tokens) {
+      for (const t of allTokens) {
+        const key = t.address.toLowerCase();
         try {
-          newBalances[t.symbol] = "...";
+          newBalances[key] = "...";
           setTokenBalances((prev) => ({ ...prev, ...newBalances }));
 
           if (!service) {
@@ -99,16 +117,73 @@ export default function WalletHomePage() {
           }
           const raw = await service.getTokenBalance(t.address, addr);
           const val = parseFloat(raw) / Math.pow(10, t.decimals);
-          newBalances[t.symbol] = val.toFixed(4);
+          newBalances[key] = formatAmount(val);
         } catch (e) {
           console.error(`Failed to fetch ${t.symbol}`, e);
-          newBalances[t.symbol] = "0.0000";
+          newBalances[key] = "0";
         }
       }
       setTokenBalances(newBalances);
     } else {
       setTokenBalances({});
     }
+  };
+
+  const handleAddToken = async () => {
+    if (!wallet || !chain) return;
+    const result = await navigator.push("/wallet/add_token", {
+      walletId: wallet.id,
+      chainId: chain.id,
+    });
+    if (result) {
+      await loadCustomTokens();
+    }
+  };
+
+  const handleRemoveToken = (token: TokenConfig) => {
+    navigator.showDialog(
+      <AlertDialog
+        title={<Text text="移除代币" fontWeight="bold" fontSize={18} />}
+        content={<Text text={`确定从列表移除 ${token.symbol} 吗？`} />}
+        actions={[
+          <GestureDetector
+            key="cancel"
+            onTap={() => navigator.pop()}
+          >
+            <Container padding={{ horizontal: 16, vertical: 8 }}>
+              <Text text="取消" color={Theme.colors.textSecondary} />
+            </Container>
+          </GestureDetector>,
+          <GestureDetector
+            key="remove"
+            onTap={async () => {
+              navigator.pop();
+              if (!wallet || !chain) return;
+              await CustomTokenService.removeToken(
+                wallet.id,
+                chain.id,
+                token.address,
+              );
+              const key = token.address.toLowerCase();
+              setTokenBalances((prev) => {
+                const next = { ...prev };
+                delete next[key];
+                return next;
+              });
+              await loadCustomTokens();
+            }}
+          >
+            <Container padding={{ horizontal: 16, vertical: 8 }}>
+              <Text
+                text="移除"
+                color={Theme.colors.error}
+                fontWeight="bold"
+              />
+            </Container>
+          </GestureDetector>,
+        ]}
+      />,
+    );
   };
 
   const handleSwitchWallet = async () => {
@@ -405,12 +480,42 @@ export default function WalletHomePage() {
               padding={{ top: 20, left: 20, right: 20 }}
             >
               <Column mainAxisAlignment="start">
-                <Text
-                  text="Assets"
-                  fontSize={20}
-                  fontWeight="bold"
-                  color={Theme.colors.textPrimary}
-                />
+                <Row
+                  mainAxisAlignment="spaceBetween"
+                  crossAxisAlignment="center"
+                >
+                  <Text
+                    text="Assets"
+                    fontSize={20}
+                    fontWeight="bold"
+                    color={Theme.colors.textPrimary}
+                  />
+                  <InkWell onTap={handleAddToken}>
+                    <Container
+                      padding={{ horizontal: 10, vertical: 4 }}
+                      decoration={{
+                        color: Theme.colors.primaryLight,
+                        borderRadius: 14,
+                      }}
+                    >
+                      <Row crossAxisAlignment="center">
+                        <Image
+                          url={Icons.add}
+                          width={18}
+                          height={18}
+                          fit="contain"
+                        />
+                        <SizedBox width={4} />
+                        <Text
+                          text="添加"
+                          color={Theme.colors.primary}
+                          fontWeight="bold"
+                          fontSize={14}
+                        />
+                      </Row>
+                    </Container>
+                  </InkWell>
+                </Row>
                 <SizedBox height={16} />
                 <SingleChildScrollView>
                   {/* Native Asset */}
@@ -465,58 +570,81 @@ export default function WalletHomePage() {
                     </Row>
                   </Card>
 
-                  {/* Token Assets */}
-                  {chain?.tokens?.map((t) => (
-                    <Card key={t.symbol} padding={16} margin={12}>
-                      <Row>
-                        <Container
-                          width={40}
-                          height={40}
-                          decoration={{
-                            color: Theme.colors.secondary,
-                            borderRadius: 20,
-                          }}
-                          alignment="center"
-                        >
-                          <Image
-                            url={
-                              TokenIcons[t.symbol.toLowerCase()] ||
-                              TokenIcons.usdt
-                            }
-                            width={32}
-                            height={32}
-                            fit="contain"
-                          />
-                        </Container>
-                        <SizedBox width={16} />
-                        <Expanded>
-                          <Column crossAxisAlignment="start">
+                  {/* Token Assets (built-in + custom) */}
+                  {[
+                    ...(chain?.tokens || []).map((t) => ({
+                      ...t,
+                      isCustom: false,
+                    })),
+                    ...customTokens.map((t) => ({ ...t, isCustom: true })),
+                  ].map((t) => {
+                    const balanceKey = t.address.toLowerCase();
+                    const cardContent = (
+                      <Card key={balanceKey} padding={16} margin={12}>
+                        <Row>
+                          <Container
+                            width={40}
+                            height={40}
+                            decoration={{
+                              color: t.isCustom
+                                ? Theme.colors.divider
+                                : Theme.colors.secondary,
+                              borderRadius: 20,
+                            }}
+                            alignment="center"
+                          >
+                            <Image
+                              url={
+                                TokenIcons[t.symbol.toLowerCase()] ||
+                                TokenIcons.usdt
+                              }
+                              width={32}
+                              height={32}
+                              fit="contain"
+                            />
+                          </Container>
+                          <SizedBox width={16} />
+                          <Expanded>
+                            <Column crossAxisAlignment="start">
+                              <Text
+                                text={t.symbol}
+                                fontWeight="bold"
+                                fontSize={16}
+                              />
+                              <Text
+                                text={t.name}
+                                color={Theme.colors.textSecondary}
+                                fontSize={14}
+                              />
+                            </Column>
+                          </Expanded>
+                          <Column crossAxisAlignment="end">
                             <Text
-                              text={t.symbol}
+                              text={
+                                hideBalance
+                                  ? "****"
+                                  : tokenBalances[balanceKey] || "..."
+                              }
                               fontWeight="bold"
                               fontSize={16}
                             />
-                            <Text
-                              text={t.name}
-                              color={Theme.colors.textSecondary}
-                              fontSize={14}
-                            />
                           </Column>
-                        </Expanded>
-                        <Column crossAxisAlignment="end">
-                          <Text
-                            text={
-                              hideBalance
-                                ? "****"
-                                : tokenBalances[t.symbol] || "..."
-                            }
-                            fontWeight="bold"
-                            fontSize={16}
-                          />
-                        </Column>
-                      </Row>
-                    </Card>
-                  ))}
+                        </Row>
+                      </Card>
+                    );
+
+                    if (t.isCustom) {
+                      return (
+                        <GestureDetector
+                          key={balanceKey}
+                          onLongPress={() => handleRemoveToken(t)}
+                        >
+                          {cardContent}
+                        </GestureDetector>
+                      );
+                    }
+                    return cardContent;
+                  })}
                 </SingleChildScrollView>
               </Column>
             </Container>
