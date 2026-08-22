@@ -1,7 +1,7 @@
 const esbuild = require("esbuild");
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execSync, execFileSync } = require("child_process");
 
 const watch = process.argv.includes("--watch");
 
@@ -99,6 +99,26 @@ async function build() {
     if (fs.existsSync(destBin)) {
       fs.copyFileSync(destBin, demoDestBin);
       console.log(`Copied bytecode to ${demoDestBin}`);
+    }
+
+    // 重新打包 demo 的所有内置 bundle（含 wallet_bundle），生成 wallet_bundle.zip + bundles.json。
+    // demo 运行时按 bundles.json 加载的是签名后的 wallet_bundle.zip，
+    // 若只复制裸 .js/.qjc 而不重跑 pack，demo 加载的仍是旧 zip，本工程改动不会生效。
+    const packAllScript = path.resolve(
+      __dirname,
+      "../../fuickjs_demo/js/tools/bundle/pack-all.js",
+    );
+    if (fs.existsSync(packAllScript)) {
+      console.log("Repacking demo bundles (zip + bundles.json)...");
+      try {
+        execFileSync(process.execPath, [packAllScript], { stdio: "inherit" });
+        console.log("Demo bundles repacked.");
+      } catch (e) {
+        console.error(
+          "Repack 失败（demo 可能尚未 build 过，缺少其他 bundle 的 js/qjc）：",
+          e.message,
+        );
+      }
     }
   }
 

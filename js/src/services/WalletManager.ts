@@ -165,14 +165,16 @@ export class WalletManager {
         }
       }
     } else if (type === WalletType.PrivateKey && privateKeyAccount) {
-      // Assume EVM for imported private key
+      // 按检测出的链类型分流（EVM / Solana），不再硬编码 EVM，
+      // 避免 Solana 私钥被错误地写入 evm 槽位并赋给所有 EVM 链地址
       const account = privateKeyAccount;
+      const protocol = (account.chainType || "evm").toLowerCase();
       if (account.address && account.privateKey) {
         primaryAddress = account.address;
-        privateKeys["evm"] = account.privateKey;
+        privateKeys[protocol] = account.privateKey;
 
         ChainRegistry.list()
-          .filter((c) => c.type.toLowerCase() === "evm")
+          .filter((c) => c.type.toLowerCase() === protocol)
           .forEach((c) => {
             addresses[c.id] = account.address!;
           });

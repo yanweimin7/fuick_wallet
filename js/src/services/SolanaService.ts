@@ -2,6 +2,7 @@ import {
   Connection,
   PublicKey,
   Transaction,
+  TransactionInstruction,
   SystemProgram,
   Keypair,
   LAMPORTS_PER_SOL,
@@ -10,14 +11,23 @@ import bs58 from "bs58";
 import * as bip39 from "bip39";
 import { derivePath } from "ed25519-hd-key";
 
+// SPL Token Program 与 Associated Token Account Program 的固定地址
+const SOLANA_TOKEN_PROGRAM_ID = new PublicKey(
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+);
+const SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
+  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+);
+
 export class SolanaService {
   private connection: Connection | null = null;
   private payer: Keypair | null = null;
 
-  constructor(rpcUrl: string) {
-    console.log("[SolanaService] Initializing with RPC:", rpcUrl);
+  constructor(rpcUrl: string | string[]) {
+    const url = Array.isArray(rpcUrl) ? rpcUrl[0] : rpcUrl;
+    console.log("[SolanaService] Initializing with RPC:", url);
     try {
-      this.connection = new Connection(rpcUrl, "confirmed");
+      this.connection = new Connection(url, "confirmed");
       console.log("[SolanaService] Connection created");
     } catch (e) {
       console.error("[SolanaService] Failed to initialize:", e);
@@ -67,7 +77,7 @@ export class SolanaService {
     }
 
     const balance =
-      tokenAccount.value[0].account.data.parsed.info.tokenAmount.uiAmountString;
+      tokenAccount.value[0].account.data.parsed.info.tokenAmount.amount;
     return balance;
   }
 
@@ -192,5 +202,101 @@ export class SolanaService {
       console.error("[SolanaService] Confirm error:", e);
     }
     return signature;
+  }
+
+  /**
+   * SPL 代币转账（与 EVM 的 transferToken 对齐）
+   * 若目标地址的关联代币账户(ATA)不存在，则先创建。
+   * 使用手写指令，避免引入 @solana/spl-token 依赖。
+   */
+  async transferToken(
+    tokenAddress: string,
+    to: string,
+    amount: string,
+    decimals: number = 9,
+  ): Promise<string> {
+    if (!this.connection || !this.payer) {
+      throw new Error(
+        "SolanaService not initialized with signer. Call initPayer first.",
+      );
+    }
+    const mint = new PublicKey(tokenAddress);
+    const owner = this.payer.publicKey;
+    const destination = new PublicKey(to);
+
+    const sourceAta = PublicKey.findProgramAddressSync(
+      [owner.toBuffer(), SOLANA_TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+      SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID,
+    )[0];
+    const destAta = PublicKey.findProgramAddressSync(
+      [
+        destination.toBuffer(),
+        SOLANA_TOKEN_PROGRAM_ID.toBuffer(),
+        mint.toBuffer(),
+      ],
+      SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID,
+    )[0];
+
+    const transaction = new Transaction();
+
+    // 目标 ATA 不存在则先创建（否则 transfer 会失败）
+    const destInfo = await this.connection.getAccountInfo(destAta);
+    if (!destInfo) {
+      transaction.add(
+        new TransactionInstruction({
+          programId: SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID,
+          keys: [
+            { pubkey: owner, isSigner: true, isWritable: true },
+            { pubkey: destAta, isSigner: false, isWritable: true },
+            { pubkey: destination, isSigner: false, isWritable: false },
+            { pubkey: mint, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: SOLANA_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+          ],
+          data: new Uint8Array(0),
+        }),
+      );
+    }
+
+    // SPL Transfer 指令：opcode=3, amount=u64 小端
+    const amountU64 = this._parseTokenAmount(amount, decimals);
+    const data = new Uint8Array(9);
+    data[0] = 3;
+    for (let i = 0; i < 8; i++) {
+      data[1 + i] = Number((amountU64 >> BigInt(8 * i)) & 0xffn);
+    }
+    transaction.add(
+      new TransactionInstruction({
+        programId: SOLANA_TOKEN_PROGRAM_ID,
+        keys: [
+          { pubkey: sourceAta, isSigner: false, isWritable: true },
+          { pubkey: destAta, isSigner: false, isWritable: true },
+          { pubkey: owner, isSigner: true, isWritable: false },
+        ],
+        data,
+      }),
+    );
+
+    const signature = await this.connection.sendTransaction(transaction, [
+      this.payer,
+    ]);
+    console.log("[SolanaService] Token transaction sent:", signature);
+    try {
+      await this.connection.confirmTransaction(signature, "confirmed");
+      console.log("[SolanaService] Token transaction confirmed:", signature);
+    } catch (e) {
+      console.error("[SolanaService] Token confirm error:", e);
+    }
+    return signature;
+  }
+
+  /**
+   * 将十进制字符串金额（如 "1.5"）按 decimals 转换为 u64 整数（无浮点精度损失）
+   */
+  private _parseTokenAmount(amount: string, decimals: number): bigint {
+    const [intPart, fracPart = ""] = amount.split(".");
+    const frac = (fracPart + "0".repeat(decimals)).slice(0, decimals);
+    const combined = (intPart || "0") + frac;
+    return BigInt(combined || "0");
   }
 }

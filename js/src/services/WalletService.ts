@@ -11,6 +11,8 @@ export interface WalletAccount {
   privateKey?: string;
   addresses?: Record<string, string>;
   privateKeys?: Record<string, string>;
+  // 导入私钥时检测出的链类型（"evm" | "solana"），用于正确分流存储
+  chainType?: string;
 }
 
 /**
@@ -110,27 +112,37 @@ export class WalletService {
 
   /**
    * 从私钥导入账户
+   * 先尝试 EVM（0x 十六进制），再尝试 Solana（base58 64 字节密钥），
+   * 并返回检测出的 chainType 以便上层正确分流存储。
    */
   static async importPrivateKey(privateKey: string): Promise<WalletAccount> {
     // 尝试作为 EVM 私钥导入
     try {
       const wallet = new ethers.Wallet(privateKey);
+      if (wallet.address) {
+        return {
+          address: wallet.address,
+          privateKey: wallet.privateKey,
+          chainType: "evm",
+        };
+      }
+    } catch {
+      // 不是 EVM 私钥，继续尝试 Solana
+    }
+    // 尝试 Solana 私钥（base58 编码的 64 字节密钥）
+    try {
+      const secretKey = bs58.decode(privateKey);
+      if (secretKey.length !== 64) {
+        throw new Error("invalid solana secret key length");
+      }
+      const keypair = Keypair.fromSecretKey(secretKey);
       return {
-        address: wallet.address,
-        privateKey: wallet.privateKey,
+        address: keypair.publicKey.toBase58(),
+        privateKey: privateKey,
+        chainType: "solana",
       };
     } catch {
-      // 不是 EVM 私钥，尝试 Solana
-      try {
-        const secretKey = bs58.decode(privateKey);
-        const keypair = Keypair.fromSecretKey(secretKey);
-        return {
-          address: keypair.publicKey.toBase58(),
-          privateKey: privateKey,
-        };
-      } catch {
-        throw new Error("Invalid private key");
-      }
+      throw new Error("Invalid private key");
     }
   }
 

@@ -1,24 +1,33 @@
 import { ethers, Network, Contract, Wallet } from "ethers";
 
 export class EvmService {
-  private provider: ethers.JsonRpcProvider | null = null;
+  private provider: ethers.Provider | null = null;
   private signer: Wallet | null = null;
 
-  constructor(rpcUrl: string, chainId?: number) {
+  constructor(rpcUrl: string | string[], chainId?: number) {
+    const urls = Array.isArray(rpcUrl) ? rpcUrl : [rpcUrl];
     console.log(
       "[EvmService] Initializing with RPC:",
-      rpcUrl,
+      urls,
       "chainId:",
       chainId,
     );
     try {
-      if (chainId) {
-        const network = Network.from(chainId);
-        this.provider = new ethers.JsonRpcProvider(rpcUrl, network);
-        console.log("[EvmService] Provider created with chainId:", chainId);
-      } else {
-        this.provider = new ethers.JsonRpcProvider(rpcUrl);
-        console.log("[EvmService] Provider created, detecting network...");
+      const network = chainId ? Network.from(chainId) : undefined;
+      const providers = urls.map((u) =>
+        network
+          ? new ethers.JsonRpcProvider(u, network)
+          : new ethers.JsonRpcProvider(u),
+      );
+      this.provider =
+        providers.length === 1
+          ? providers[0]
+          : new ethers.FallbackProvider(providers, 1);
+      console.log(
+        "[EvmService] Provider created, fallback count:",
+        providers.length,
+      );
+      if (!chainId) {
         this.detectNetwork();
       }
     } catch (e) {
@@ -66,7 +75,8 @@ export class EvmService {
     ];
     const contract = new ethers.Contract(tokenAddress, minABI, this.provider);
     const balance = await contract.balanceOf(walletAddress);
-    return ethers.formatEther(balance);
+    // 返回原始整数（未除以 decimals），由调用方按代币 decimals 格式化
+    return balance.toString();
   }
 
   async getBlockNumber(): Promise<number> {

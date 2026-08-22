@@ -15,6 +15,8 @@ import {
   AlertDialog,
   Image,
   GestureDetector,
+  ClipboardService,
+  ToastService,
 } from "fuickjs";
 import { WalletManager, WalletInfo } from "../../services/WalletManager";
 import WalletListPage from "./WalletListPage";
@@ -322,29 +324,42 @@ export default function WalletHomePage() {
                   fontWeight="bold"
                 />
                 <SizedBox height={20} />
-                <Container
-                  padding={{ horizontal: 12, vertical: 6 }}
-                  decoration={{ color: "#8c8dae33", borderRadius: 20 }}
+                <InkWell
+                  onTap={async () => {
+                    const fullAddress =
+                      wallet?.addresses?.[chain?.id || ""] ||
+                      wallet?.address ||
+                      "";
+                    if (fullAddress) {
+                      await ClipboardService.setData(fullAddress);
+                      await ToastService.show("地址已复制");
+                    }
+                  }}
                 >
-                  <Row mainAxisSize="min">
-                    <Text
-                      text={formatAddress(
-                        wallet?.addresses?.[chain?.id || ""] ||
-                          wallet?.address ||
-                          "",
-                      )}
-                      color="white"
-                      fontSize={12}
-                    />
-                    <SizedBox width={4} />
-                    <Image
-                      url={Icons.copy}
-                      width={12}
-                      height={12}
-                      fit="contain"
-                    />
-                  </Row>
-                </Container>
+                  <Container
+                    padding={{ horizontal: 12, vertical: 6 }}
+                    decoration={{ color: "#8c8dae33", borderRadius: 20 }}
+                  >
+                    <Row mainAxisSize="min">
+                      <Text
+                        text={formatAddress(
+                          wallet?.addresses?.[chain?.id || ""] ||
+                            wallet?.address ||
+                            "",
+                        )}
+                        color="white"
+                        fontSize={12}
+                      />
+                      <SizedBox width={4} />
+                      <Image
+                        url={Icons.copy}
+                        width={12}
+                        height={12}
+                        fit="contain"
+                      />
+                    </Row>
+                  </Container>
+                </InkWell>
               </Column>
             </Container>
           </Padding>
@@ -412,7 +427,7 @@ export default function WalletHomePage() {
                       >
                         <Image
                           url={
-                            ChainIcons[chain?.id || "ethereum"] ||
+                            ChainIcons[chain?.icon || "ethereum"] ||
                             ChainIcons.ethereum
                           }
                           width={32}

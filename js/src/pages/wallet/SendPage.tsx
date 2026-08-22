@@ -18,7 +18,11 @@ import {
 import { Theme } from "../../theme";
 import { ThemeButton, ThemeInput } from "../../components/common";
 import { WalletInfo, WalletManager } from "../../services/WalletManager";
-import { ChainConfig, getSelectedChain } from "../../services/ChainRegistry";
+import {
+  ChainConfig,
+  TokenConfig,
+  getSelectedChain,
+} from "../../services/ChainRegistry";
 import { PasswordService } from "../../services/PasswordService";
 import { ChainServiceManager } from "../../services/ChainServiceManager";
 import { Icons } from "../../assets/icons";
@@ -33,6 +37,7 @@ export default function SendPage({
     initialWallet || null,
   );
   const [chain, setChain] = useState<ChainConfig | null>(null);
+  const [selectedToken, setSelectedToken] = useState<TokenConfig | null>(null);
   const [toAddress, setToAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,6 +47,7 @@ export default function SendPage({
     (async () => {
       const c = await getSelectedChain();
       setChain(c);
+      setSelectedToken(null);
 
       if (!wallet) {
         const wallets = WalletManager.getInstance().getWallets();
@@ -56,7 +62,7 @@ export default function SendPage({
     if (wallet && chain) {
       fetchBalance();
     }
-  }, [wallet, chain]);
+  }, [wallet, chain, selectedToken]);
 
   const fetchBalance = async () => {
     if (!wallet || !chain) return;
@@ -68,9 +74,17 @@ export default function SendPage({
       if (!service) {
         throw new Error("服务不可用");
       }
-      const val = await service.getBalance(addr);
+      let val: string;
+      if (selectedToken) {
+        const raw = await service.getTokenBalance(selectedToken.address, addr);
+        val = (
+          parseFloat(raw || "0") / Math.pow(10, selectedToken.decimals)
+        ).toString();
+      } else {
+        val = await service.getBalance(addr);
+      }
       const num = parseFloat(val);
-      setBalance(num.toFixed(4));
+      setBalance(isNaN(num) ? "0.0000" : num.toFixed(4));
     } catch (e) {
       setBalance("错误");
     }
@@ -153,7 +167,16 @@ export default function SendPage({
       }
 
       // 4. 执行交易
-      txHash = await service.transfer(toAddress, amount);
+      if (selectedToken) {
+        txHash = await service.transferToken(
+          selectedToken.address,
+          toAddress,
+          amount,
+          selectedToken.decimals,
+        );
+      } else {
+        txHash = await service.transfer(toAddress, amount);
+      }
     } catch (e: any) {
       error = e;
       console.error(e);
@@ -230,7 +253,7 @@ export default function SendPage({
     <Scaffold
       appBar={
         <AppBar
-          title={`发送 ${chain?.symbol || ""}`}
+          title={`发送 ${selectedToken ? selectedToken.symbol : chain?.symbol || ""}`}
           backgroundColor={Theme.colors.surface}
           elevation={0}
           centerTitle={true}
@@ -284,7 +307,7 @@ export default function SendPage({
                   </Row>
                   <SizedBox height={12} />
                   <Text
-                    text={`余额: ${balance} ${chain?.symbol || ""}`}
+                    text={`余额: ${balance} ${selectedToken ? selectedToken.symbol : chain?.symbol || ""}`}
                     fontSize={12}
                     color={Theme.colors.textSecondary}
                   />
@@ -293,11 +316,64 @@ export default function SendPage({
 
               <SizedBox height={24} />
 
+              {/* 资产选择器：原生 + 各链代币 */}
+              {chain && chain.tokens && chain.tokens.length > 0 && (
+                <Column crossAxisAlignment="start">
+                  <Text
+                    text="资产"
+                    color={Theme.colors.textSecondary}
+                    fontSize={14}
+                  />
+                  <SizedBox height={8} />
+                  <SingleChildScrollView scrollDirection="horizontal">
+                    <Row crossAxisAlignment="center">
+                      {[null, ...chain.tokens].map((t) => {
+                        const isNative = t === null;
+                        const sym = isNative
+                          ? chain.symbol || "Native"
+                          : t.symbol;
+                        const selected = isNative
+                          ? selectedToken === null
+                          : selectedToken?.symbol === t.symbol;
+                        return (
+                          <InkWell
+                            key={sym}
+                            onTap={() => setSelectedToken(t)}
+                          >
+                            <Container
+                              margin={{ right: 8 }}
+                              padding={{ horizontal: 14, vertical: 8 }}
+                              decoration={{
+                                color: selected
+                                  ? Theme.colors.primary
+                                  : Theme.colors.surface,
+                                borderRadius: 16,
+                              }}
+                            >
+                              <Text
+                                text={sym}
+                                color={
+                                  selected ? "#ffffff" : Theme.colors.textPrimary
+                                }
+                                fontSize={13}
+                                fontWeight="bold"
+                              />
+                            </Container>
+                          </InkWell>
+                        );
+                      })}
+                    </Row>
+                  </SingleChildScrollView>
+                </Column>
+              )}
+
+              <SizedBox height={24} />
+
               <ThemeInput
                 label="接收地址"
                 value={toAddress}
                 onChanged={setToAddress}
-                hint="0x..."
+                hint={chain?.type === "Solana" ? "Solana 地址..." : "0x..."}
               />
 
               <SizedBox height={16} />
