@@ -199,11 +199,12 @@ export default function WalletListPage(props: {
   }
 
   return (
-    <Scaffold
+    <Scaffold backgroundColor={Theme.colors.background}
       appBar={
         <AppBar
           title="我的钱包"
-          backgroundColor={Theme.colors.surface}
+          backgroundColor={Theme.colors.background}
+          foregroundColor={Theme.colors.textPrimary}
           elevation={0}
         />
       }

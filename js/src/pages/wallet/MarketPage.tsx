@@ -10,7 +10,6 @@ import {
   Container,
   Text,
   Padding,
-  SafeArea,
   Row,
   Image,
   SizedBox,
@@ -25,6 +24,7 @@ import {
   SliverToBoxAdapter,
   SliverList,
   Flexible,
+  Expanded,
   Divider,
   TextField,
   DefaultTabController,
@@ -33,6 +33,7 @@ import {
   SliverAppBar,
 } from "fuickjs";
 import { Theme } from "../../theme";
+import { ChangeBadge } from "../../components/common";
 
 const TABS = ["全部", "自选", "现货", "合约"];
 const TAB_TO_PREFIXES: Record<string, string[]> = {
@@ -49,11 +50,22 @@ interface Crypto {
   change: number;
   volume: number;
   marketCap: number;
+  color: string;
 }
 
-// --- 数据生成逻辑 ---
+const COIN_COLORS: Record<string, string> = {
+  BTC: "#F7931A",
+  ETH: "#627EEA",
+  SOL: "#14F195",
+  BNB: "#F3BA2F",
+  XRP: "#23292F",
+  ADA: "#0033AD",
+  DOGE: "#C2A633",
+  DOT: "#E6007A",
+  MATIC: "#8247E5",
+  LTC: "#345D9D",
+};
 
-// 生成 Crypto 数据
 const generateCryptos = (count: number) => {
   const cryptos = [];
   const baseSymbols = [
@@ -69,27 +81,40 @@ const generateCryptos = (count: number) => {
     "LTC",
   ];
   const quotes = ["USDT", "USDC"];
+  const basePrices: Record<string, number> = {
+    BTC: 64000,
+    ETH: 3200,
+    SOL: 145,
+    BNB: 580,
+    XRP: 0.52,
+    ADA: 0.45,
+    DOGE: 0.12,
+    DOT: 6.8,
+    MATIC: 0.72,
+    LTC: 72,
+  };
 
   for (let i = 0; i < count; i++) {
     const base = baseSymbols[i % baseSymbols.length];
     const quote = quotes[i % quotes.length];
-    // 为了增加多样性，后面加一些后缀
     const suffix = i >= baseSymbols.length ? ` ${i}` : "";
     const symbol = `${base}/${quote}${suffix}`;
+    const change = -6 + Math.random() * 12;
 
     cryptos.push({
       symbol: symbol,
       name: base + suffix,
-      price: 10 + Math.random() * 50000,
-      change: -10 + Math.random() * 20,
+      price: (basePrices[base] || 10 + Math.random() * 500) * (0.9 + Math.random() * 0.2),
+      change: change,
       volume: Math.floor(Math.random() * 1000000),
       marketCap: Math.floor(Math.random() * 1000000000),
+      color: COIN_COLORS[base] || "#64748B",
     });
   }
   return cryptos;
 };
 
-const ALL_CRYPTOS = generateCryptos(100);
+const ALL_CRYPTOS = generateCryptos(40);
 
 const BANNERS = [
   "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=800&q=80",
@@ -98,81 +123,78 @@ const BANNERS = [
 ];
 
 const CATEGORIES = [
-  { name: "涨幅榜", icon: "trending_up", color: "#4CAF50" },
-  { name: "跌幅榜", icon: "trending_down", color: "#F44336" },
-  { name: "新币", icon: "fiber_new", color: "#FF4081" },
-  { name: "Defi", icon: "account_balance", color: "#9C27B0" },
-  { name: "GameFi", icon: "games", color: "#795548" },
-  { name: "NFT", icon: "image", color: "#FF9800" },
-  { name: "Layer2", icon: "layers", color: "#2196F3" },
-  { name: "更多", icon: "apps", color: "#607D8B" },
+  { name: "涨幅榜", icon: "trending_up", color: Theme.colors.success },
+  { name: "跌幅榜", icon: "trending_down", color: Theme.colors.error },
+  { name: "新币", icon: "fiber_new", color: Theme.colors.accent },
+  { name: "Defi", icon: "account_balance", color: "#2DD4BF" },
+  { name: "GameFi", icon: "sports_esports", color: "#F59E0B" },
+  { name: "Layer2", icon: "layers", color: "#60A5FA" },
+  { name: "NFT", icon: "image", color: "#F472B6" },
+  { name: "更多", icon: "apps", color: "#94A3B8" },
 ];
-
-// --- 组件定义 ---
 
 function CryptoItem({ crypto }: { crypto: Crypto; index: number }) {
   const isUp = crypto.change >= 0;
-  const color = isUp ? Theme.colors.success : Theme.colors.error;
 
   return (
-    <Column>
-      <InkWell onTap={() => console.log(`Click crypto: ${crypto.symbol}`)}>
-        <Container color={Theme.colors.surface}>
-          <Padding padding={{ left: 16, right: 16, top: 12, bottom: 12 }}>
-            <Row mainAxisAlignment="spaceBetween">
-              <Column crossAxisAlignment="start">
-                <Row>
-                  <Text
-                    text={crypto.name}
-                    fontSize={16}
-                    fontWeight="bold"
-                    color={Theme.colors.textPrimary}
-                  />
-                  <SizedBox width={6} />
-                  <Container
-                    color={Theme.colors.background}
-                    borderRadius={4}
-                    padding={{ left: 4, right: 4, top: 1, bottom: 1 }}
-                  >
-                    <Text
-                      text="10X"
-                      fontSize={10}
-                      color={Theme.colors.textSecondary}
-                    />
-                  </Container>
-                </Row>
-                <SizedBox height={4} />
-                <Text
-                  text={crypto.symbol}
-                  fontSize={12}
-                  color={Theme.colors.textSecondary}
-                />
-              </Column>
+    <InkWell onTap={() => console.log(`Click crypto: ${crypto.symbol}`)}>
+      <Container
+        margin={{ horizontal: 16, bottom: 10 }}
+        padding={{ left: 14, right: 14, top: 14, bottom: 14 }}
+        decoration={{
+          color: Theme.colors.surface,
+          borderRadius: Theme.borderRadius.l,
+          border: { color: Theme.colors.border, width: 1 },
+        }}
+      >
+        <Row mainAxisAlignment="spaceBetween" crossAxisAlignment="center">
+          <Row crossAxisAlignment="center">
+            <Container
+              width={40}
+              height={40}
+              alignment="center"
+              decoration={{
+                color: crypto.color + "22",
+                borderRadius: 14,
+              }}
+            >
+              <Text
+                text={crypto.name.substring(0, 1)}
+                fontSize={16}
+                fontWeight="bold"
+                color={crypto.color}
+              />
+            </Container>
+            <SizedBox width={12} />
+            <Column crossAxisAlignment="start">
+              <Text
+                text={crypto.name}
+                fontSize={16}
+                fontWeight="bold"
+                color={Theme.colors.textPrimary}
+              />
+              <SizedBox height={3} />
+              <Text
+                text={crypto.symbol}
+                fontSize={12}
+                color={Theme.colors.textSecondary}
+              />
+            </Column>
+          </Row>
 
-              <Row>
-                <Column crossAxisAlignment="end">
-                  <Text
-                    text={crypto.price.toFixed(2)}
-                    fontSize={17}
-                    fontWeight="bold"
-                    color={color}
-                  />
-                  <SizedBox height={2} />
-                  <Text
-                    text={(isUp ? "+" : "") + crypto.change.toFixed(2) + "%"}
-                    fontSize={12}
-                    color={color}
-                  />
-                </Column>
-              </Row>
-            </Row>
-          </Padding>
-        </Container>
-      </InkWell>
-      <Padding padding={{ left: 16 }}>
-        <Divider height={1} color={Theme.colors.divider} />
-      </Padding>
-    </Column>
+          <Column crossAxisAlignment="end">
+            <Text
+              text={`$${crypto.price.toFixed(2)}`}
+              fontSize={16}
+              fontWeight="bold"
+              color={Theme.colors.textPrimary}
+            />
+            <SizedBox height={4} />
+            <ChangeBadge value={crypto.change} />
+          </Column>
+        </Row>
+      </Container>
+    </InkWell>
   );
 }
 
@@ -189,9 +211,7 @@ export default function MarketPage() {
   const { tick, cryptos: cryptosWithUpdate } = marketData;
 
   const filteredCryptos = useMemo(() => {
-    // 简单模拟过滤逻辑
     if (activeTabIndex === 0) return ALL_CRYPTOS;
-    // 这里只是简单演示，实际上应该根据 tab 过滤
     return ALL_CRYPTOS.filter((_, i) => i % (activeTabIndex + 1) === 0);
   }, [activeTabIndex]);
 
@@ -204,8 +224,8 @@ export default function MarketPage() {
       setMarketData((prev) => {
         const nextCryptos = prev.cryptos.map((s) => ({
           ...s,
-          price: s.price + (Math.random() - 0.5) * 10,
-          change: s.change + (Math.random() - 0.5) * 0.1,
+          price: Math.max(0.01, s.price + (Math.random() - 0.5) * s.price * 0.01),
+          change: s.change + (Math.random() - 0.5) * 0.15,
         }));
 
         const nextBannerIndex = (prev.bannerIndex + 1) % BANNERS.length;
@@ -250,8 +270,8 @@ export default function MarketPage() {
           url={url}
           fit="cover"
           width={Infinity}
-          height={150}
-          borderRadius={Theme.borderRadius.m}
+          height={160}
+          borderRadius={Theme.borderRadius.l}
         />
       )),
     [],
@@ -263,21 +283,22 @@ export default function MarketPage() {
         <Container
           key={i}
           alignment="center"
+          padding={{ vertical: 14 }}
           decoration={{
             color: Theme.colors.surface,
-            borderRadius: Theme.borderRadius.m,
-            boxShadow: Theme.shadows.small,
+            borderRadius: Theme.borderRadius.l,
+            border: { color: Theme.colors.border, width: 1 },
           }}
         >
           <Column mainAxisAlignment="center">
             <Container
-              width={40}
-              height={40}
-              borderRadius={20}
-              color={cat.color + "15"}
+              width={42}
+              height={42}
+              borderRadius={14}
+              color={cat.color + "22"}
             >
               <Center>
-                <Icon name={cat.icon} color={cat.color} size={24} />
+                <Icon name={cat.icon} color={cat.color} size={22} />
               </Center>
             </Container>
             <SizedBox height={8} />
@@ -301,58 +322,67 @@ export default function MarketPage() {
     <DefaultTabController length={TABS.length} initialIndex={0}>
       <Scaffold backgroundColor={Theme.colors.background}>
         <CustomScrollView>
-          <SliverAppBar pinned={true}>
-            <Container color={Theme.colors.primary} isBoundary={true}>
-              <SafeArea>
-                <Padding padding={{ left: 16, right: 16, bottom: 8 }}>
-                  <Column mainAxisAlignment="center" crossAxisAlignment="start">
-                    <Text
-                      text="行情"
-                      fontSize={18}
-                      color={Theme.colors.surface}
-                      fontWeight="bold"
-                    />
-                    <Text
-                      text={`实时行情 · 更新 ${tick}`}
-                      fontSize={11}
-                      color={Theme.colors.surface}
-                    />
-                  </Column>
-                </Padding>
-              </SafeArea>
+            <SliverAppBar pinned={true} expandedHeight={0}>
+              <Container
+                color={Theme.colors.background}
+              >
+                 <Padding padding={{ left: 16, right: 16, bottom: 10, top: 8 }}>
+                 <Row
+                   mainAxisAlignment="spaceBetween"
+                   crossAxisAlignment="center"
+                 >
+                   <Expanded flex={1}>
+                     <Column crossAxisAlignment="start">
+                       <Text
+                         text="行情"
+                         fontSize={24}
+                         color="white"
+                         fontWeight="bold"
+                       />
+                     </Column>
+                   </Expanded>
+                   <Container
+                     width={40}
+                     height={40}
+                     alignment="center"
+                     decoration={{
+                       color: "#FFFFFF1F",
+                       borderRadius: Theme.borderRadius.full,
+                     }}
+                   >
+                     <Icon name="notifications" color="white" size={22} />
+                   </Container>
+                 </Row>
+               </Padding>
             </Container>
           </SliverAppBar>
 
           <SliverToBoxAdapter>
             <Padding padding={{ left: 16, right: 16, top: 12, bottom: 0 }}>
               <Container
-                height={44}
+                height={46}
+                padding={{ horizontal: 14 }}
                 decoration={{
-                  color: Theme.colors.surface,
-                  borderRadius: 22,
-                  boxShadow: Theme.shadows.small,
+                  color: Theme.colors.surfaceVariant,
+                  borderRadius: Theme.borderRadius.full,
+                  border: { color: Theme.colors.border, width: 1 },
                 }}
               >
-                <Padding padding={{ left: 16, right: 16 }}>
-                  <Row crossAxisAlignment="center">
-                    <Icon
-                      name="search"
-                      size={20}
-                      color={Theme.colors.textHint}
+                <Row crossAxisAlignment="center">
+                  <Icon
+                    name="search"
+                    size={20}
+                    color={Theme.colors.textHint}
+                  />
+                  <SizedBox width={8} />
+                  <Flexible>
+                    <TextField
+                      hintText="搜索币种"
+                      border="none"
+                      onChanged={(v) => console.log("Search:", v)}
                     />
-                    <SizedBox width={8} />
-                    <Flexible>
-                      <TextField
-                        hintText="搜索币种"
-                        onChanged={(v) => console.log("Search:", v)}
-                        decoration={{
-                          hintStyle: { color: Theme.colors.textHint },
-                          border: { width: 0, color: "transparent" },
-                        }}
-                      />
-                    </Flexible>
-                  </Row>
-                </Padding>
+                  </Flexible>
+                </Row>
               </Container>
             </Padding>
           </SliverToBoxAdapter>
@@ -360,9 +390,9 @@ export default function MarketPage() {
           <SliverToBoxAdapter>
             <Padding padding={{ left: 16, right: 16, top: 16 }}>
               <Container
-                height={150}
+                height={160}
                 decoration={{
-                  borderRadius: Theme.borderRadius.m,
+                  borderRadius: Theme.borderRadius.l,
                   boxShadow: Theme.shadows.medium,
                 }}
               >
@@ -380,11 +410,11 @@ export default function MarketPage() {
 
           <SliverToBoxAdapter>
             <GridView
-              padding={{ left: 12, right: 12, bottom: 8 }}
+              padding={{ left: 12, right: 12, top: 16, bottom: 4 }}
               crossAxisCount={4}
               mainAxisSpacing={12}
               crossAxisSpacing={12}
-              childAspectRatio={0.8}
+              childAspectRatio={0.85}
               shrinkWrap={true}
               physics="never"
             >
@@ -392,20 +422,7 @@ export default function MarketPage() {
             </GridView>
           </SliverToBoxAdapter>
 
-          <SliverToBoxAdapter>
-            <Padding padding={{ left: 16, right: 16, top: 20, bottom: 0 }}>
-              <Row mainAxisAlignment="spaceBetween">
-                <Text
-                  text={`${TABS[activeTabIndex]}榜单`}
-                  fontSize={18}
-                  fontWeight="bold"
-                  color={Theme.colors.textPrimary}
-                />
-              </Row>
-            </Padding>
-          </SliverToBoxAdapter>
-
-          <SliverPersistentHeader pinned={true} minExtent={49} maxExtent={49}>
+          <SliverPersistentHeader pinned={true} minExtent={52} maxExtent={52}>
             <Container color={Theme.colors.background}>
               <Column>
                 <TabBar
@@ -416,7 +433,7 @@ export default function MarketPage() {
                   indicatorColor={Theme.colors.primary}
                   indicatorWeight={2}
                 />
-                <Divider height={1} color={Theme.colors.divider} />
+                <Divider height={1} color={Theme.colors.border} />
               </Column>
             </Container>
           </SliverPersistentHeader>

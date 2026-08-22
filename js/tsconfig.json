@@ -17,6 +17,12 @@
     "paths": {
       "*": [
         "src/*"
+      ],
+      "@fuickjs-community/web_view": [
+        "../../fuickjs_community/web_view/src/index.ts"
+      ],
+      "fuickjs": [
+        "../../fuickjs_framework/fuickjs/src/index.ts"
       ]
     }
   },

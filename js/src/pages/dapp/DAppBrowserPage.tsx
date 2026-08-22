@@ -207,12 +207,12 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
   const loading = progress > 0 && progress < 100;
 
   return (
-    <Scaffold>
+    <Scaffold backgroundColor={Theme.colors.background}>
       <Column crossAxisAlignment="stretch">
         <SafeArea>
           <Container
             decoration={{
-              color: Theme.colors.surface,
+              color: Theme.colors.background,
               border: { bottom: { width: 1, color: Theme.colors.divider } },
             }}
             padding={{ horizontal: 8, top: 8, bottom: 8 }}
@@ -223,7 +223,7 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
                 <Container
                   padding={{ horizontal: 12, vertical: 7 }}
                   decoration={{
-                    color: Theme.colors.surfaceLight,
+                    color: Theme.colors.surfaceVariant,
                     borderRadius: Theme.borderRadius.full,
                   }}
                 >
@@ -262,7 +262,7 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
                   decoration={{
                     color: connected
                       ? Theme.colors.success + "1A"
-                      : Theme.colors.surfaceLight,
+                      : Theme.colors.surfaceVariant,
                     borderRadius: Theme.borderRadius.full,
                   }}
                 >
@@ -295,7 +295,7 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
                 <LinearProgressIndicator
                   value={progress / 100}
                   color={Theme.colors.primary}
-                  backgroundColor={Theme.colors.primaryLight}
+                  backgroundColor={Theme.colors.accent + "22"}
                   strokeWidth={2}
                   borderRadius={2}
                 />

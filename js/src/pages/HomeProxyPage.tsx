@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Center, Scaffold, CircularProgressIndicator } from "fuickjs";
+import { Theme } from "../theme";
 import OnboardingPage from "./OnboardingPage";
 import MainTabsPage from "./wallet/MainTabsPage";
 import { WalletManager } from "../services/WalletManager";
@@ -22,7 +23,7 @@ export default function HomeProxyPage() {
 
   if (hasWallet === null) {
     return (
-      <Scaffold>
+      <Scaffold backgroundColor={Theme.colors.background}>
         <Center>
           <CircularProgressIndicator />
         </Center>

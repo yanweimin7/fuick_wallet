@@ -93,7 +93,7 @@ export default function ChainSelectPage() {
 
   return (
     <DefaultTabController length={2} initialIndex={0}>
-      <Scaffold
+      <Scaffold backgroundColor={Theme.colors.background}
         appBar={
           <AppBar
             title={
@@ -106,7 +106,7 @@ export default function ChainSelectPage() {
             }
             centerTitle={true}
             elevation={0}
-            backgroundColor={Theme.colors.surface}
+            backgroundColor={Theme.colors.background}
             foregroundColor={Theme.colors.textPrimary}
             bottom={
               <TabBar

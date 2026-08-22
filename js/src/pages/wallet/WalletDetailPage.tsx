@@ -132,7 +132,7 @@ export default function WalletDetailPage({ walletId }: { walletId?: string }) {
         <AppBar
           title={<Text text="钱包详情" color={Theme.colors.textPrimary} />}
           centerTitle={true}
-          backgroundColor={Theme.colors.surface}
+          backgroundColor={Theme.colors.background}
           foregroundColor={Theme.colors.textPrimary}
           elevation={0}
         />
@@ -151,7 +151,7 @@ export default function WalletDetailPage({ walletId }: { walletId?: string }) {
                         width={48}
                         height={48}
                         decoration={{
-                          color: Theme.colors.primaryLight + "33",
+                          color: Theme.colors.accent + "22" + "33",
                           borderRadius: 24,
                         }}
                         alignment="center"

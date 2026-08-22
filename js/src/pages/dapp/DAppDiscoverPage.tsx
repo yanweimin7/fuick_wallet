@@ -20,6 +20,7 @@ import {
   Tab,
 } from "fuickjs";
 import { Theme } from "../../theme";
+import { Chip } from "../../components/common";
 
 interface DApp {
   name: string;
@@ -61,7 +62,7 @@ const TESTNET_CATEGORIES: Category[] = [
   },
   {
     title: "Sepolia 实测",
-    accent: Theme.colors.secondary,
+    accent: Theme.colors.accent,
     apps: [
       {
         name: "Yellow Co-Sign",
@@ -128,7 +129,7 @@ const MAINNET_CATEGORIES: Category[] = [
   },
   {
     title: "NFT",
-    accent: Theme.colors.secondary,
+    accent: Theme.colors.accent,
     apps: [
       { name: "OpenSea", url: "https://opensea.io", desc: "NFT 市场" },
       { name: "Blur", url: "https://blur.io", desc: "NFT 交易" },
@@ -171,22 +172,23 @@ function DAppCard({
         padding={{ all: 14 }}
         margin={{ bottom: 12 }}
         decoration={{
-          color: Theme.colors.background,
-          borderRadius: Theme.borderRadius.m,
-          border: { width: 1, color: Theme.colors.divider },
-          boxShadow: Theme.shadows.small,
+          color: Theme.colors.surface,
+          borderRadius: Theme.borderRadius.l,
+          border: { width: 1, color: Theme.colors.border },
         }}
       >
         <Row crossAxisAlignment="center">
           <Container
-            padding={{ all: 10 }}
+            width={42}
+            height={42}
+            alignment="center"
             margin={{ right: 12 }}
             decoration={{
-              color: Theme.colors.primaryLight,
-              borderRadius: Theme.borderRadius.s,
+              color: Theme.colors.accent + "22",
+              borderRadius: 14,
             }}
           >
-            <Icon name="public" color={Theme.colors.primary} />
+            <Icon name="public" color={Theme.colors.accent} size={22} />
           </Container>
           <Expanded flex={1}>
             <Column crossAxisAlignment="start">
@@ -196,34 +198,19 @@ function DAppCard({
               >
                 <Text
                   text={app.name}
-                  fontSize={14}
+                  fontSize={15}
                   fontWeight="bold"
                   color={Theme.colors.textPrimary}
                 />
-                {app.tag ? (
-                  <Container
-                    padding={{ horizontal: 8, vertical: 3 }}
-                    decoration={{
-                      color: accent + "1A",
-                      borderRadius: Theme.borderRadius.full,
-                    }}
-                  >
-                    <Text
-                      text={app.tag}
-                      fontSize={10}
-                      fontWeight="bold"
-                      color={accent}
-                    />
-                  </Container>
-                ) : null}
+                {app.tag ? <Chip label={app.tag} color={accent} /> : null}
               </Row>
-              <SizedBox height={2} />
+              <SizedBox height={3} />
               <Text
                 text={app.desc}
-                fontSize={11}
+                fontSize={12}
                 color={Theme.colors.textSecondary}
               />
-              <SizedBox height={2} />
+              <SizedBox height={3} />
               <Text
                 text={hostOf(app.url)}
                 fontSize={10}
@@ -232,7 +219,7 @@ function DAppCard({
             </Column>
           </Expanded>
           <SizedBox width={6} />
-          <Icon name="chevron_right" color={Theme.colors.textHint} />
+          <Icon name="chevron_right" color={Theme.colors.textHint} size={20} />
         </Row>
       </Container>
     </InkWell>
@@ -327,7 +314,7 @@ export default function DAppDiscoverPage() {
   };
 
   return (
-    <Scaffold>
+    <Scaffold backgroundColor={Theme.colors.background}>
       <SafeArea>
         <DefaultTabController length={2} initialIndex={0}>
           <Column crossAxisAlignment="stretch">
@@ -345,7 +332,7 @@ export default function DAppDiscoverPage() {
               <Container
                 padding={{ horizontal: 12, vertical: 4 }}
                 decoration={{
-                  color: Theme.colors.surfaceLight,
+                  color: Theme.colors.surfaceVariant,
                   borderRadius: Theme.borderRadius.full,
                 }}
               >
@@ -355,6 +342,7 @@ export default function DAppDiscoverPage() {
                   <Expanded flex={1}>
                     <TextField
                       value={query}
+                      border="none"
                       onChanged={setQuery}
                     />
                   </Expanded>
@@ -364,8 +352,8 @@ export default function DAppDiscoverPage() {
               <TabBar
                 tabs={[<Tab text="测试网" />, <Tab text="正式网" />]}
                 indicatorColor={Theme.colors.primary}
-                labelColor={Theme.colors.textPrimary}
-                unselectedLabelColor={Theme.colors.textHint}
+                labelColor={Theme.colors.primary}
+                unselectedLabelColor={Theme.colors.textSecondary}
               />
             </Column>
             <Expanded flex={1}>

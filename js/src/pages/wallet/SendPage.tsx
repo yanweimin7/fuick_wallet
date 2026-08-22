@@ -262,11 +262,12 @@ export default function SendPage({
   };
 
   return (
-    <Scaffold
+    <Scaffold backgroundColor={Theme.colors.background}
       appBar={
         <AppBar
           title={`发送 ${selectedToken ? selectedToken.symbol : chain?.symbol || ""}`}
-          backgroundColor={Theme.colors.surface}
+          backgroundColor={Theme.colors.background}
+          foregroundColor={Theme.colors.textPrimary}
           elevation={0}
           centerTitle={true}
         />

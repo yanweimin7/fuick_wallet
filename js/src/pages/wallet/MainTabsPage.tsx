@@ -166,14 +166,15 @@ export default function MainTabsPage() {
   };
 
   return (
-    <Scaffold
+    <Scaffold backgroundColor={Theme.colors.background}
       bottomNavigationBar={
         <BottomNavigationBar
           currentIndex={currentIndex}
           onTap={handleTabTap}
           selectedItemColor={Theme.colors.primary}
-          unselectedItemColor={Theme.colors.textSecondary}
+          unselectedItemColor={Theme.colors.textHint}
           backgroundColor={Theme.colors.surface}
+          elevation={8}
           items={[
             <BottomNavigationBarItem
               key="market"
@@ -181,14 +182,14 @@ export default function MainTabsPage() {
               label="行情"
             />,
             <BottomNavigationBarItem
-              key="assets"
-              icon={<Icon name="account_balance_wallet" />}
-              label="资产"
-            />,
-            <BottomNavigationBarItem
               key="discover"
               icon={<Icon name="public" />}
               label="DApp"
+            />,
+            <BottomNavigationBarItem
+              key="assets"
+              icon={<Icon name="account_balance_wallet" />}
+              label="资产"
             />,
           ]}
         />
@@ -200,8 +201,8 @@ export default function MainTabsPage() {
         onPageChanged={handlePageChanged}
         children={[
           <MarketPage key="market" />,
-          <WalletHomePage key="assets" />,
           <DAppDiscoverPage key="discover" />,
+          <WalletHomePage key="assets" />,
         ]}
       />
     </Scaffold>

@@ -71,6 +71,37 @@ async function build() {
     fs.mkdirSync(destDir, { recursive: true });
   }
 
+  // 编译期拦截“未导入/模块无法解析”类错误（TS2304 找不到标识符、TS2307 找不到模块）。
+  // 说明：fuickjs 的类型定义不完整（gradient / border.bottom / physics / fontFamily 等运行时支持但 .d.ts 未声明），
+  // 全量 tsc --noEmit 会产生大量 TS2769/TS2345 噪音，不能直接让构建失败。
+  // 这里只针对“导入缺失”这一类本可在编译期发现的错误中止构建，避免把
+  // “ReferenceError: Theme/Icon is not defined” 之类的问题带进运行时。
+  function checkImports() {
+    console.log("Type-checking imports (TS2304/TS2307 only)...");
+    let out = "";
+    try {
+      out = execSync("node_modules/.bin/tsc --noEmit", {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch (e) {
+      out = (e.stdout || "") + "\n" + (e.stderr || "");
+    }
+    const fatal = out
+      .split("\n")
+      .filter((l) => /\berror TS2304\b|\berror TS2307\b/.test(l));
+    if (fatal.length) {
+      console.error("\n✘ 发现未导入或模块无法解析的引用，构建中止：");
+      console.error(fatal.join("\n"));
+      console.error(
+        "\n请确认相关标识符（如 Theme / Icon 等）已在文件顶部正确 import。",
+      );
+      process.exit(1);
+    }
+  }
+
+  checkImports();
+
   console.log("Building bundle...");
   await esbuild.build({
     ...options,

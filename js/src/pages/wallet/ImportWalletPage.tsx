@@ -113,7 +113,7 @@ export default function ImportWalletPage(props: { nextPath?: string }) {
     <Scaffold
       backgroundColor={Theme.colors.background}
       appBar={
-        <AppBar title="导入钱包" backgroundColor={Theme.colors.surface} />
+        <AppBar title="导入钱包" backgroundColor={Theme.colors.background} foregroundColor={Theme.colors.textPrimary} />
       }
     >
       <Container color={Theme.colors.background}>

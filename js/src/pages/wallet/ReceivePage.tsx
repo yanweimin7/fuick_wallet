@@ -75,11 +75,11 @@ export default function ReceivePage(props: { wallet: WalletInfo }) {
   }, [address]);
 
   return (
-    <Scaffold
+    <Scaffold backgroundColor={Theme.colors.background}
       appBar={
         <AppBar
           title="接收"
-          backgroundColor={Theme.colors.surface}
+          backgroundColor={Theme.colors.background}
           foregroundColor={Theme.colors.textPrimary}
         />
       }

@@ -36,11 +36,12 @@ const ACTIONS = [
 
 export default function HomePage() {
   return (
-    <Scaffold
+    <Scaffold backgroundColor={Theme.colors.background}
       appBar={
         <AppBar
           title="Discovery"
-          backgroundColor={Theme.colors.surface}
+          backgroundColor={Theme.colors.background}
+          foregroundColor={Theme.colors.textPrimary}
           elevation={0}
           actions={[
             <Icon
@@ -170,7 +171,7 @@ export default function HomePage() {
                       width={40}
                       height={40}
                       decoration={{
-                        color: Theme.colors.primaryLight,
+                        color: Theme.colors.accent + "22",
                         borderRadius: 20,
                       }}
                       alignment="center"

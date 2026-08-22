@@ -90,7 +90,7 @@ export default function CreateWalletPage(props: { nextPath?: string }) {
         appBar={
           <AppBar
             title="创建钱包"
-            backgroundColor={Theme.colors.surface}
+            backgroundColor={Theme.colors.background}
             foregroundColor={Theme.colors.textPrimary}
           />
         }
@@ -119,7 +119,7 @@ export default function CreateWalletPage(props: { nextPath?: string }) {
         appBar={
           <AppBar
             title="Error"
-            backgroundColor={Theme.colors.surface}
+            backgroundColor={Theme.colors.background}
             foregroundColor={Theme.colors.textPrimary}
           />
         }
@@ -175,7 +175,7 @@ export default function CreateWalletPage(props: { nextPath?: string }) {
         appBar={
           <AppBar
             title="创建钱包"
-            backgroundColor={Theme.colors.surface}
+            backgroundColor={Theme.colors.background}
             foregroundColor={Theme.colors.textPrimary}
           />
         }

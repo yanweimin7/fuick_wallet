@@ -228,11 +228,12 @@ export default function AddTokenPage({
   };
 
   return (
-    <Scaffold
+    <Scaffold backgroundColor={Theme.colors.background}
       appBar={
         <AppBar
           title="添加代币"
-          backgroundColor={Theme.colors.surface}
+          backgroundColor={Theme.colors.background}
+          foregroundColor={Theme.colors.textPrimary}
           elevation={0}
           centerTitle={true}
         />
