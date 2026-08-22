@@ -18,6 +18,8 @@ import WalletDetailPage from "./pages/wallet/WalletDetailPage";
 import ReceivePage from "./pages/wallet/ReceivePage";
 import SendPage from "./pages/wallet/SendPage";
 import AddTokenPage from "./pages/wallet/AddTokenPage";
+import DAppDiscoverPage from "./pages/dapp/DAppDiscoverPage";
+import DAppBrowserPage from "./pages/dapp/DAppBrowserPage";
 import React from "react";
 
 // Custom Global Error UI
@@ -109,6 +111,12 @@ export async function initApp() {
     );
     Router.register("/wallet/add_token", (args) =>
       React.createElement(AddTokenPage, cast(args)),
+    );
+    Router.register("/wallet/dapp_discover", (args) =>
+      React.createElement(DAppDiscoverPage, cast(args)),
+    );
+    Router.register("/wallet/dapp_browser", (args) =>
+      React.createElement(DAppBrowserPage, cast(args)),
     );
 
     console.log("Wallet App Initialized");

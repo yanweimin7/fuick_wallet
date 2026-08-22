@@ -59,6 +59,10 @@ async function build() {
       events: path.resolve(__dirname, "node_modules/events/events.js"),
       buffer: path.resolve(__dirname, "node_modules/buffer"),
       "crypto-js": path.resolve(__dirname, "node_modules/crypto-js"),
+      "@fuickjs-community/web_view": path.resolve(
+        __dirname,
+        "../../fuickjs_community/web_view/src/index.ts",
+      ),
     },
   };
 

@@ -11,9 +11,9 @@ import {
   InkWell,
   Container,
 } from "fuickjs";
-import HomePage from "./HomePage";
 import MarketPage from "./MarketPage";
 import WalletHomePage from "./WalletHomePage";
+import DAppDiscoverPage from "../dapp/DAppDiscoverPage";
 import { Theme } from "../../theme";
 import { LocalAuthService } from "../../services/LocalAuthService";
 import { DeviceInfoService } from "fuickjs";
@@ -176,11 +176,6 @@ export default function MainTabsPage() {
           backgroundColor={Theme.colors.surface}
           items={[
             <BottomNavigationBarItem
-              key="home"
-              icon={<Icon name="home" />}
-              label="首页"
-            />,
-            <BottomNavigationBarItem
               key="market"
               icon={<Icon name="show_chart" />}
               label="行情"
@@ -190,17 +185,23 @@ export default function MainTabsPage() {
               icon={<Icon name="account_balance_wallet" />}
               label="资产"
             />,
+            <BottomNavigationBarItem
+              key="discover"
+              icon={<Icon name="public" />}
+              label="DApp"
+            />,
           ]}
         />
       }
     >
       <PageView
         ref={pageViewRef}
+        physics="never"
         onPageChanged={handlePageChanged}
         children={[
-          <HomePage key="home" />,
           <MarketPage key="market" />,
           <WalletHomePage key="assets" />,
+          <DAppDiscoverPage key="discover" />,
         ]}
       />
     </Scaffold>

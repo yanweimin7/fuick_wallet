@@ -125,6 +125,72 @@ export class EvmService {
     console.log("[EvmService] Signer initialized for:", this.signer.address);
   }
 
+  /** 透传任意 JSON-RPC 只读请求（eth_call / eth_getBalance / eth_blockNumber 等） */
+  async send(method: string, params: unknown[]): Promise<unknown> {
+    if (!this.provider) {
+      throw new Error("EvmService not initialized");
+    }
+    return this.provider.send(method, params);
+  }
+
+  /** 对消息签名（personal_sign），message 可为 utf8 字符串或 0x 十六进制 */
+  async signMessage(message: string): Promise<string> {
+    if (!this.signer) {
+      throw new Error("EvmService signer not initialized");
+    }
+    return this.signer.signMessage(message);
+  }
+
+  /** 对 EIP-712 结构化数据签名（eth_signTypedData_v4） */
+  async signTypedData(
+    domain: unknown,
+    types: Record<string, Array<{ name: string; type: string }>>,
+    value: unknown,
+  ): Promise<string> {
+    if (!this.signer) {
+      throw new Error("EvmService signer not initialized");
+    }
+    // ethers v6 要求 types 中剔除 EIP712Domain
+    const { EIP712Domain, ...filteredTypes } = types as any;
+    return this.signer.signTypedData(domain as any, filteredTypes as any, value as any);
+  }
+
+  /** 发送一笔交易，返回交易哈希 */
+  async sendTransaction(tx: {
+    to?: string;
+    from?: string;
+    value?: string;
+    data?: string;
+    gasLimit?: string;
+    gasPrice?: string;
+    maxFeePerGas?: string;
+    maxPriorityFeePerGas?: string;
+    nonce?: string;
+  }): Promise<string> {
+    if (!this.signer) {
+      throw new Error("EvmService signer not initialized");
+    }
+    const txRequest: any = {};
+    if (tx.to) txRequest.to = tx.to;
+    if (tx.value) txRequest.value = tx.value;
+    if (tx.data) txRequest.data = tx.data;
+    if (tx.gasLimit) txRequest.gasLimit = tx.gasLimit;
+    if (tx.gasPrice) txRequest.gasPrice = tx.gasPrice;
+    if (tx.maxFeePerGas) txRequest.maxFeePerGas = tx.maxFeePerGas;
+    if (tx.maxPriorityFeePerGas)
+      txRequest.maxPriorityFeePerGas = tx.maxPriorityFeePerGas;
+    if (tx.nonce) txRequest.nonce = parseInt(tx.nonce, 16);
+
+    const sent = await this.signer.sendTransaction(txRequest);
+    console.log("[EvmService] Transaction sent:", sent.hash);
+    try {
+      await sent.wait(1);
+    } catch (e) {
+      console.error("[EvmService] Wait error:", e);
+    }
+    return sent.hash;
+  }
+
   async transfer(to: string, amount: string): Promise<string> {
     if (!this.signer) {
       throw new Error(
