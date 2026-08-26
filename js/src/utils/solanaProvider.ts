@@ -227,7 +227,10 @@ export const SOLANA_INJECT_SCRIPT = `(function(){
       icon: 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2732%27 height=%2732%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%237c5cff%27/%3E%3C/svg%3E',
       version: '1.0.0',
       chains: ['solana:mainnet', 'solana:testnet', 'solana:devnet'],
-      accounts: currentAccounts(),
+      // 必须是「实时」getter：适配器直接读取 wallet.accounts[0] 来取首个账户，
+      // 若在这里一次性快照（buildApi 时 _publicKey 尚为 null），accounts 永远为
+      // []，适配器连接时会因取不到账户抛出 WalletAccountError 而表现为「连接后断开」。
+      get accounts() { return currentAccounts(); },
       features: {
         // 基础标准特性（@solana/wallet-adapter 的 isWalletAdapterCompatibleStandardWallet
         // 硬性要求 standard:connect + standard:events，否则钱包会被静默丢弃）
