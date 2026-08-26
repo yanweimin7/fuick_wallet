@@ -293,17 +293,21 @@ export const SOLANA_INJECT_SCRIPT = `(function(){
   //  - 旧契约 navigator.wallets 数组：push 我们的 announce 回调
   function registerWalletStandard(api){
     if (typeof window === 'undefined') return;
+    // 一旦被 dApp 成功注册，立即停止重复派发，否则每次 register-wallet 都会让
+    // dApp 重建适配器实例，导致已建立的连接瞬间被重置（表现为「连接后马上断开」）。
+    var announced = false;
     // 接收 dApp 的 register 函数（可能是函数本身，或 { register }）
     function acceptRegister(arg){
       var register = (arg && arg.register) ? arg.register : arg;
       if (typeof register === 'function') {
-        try { register(api); } catch (e) {}
+        try { register(api); announced = true; } catch (e) {}
       }
     }
     // 钱包主动注册：detail 为「接收 app register 并注册自己」的回调
     function announce(appRegister){ acceptRegister(appRegister); }
 
     function dispatch(){
+      if (announced) return;
       try { window.dispatchEvent(new CustomEvent('wallet-standard:register-wallet', { detail: announce })); } catch (e) {}
       try { window.dispatchEvent(new CustomEvent('wallet-standard:app-ready', { detail: announce })); } catch (e) {}
     }
@@ -338,10 +342,12 @@ export const SOLANA_INJECT_SCRIPT = `(function(){
 
     // 关键容错：Android 上 AT_DOCUMENT_START 可能晚于 dApp 自身的检测脚本，
     // 导致 dApp 的 register-wallet 监听器在我们首次派发后才注册而错过。
-    // 因此持续轮询重派 + 重装 provider（约 15s），确保任何时机的监听器都能捕获。
+    // 因此做有限次重派 + 持续重装 provider；但一旦被 dApp 注册成功（announced），
+    // 必须立即停止注册事件派发，避免适配器被反复重建。
     var retries = 0;
     var timer = setInterval(function(){
       install();
+      if (announced) { try { clearInterval(timer); } catch (e) {} return; }
       dispatch();
       retries++;
       if (retries >= 30) { try { clearInterval(timer); } catch (e) {} }
