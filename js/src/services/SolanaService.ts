@@ -8,6 +8,7 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import bs58 from "bs58";
+import nacl from "tweetnacl";
 import * as bip39 from "bip39";
 import { derivePath } from "ed25519-hd-key";
 
@@ -36,6 +37,11 @@ export class SolanaService {
 
   isConnected(): boolean {
     return this.connection !== null;
+  }
+
+  /** 当前 signer 的 base58 地址（未初始化 signer 时为 null） */
+  getAddress(): string | null {
+    return this.payer ? this.payer.publicKey.toBase58() : null;
   }
 
   async getBalance(address: string): Promise<string> {
@@ -307,6 +313,71 @@ export class SolanaService {
       console.error("[SolanaService] Token confirm error:", e);
     }
     return signature;
+  }
+
+  /**
+   * 对消息签名（ed25519），返回 64 字节签名。
+   * 对应 dApp 的 window.solana.signMessage。
+   */
+  signMessage(message: Uint8Array): Uint8Array {
+    if (!this.payer) {
+      throw new Error("SolanaService not initialized with signer");
+    }
+    return nacl.sign.detached(message, this.payer.secretKey);
+  }
+
+  /**
+   * 对（页面传入的序列化）交易做部分签名，返回序列化后的已签名交易字节。
+   */
+  signTransaction(serialized: Uint8Array): Uint8Array {
+    if (!this.connection || !this.payer) {
+      throw new Error("SolanaService not initialized with signer");
+    }
+    const tx = Transaction.from(serialized);
+    tx.partialSign(this.payer);
+    return tx.serialize();
+  }
+
+  /**
+   * 签名并发送交易，返回交易签名（base58）。对应 dApp 的 window.solana.sendTransaction。
+   */
+  async signAndSendTransaction(serialized: Uint8Array): Promise<string> {
+    if (!this.connection || !this.payer) {
+      throw new Error("SolanaService not initialized with signer");
+    }
+    const tx = Transaction.from(serialized);
+    tx.partialSign(this.payer);
+    const signature = await this.connection.sendRawTransaction(tx.serialize());
+    try {
+      await this.connection.confirmTransaction(signature, "confirmed");
+    } catch (e) {
+      console.error("[SolanaService] Confirm error:", e);
+    }
+    return signature;
+  }
+
+  /**
+   * 只读 JSON-RPC 透传（如 getBalance / getAccountInfo / getLatestBlockhash 等）。
+   * 直接 POST 到 RPC 端点，供 dApp 通过 window.solana.request 调用。
+   */
+  async send(method: string, params: any[]): Promise<unknown> {
+    if (!this.connection) {
+      throw new Error("SolanaService not initialized");
+    }
+    const rpcUrl = (this.connection as any).rpcEndpoint as string;
+    const res = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method,
+        params: params || [],
+      }),
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message || "Solana RPC error");
+    return json.result;
   }
 
   /**

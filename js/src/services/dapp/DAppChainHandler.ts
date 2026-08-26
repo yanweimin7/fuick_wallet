@@ -17,6 +17,12 @@ export interface DAppHandlerContext {
   requestPassword: () => Promise<string | null>;
   /** 弹确认框（连接 / 签名 / 交易），返回是否确认 */
   confirm: (title: string, body: string) => Promise<boolean>;
+  /** 连接授权确认框（更美观，含 dApp 与钱包信息）；缺省时回退到 confirm */
+  confirmConnect?: (info: {
+    origin: string;
+    address: string;
+    chainKind: string;
+  }) => Promise<boolean>;
   /** 通知页面 provider 链变化（用于 window.__fuickEmit('chainChanged')） */
   emitChainChanged: (chainId: string) => void;
   /** 通知页面 provider 账户变化 */

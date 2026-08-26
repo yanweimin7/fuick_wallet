@@ -12,6 +12,7 @@ import {
   Expanded,
   SafeArea,
   LinearProgressIndicator,
+  SingleChildScrollView,
   SizedBox,
   ClipboardService,
   ToastService,
@@ -22,6 +23,12 @@ import { Theme } from "../../theme";
 import { DAppBridgeService } from "../../services/DAppBridgeService";
 import { DAppHandlerContext } from "../../services/dapp/DAppChainHandler";
 import { VerifyPasswordDialog } from "../../components/PasswordDialogs";
+import { IconBadge, ThemeButton } from "../../components/common";
+
+function shortAddr(a?: string | null): string {
+  if (!a) return "";
+  return a.length > 14 ? `${a.slice(0, 8)}...${a.slice(-6)}` : a;
+}
 
 function toOrigin(url?: string): string {
   if (!url) return "";
@@ -67,7 +74,9 @@ function IconButton({
         <Icon
           name={name}
           size={size}
-          color={disabled ? Theme.colors.textHint : color || Theme.colors.textPrimary}
+          color={
+            disabled ? Theme.colors.textHint : color || Theme.colors.textPrimary
+          }
         />
       </Container>
     </InkWell>
@@ -80,7 +89,10 @@ const INJECT_SCRIPT = DAppBridgeService.getHandlers()
   .filter(Boolean)
   .join("\n");
 
-export default function DAppBrowserPage(args: { url?: string; title?: string }) {
+export default function DAppBrowserPage(args: {
+  url?: string;
+  title?: string;
+}) {
   const navigator = useNavigator();
   const webViewRef = useRef<WebView>(null);
   const initialUrl = args.url || "https://app.uniswap.org";
@@ -110,18 +122,33 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
       <AlertDialog
         backgroundColor={Theme.colors.surface}
         title={
-          <Text text={titleText} fontWeight="bold" fontSize={18} color={Theme.colors.textPrimary} />
+          <Text
+            text={titleText}
+            fontWeight="bold"
+            fontSize={18}
+            color={Theme.colors.textPrimary}
+          />
         }
-        content={<Text text={body} fontSize={14} color={Theme.colors.textSecondary} />}
+        content={
+          <Text text={body} fontSize={14} color={Theme.colors.textSecondary} />
+        }
         actions={[
           <InkWell key="cancel" onTap={() => navigator.pop(false)}>
             <Container padding={{ horizontal: 16, vertical: 8 }}>
-              <Text text="取消" color={Theme.colors.textSecondary} fontWeight="bold" />
+              <Text
+                text="取消"
+                color={Theme.colors.textSecondary}
+                fontWeight="bold"
+              />
             </Container>
           </InkWell>,
           <InkWell key="ok" onTap={() => navigator.pop(true)}>
             <Container padding={{ horizontal: 16, vertical: 8 }}>
-              <Text text="确认" color={Theme.colors.primary} fontWeight="bold" />
+              <Text
+                text="确认"
+                color={Theme.colors.primary}
+                fontWeight="bold"
+              />
             </Container>
           </InkWell>,
         ]}
@@ -134,13 +161,24 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
       <AlertDialog
         backgroundColor={Theme.colors.surface}
         title={
-          <Text text={titleText} fontWeight="bold" fontSize={18} color={Theme.colors.textPrimary} />
+          <Text
+            text={titleText}
+            fontWeight="bold"
+            fontSize={18}
+            color={Theme.colors.textPrimary}
+          />
         }
-        content={<Text text={body} fontSize={14} color={Theme.colors.textSecondary} />}
+        content={
+          <Text text={body} fontSize={14} color={Theme.colors.textSecondary} />
+        }
         actions={[
           <InkWell key="ok" onTap={() => navigator.pop(true)}>
             <Container padding={{ horizontal: 16, vertical: 8 }}>
-              <Text text="知道了" color={Theme.colors.primary} fontWeight="bold" />
+              <Text
+                text="知道了"
+                color={Theme.colors.primary}
+                fontWeight="bold"
+              />
             </Container>
           </InkWell>,
         ]}
@@ -153,16 +191,169 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
     return encryptionKey ? (encryptionKey as string) : null;
   };
 
+  /** 连接授权底部弹层：展示 dApp 站点与本地钱包的对应关系（与「已连接站点」风格一致） */
+  const ConnectConfirmSheet = ({
+    origin,
+    address,
+    chainKind,
+  }: {
+    origin: string;
+    address: string;
+    chainKind: string;
+  }) => {
+    const nav = useNavigator();
+    const host = hostOf(origin);
+    const chainLabel = chainKind === "solana" ? "Solana" : "EVM";
+    return (
+      <Container
+        color={Theme.colors.surface}
+        borderRadius={{ topLeft: Theme.borderRadius.xl, topRight: Theme.borderRadius.xl }}
+        padding={{ horizontal: 20, top: 16, bottom: 24 }}
+      >
+        <SingleChildScrollView scrollDirection="vertical">
+          <Column crossAxisAlignment="stretch">
+          <Row crossAxisAlignment="center" mainAxisAlignment="spaceBetween">
+            <Text
+              text="连接请求"
+              fontSize={18}
+              fontWeight="bold"
+              color={Theme.colors.textPrimary}
+            />
+            <InkWell onTap={() => nav.pop(false)}>
+              <Container padding={{ horizontal: 8, vertical: 6 }}>
+                <Icon name="close" color={Theme.colors.textHint} size={22} />
+              </Container>
+            </InkWell>
+          </Row>
+          <SizedBox height={4} />
+          <Text
+            text={`${host} 想要连接你的钱包`}
+            fontSize={12}
+            color={Theme.colors.textHint}
+          />
+          <SizedBox height={16} />
+
+          <Container
+            padding={{ all: 14 }}
+            decoration={{
+              color: Theme.colors.surfaceVariant,
+              borderRadius: Theme.borderRadius.m,
+            }}
+          >
+            <Row crossAxisAlignment="center">
+              <IconBadge icon="public" color={Theme.colors.accent} size={40} />
+              <SizedBox width={12} />
+              <Expanded flex={1}>
+                <Text
+                  text={host}
+                  fontSize={14}
+                  fontWeight="bold"
+                  color={Theme.colors.textPrimary}
+                />
+                <SizedBox height={2} />
+                <Text text="dApp 站点" fontSize={12} color={Theme.colors.textHint} />
+              </Expanded>
+            </Row>
+          </Container>
+
+          <SizedBox height={8} />
+          <Icon name="arrow_downward" color={Theme.colors.textHint} size={18} />
+          <SizedBox height={8} />
+
+          <Container
+            padding={{ all: 14 }}
+            decoration={{
+              color: Theme.colors.surfaceVariant,
+              borderRadius: Theme.borderRadius.m,
+            }}
+          >
+            <Row crossAxisAlignment="center">
+              <IconBadge
+                icon="account_balance_wallet"
+                color={Theme.colors.primary}
+                size={40}
+              />
+              <SizedBox width={12} />
+              <Expanded flex={1}>
+                <Text
+                  text="Fuick Wallet"
+                  fontSize={14}
+                  fontWeight="bold"
+                  color={Theme.colors.textPrimary}
+                />
+                <SizedBox height={2} />
+                <Text
+                  text={`${chainLabel} · ${shortAddr(address)}`}
+                  fontSize={12}
+                  color={Theme.colors.textHint}
+                />
+              </Expanded>
+            </Row>
+          </Container>
+
+          <SizedBox height={14} />
+          <Text
+            text="仅共享公开地址，不会泄露私钥"
+            fontSize={11}
+            color={Theme.colors.textHint}
+            textAlign="center"
+          />
+
+          <SizedBox height={16} />
+          <Row mainAxisAlignment="spaceBetween">
+            <Expanded flex={1}>
+              <Container margin={{ right: 6 }}>
+                <ThemeButton
+                  text="取消"
+                  variant="outline"
+                  fullWidth
+                  onTap={() => nav.pop(false)}
+                />
+              </Container>
+            </Expanded>
+            <Expanded flex={1}>
+              <Container margin={{ left: 6 }}>
+                <ThemeButton
+                  text="连接"
+                  fullWidth
+                  onTap={() => nav.pop(true)}
+                />
+              </Container>
+            </Expanded>
+          </Row>
+          </Column>
+        </SingleChildScrollView>
+      </Container>
+    );
+  };
+
+  const showConnectConfirm = async (
+    origin: string,
+    address: string,
+    chainKind: string,
+  ): Promise<boolean> => {
+    return (await navigator.showBottomSheet(
+      <ConnectConfirmSheet
+        origin={origin}
+        address={address}
+        chainKind={chainKind}
+      />,
+      { maxHeight: 560, backgroundColor: Theme.colors.surface },
+    )) as boolean;
+  };
+
   const emitChainChanged = (chainId: string) => {
     const dec = parseInt(chainId, 16);
     webViewRef.current?.evaluateJavascript(
-      `window.ethereum && window.ethereum.setChainId(${dec})`,
+      `window.ethereum && window.ethereum.setChainId(${dec});` +
+        `window.solana && window.solana.setChainId && window.solana.setChainId(${dec});`,
     );
   };
 
   const emitAccountsChanged = (accounts: string[]) => {
     webViewRef.current?.evaluateJavascript(
-      `window.ethereum && window.ethereum.setAccounts(${JSON.stringify(accounts)})`,
+      `window.ethereum && window.ethereum.setAccounts(${JSON.stringify(accounts)});` +
+        `window.solana && window.solana.setAccounts && window.solana.setAccounts(${JSON.stringify(accounts)});`,
     );
   };
 
@@ -176,11 +367,19 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
   const handleMessage = async (payload: unknown) => {
     let raw: any = payload;
     if (typeof raw === "string") {
-      try { raw = JSON.parse(raw); } catch { /* keep */ }
+      try {
+        raw = JSON.parse(raw);
+      } catch {
+        /* keep */
+      }
     }
     if (Array.isArray(raw) && raw.length > 0) raw = raw[0];
     if (typeof raw === "string") {
-      try { raw = JSON.parse(raw); } catch { /* keep */ }
+      try {
+        raw = JSON.parse(raw);
+      } catch {
+        /* keep */
+      }
     }
     const msg: any = raw;
     const { id, method, params, origin: msgOrigin } = msg;
@@ -189,6 +388,7 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
       origin: originToUse,
       requestPassword,
       confirm: showConfirm,
+      confirmConnect: showConnectConfirm,
       emitChainChanged,
       emitAccountsChanged,
       setConnected,
@@ -231,7 +431,9 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
                     <Icon
                       name={secure ? "lock" : "lock_open"}
                       size={16}
-                      color={secure ? Theme.colors.success : Theme.colors.warning}
+                      color={
+                        secure ? Theme.colors.success : Theme.colors.warning
+                      }
                     />
                     <SizedBox width={8} />
                     <Expanded flex={1}>
@@ -283,7 +485,9 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
                       fontSize={12}
                       fontWeight="bold"
                       color={
-                        connected ? Theme.colors.success : Theme.colors.textSecondary
+                        connected
+                          ? Theme.colors.success
+                          : Theme.colors.textSecondary
                       }
                     />
                   </Row>
@@ -310,6 +514,7 @@ export default function DAppBrowserPage(args: { url?: string; title?: string }) 
             url={url}
             injectedJavaScript={INJECT_SCRIPT}
             onMessage={(payload: unknown) => handleMessage(payload)}
+            onConsoleMessage={(m: string) => console.log("[DAppWebView]", m)}
             onTitleChanged={(t: string) => setTitle(t)}
             onProgressChanged={(p: number) => setProgress(p)}
             onLoadStop={(u: string) => {

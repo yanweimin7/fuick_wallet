@@ -25,7 +25,8 @@ export class EvmDAppHandler implements DAppChainHandler {
       method === "wallet_switchEthereumChain" ||
       method === "wallet_requestPermissions" ||
       method === "wallet_getPermissions" ||
-      method === "wallet_revokePermissions"
+      method === "wallet_revokePermissions" ||
+      method === "wallet_getCapabilities"
     );
   }
 
@@ -48,10 +49,16 @@ export class EvmDAppHandler implements DAppChainHandler {
     const addr = await DAppBridgeService.getActiveAddress();
     if (!addr) throw new Error("没有可用账户");
 
-    const ok = await ctx.confirm(
-      "连接请求",
-      `${ctx.origin}\n请求连接你的钱包\n地址: ${shortAddr(addr)}`,
-    );
+    const ok = ctx.confirmConnect
+      ? await ctx.confirmConnect({
+          origin: ctx.origin,
+          address: addr,
+          chainKind: this.chainKind,
+        })
+      : await ctx.confirm(
+          "连接请求",
+          `${ctx.origin}\n请求连接你的钱包\n地址: ${shortAddr(addr)}`,
+        );
     if (!ok) throw new Error("用户拒绝连接");
 
     await DAppBridgeService.setSiteAccounts(ctx.origin, this.chainKind, [addr]);
@@ -125,6 +132,12 @@ export class EvmDAppHandler implements DAppChainHandler {
     ctx.emitChainChanged("0x" + chainId.toString(16));
   }
 
+  /** EIP-5792：返回各链的能力支持情况。当前仅声明基础连接能力。 */
+  async getCapabilities(ctx: DAppHandlerContext): Promise<unknown> {
+    const hex = await this.getChainId();
+    return { [hex]: {} };
+  }
+
   async requestPermissions(
     params: any[],
     ctx: DAppHandlerContext,
@@ -186,6 +199,8 @@ export class EvmDAppHandler implements DAppChainHandler {
         return this.revokePermissions(params, ctx);
       case "wallet_switchEthereumChain":
         return this.switchChain(params, ctx);
+      case "wallet_getCapabilities":
+        return this.getCapabilities(ctx);
       case "personal_sign":
       case "eth_sign":
         return this.signMessage(params, ctx);

@@ -9,7 +9,7 @@
 export const EIP1193_INJECT_SCRIPT = `(function(){
   if (window.ethereum) return;
   var HANDLER = 'fuickBridge';
-  var pending = {};
+  var pending = (window.__fuickPending = window.__fuickPending || {});
   var counter = 0;
   var listeners = {};
 
@@ -31,14 +31,16 @@ export const EIP1193_INJECT_SCRIPT = `(function(){
     });
   }
 
-  window.__fuickResolve = function(id, ok, dataJson){
-    var p = pending[id];
-    if (!p) return;
-    delete pending[id];
-    var data;
-    try { data = (typeof dataJson === 'string') ? JSON.parse(dataJson) : dataJson; } catch (e) { data = null; }
-    if (ok) p.resolve(data); else p.reject(new Error(data || 'rejected'));
-  };
+  if (!window.__fuickResolve) {
+    window.__fuickResolve = function(id, ok, dataJson){
+      var p = pending[id];
+      if (!p) return;
+      delete pending[id];
+      var data;
+      try { data = (typeof dataJson === 'string') ? JSON.parse(dataJson) : dataJson; } catch (e) { data = null; }
+      if (ok) p.resolve(data); else p.reject(new Error(data || 'rejected'));
+    };
+  }
 
   window.__fuickEmit = function(event, data){
     (listeners[event] || []).forEach(function(cb){ try { cb(data); } catch (e) {} });

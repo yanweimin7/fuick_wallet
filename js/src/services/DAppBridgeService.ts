@@ -1,21 +1,34 @@
 import { EvmService } from "./EvmService";
+import { SolanaService } from "./SolanaService";
 import { WalletManager } from "./WalletManager";
 import { StorageService } from "./StorageService";
-import { getSelectedChain, setSelectedChain, ChainRegistry } from "./ChainRegistry";
+import {
+  getSelectedChain,
+  setSelectedChain,
+  ChainRegistry,
+} from "./ChainRegistry";
 import { DAppChainHandler } from "./dapp/DAppChainHandler";
 import { EvmDAppHandler } from "./dapp/EvmDAppHandler";
+import { SolanaDAppHandler } from "./dapp/SolanaDAppHandler";
+import bs58 from "bs58";
+import { base64Encode } from "../utils/base64";
 
 const CONNECTED_KEY = "fuick_dapp_connected_sites";
+/** Solana dApp 默认使用的链（ChainRegistry 中的 id） */
+const SOLANA_CHAIN_ID = "solana-mainnet";
 
 /**
  * DApp 桥接中枢：
  * - 维护「已连接站点」持久化（按 origin + chainKind 命名空间，便于多链共存）
  * - 持有链 Handler 注册表，页面把请求派发给对应 handler
- * - 提供 EVM 基础设施（EvmService 缓存、私钥获取、切链）
+ * - 提供 EVM / Solana 基础设施（Service 缓存、私钥获取、切链）
  */
 export class DAppBridgeService {
-  /** 已注册链 handler；默认包含 EVM（EIP-1193） */
-  private static handlers: DAppChainHandler[] = [new EvmDAppHandler()];
+  /** 已注册链 handler；默认包含 EVM（EIP-1193）与 Solana */
+  private static handlers: DAppChainHandler[] = [
+    new EvmDAppHandler(),
+    new SolanaDAppHandler(),
+  ];
 
   /** 注册一条链的 handler（同 chainKind 只保留一个） */
   static registerHandler(handler: DAppChainHandler): void {
@@ -135,5 +148,59 @@ export class DAppBridgeService {
     if (!target) throw new Error("不支持的链: " + chainId);
     await setSelectedChain(target);
     this.evmCache.clear();
+  }
+
+  // ---------------- Solana 基础设施 ----------------
+
+  /** 当前钱包在 Solana 主网上的地址（dApp connect 时使用） */
+  static async getSolanaAddress(): Promise<string | null> {
+    const wm = WalletManager.getInstance();
+    const wid = wm.getLastSelectedWalletId();
+    if (!wid) return null;
+    return wm.getAddressForChain(wid, SOLANA_CHAIN_ID) || null;
+  }
+
+  /** 连接 dApp 时返回 { address, publicKey(base64 字节) }，便于页面构造合法 Wallet Standard 账户 */
+  static async getSolanaKeyInfo(): Promise<{
+    address: string;
+    publicKey: string;
+  } | null> {
+    const address = await this.getSolanaAddress();
+    if (!address) return null;
+    let publicKey = "";
+    try {
+      publicKey = base64Encode(bs58.decode(address));
+    } catch (e) {
+      publicKey = "";
+    }
+    return { address, publicKey };
+  }
+
+  /** 默认 Solana 链配置 */
+  static getSolanaChainConfig() {
+    return (
+      ChainRegistry.getById(SOLANA_CHAIN_ID) ||
+      ChainRegistry.list().find((c) => c.type === "Solana")!
+    );
+  }
+
+  /** 缓存的 SolanaService 实例（使用 Solana 主网 RPC） */
+  private static solanaSvc: SolanaService | null = null;
+  static async getSolanaService(): Promise<SolanaService> {
+    if (this.solanaSvc && this.solanaSvc.isConnected()) return this.solanaSvc;
+    const cfg = this.getSolanaChainConfig();
+    this.solanaSvc = new SolanaService(cfg.rpcUrl);
+    return this.solanaSvc;
+  }
+
+  /** 用 encryptionKey 解出当前钱包的 Solana 私钥 */
+  static async getSolanaPrivateKey(encryptionKey: string): Promise<string> {
+    const wm = WalletManager.getInstance();
+    const wid = wm.getLastSelectedWalletId();
+    if (!wid) throw new Error("没有已选择的钱包");
+    const secret = await wm.getSecret(wid, encryptionKey);
+    const pk = secret?.privateKeys?.solana;
+    if (!pk) throw new Error("该钱包没有 Solana 私钥");
+    return pk;
   }
 }
