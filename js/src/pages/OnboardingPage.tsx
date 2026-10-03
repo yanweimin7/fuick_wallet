@@ -33,7 +33,11 @@ export default function OnboardingPage() {
               }}
               alignment="center"
             >
-              <Icon name="account_balance_wallet" size={60} color="white" />
+              <Icon
+                name="account_balance_wallet"
+                size={60}
+                color={Theme.colors.onPrimary}
+              />
             </Container>
 
             <SizedBox height={32} />
@@ -68,7 +72,11 @@ export default function OnboardingPage() {
                 }}
                 alignment="center"
               >
-                <Text text="创建新钱包" color="white" fontWeight="bold" />
+                <Text
+                  text="创建新钱包"
+                  color={Theme.colors.onPrimary}
+                  fontWeight="bold"
+                />
               </Container>
             </InkWell>
 
@@ -87,6 +95,7 @@ export default function OnboardingPage() {
                 decoration={{
                   color: Theme.colors.surface,
                   borderRadius: 24,
+                  border: { color: Theme.colors.border, width: 1 },
                 }}
                 alignment="center"
               >

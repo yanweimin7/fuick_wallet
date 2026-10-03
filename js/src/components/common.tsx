@@ -83,7 +83,7 @@ export const ThemeButton = ({
     textColor = Theme.colors.primary;
   } else if (variant === "danger") {
     bgColor = Theme.colors.error;
-    textColor = "#FFFFFF";
+    textColor = Theme.colors.onError;
   }
 
   return (
@@ -233,7 +233,11 @@ export const IconBadge = ({
       borderRadius: size / 2,
     }}
   >
-    <Icon name={icon} color={soft ? color : "#FFFFFF"} size={size * 0.5} />
+    <Icon
+      name={icon}
+      color={soft ? color : Theme.colors.onTint}
+      size={size * 0.5}
+    />
   </Container>
 );
 

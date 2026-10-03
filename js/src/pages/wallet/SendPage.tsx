@@ -332,62 +332,64 @@ export default function SendPage({
               {/* 资产选择器：原生 + 各链代币 + 自定义代币 */}
               {chain &&
                 [...(chain.tokens || []), ...customTokens].length > 0 && (
-                <Column crossAxisAlignment="start">
-                  <Text
-                    text="资产"
-                    color={Theme.colors.textSecondary}
-                    fontSize={14}
-                  />
-                  <SizedBox height={8} />
-                  <SingleChildScrollView scrollDirection="horizontal">
-                    <Row crossAxisAlignment="center">
-                      {[
-                        null,
-                        ...(chain.tokens || []),
-                        ...customTokens,
-                      ].map((t) => {
-                        const isNative = t === null;
-                        const sym = isNative
-                          ? chain.symbol || "Native"
-                          : (t as TokenConfig).symbol;
-                        const selected = isNative
-                          ? selectedToken === null
-                          : selectedToken?.address
-                            ? selectedToken.address ===
-                              (t as TokenConfig).address
-                            : selectedToken?.symbol ===
-                              (t as TokenConfig).symbol;
-                        return (
-                          <InkWell
-                            key={sym}
-                            onTap={() => setSelectedToken(t as TokenConfig | null)}
-                          >
-                            <Container
-                              margin={{ right: 8 }}
-                              padding={{ horizontal: 14, vertical: 8 }}
-                              decoration={{
-                                color: selected
-                                  ? Theme.colors.primary
-                                  : Theme.colors.surface,
-                                borderRadius: 16,
-                              }}
-                            >
-                              <Text
-                                text={sym}
-                                color={
-                                  selected ? "#ffffff" : Theme.colors.textPrimary
+                  <Column crossAxisAlignment="start">
+                    <Text
+                      text="资产"
+                      color={Theme.colors.textSecondary}
+                      fontSize={14}
+                    />
+                    <SizedBox height={8} />
+                    <SingleChildScrollView scrollDirection="horizontal">
+                      <Row crossAxisAlignment="center">
+                        {[null, ...(chain.tokens || []), ...customTokens].map(
+                          (t) => {
+                            const isNative = t === null;
+                            const sym = isNative
+                              ? chain.symbol || "Native"
+                              : (t as TokenConfig).symbol;
+                            const selected = isNative
+                              ? selectedToken === null
+                              : selectedToken?.address
+                                ? selectedToken.address ===
+                                  (t as TokenConfig).address
+                                : selectedToken?.symbol ===
+                                  (t as TokenConfig).symbol;
+                            return (
+                              <InkWell
+                                key={sym}
+                                onTap={() =>
+                                  setSelectedToken(t as TokenConfig | null)
                                 }
-                                fontSize={13}
-                                fontWeight="bold"
-                              />
-                            </Container>
-                          </InkWell>
-                        );
-                      })}
-                    </Row>
-                  </SingleChildScrollView>
-                </Column>
-              )}
+                              >
+                                <Container
+                                  margin={{ right: 8 }}
+                                  padding={{ horizontal: 14, vertical: 8 }}
+                                  decoration={{
+                                    color: selected
+                                      ? Theme.colors.primary
+                                      : Theme.colors.surface,
+                                    borderRadius: 16,
+                                  }}
+                                >
+                                  <Text
+                                    text={sym}
+                                    color={
+                                      selected
+                                        ? Theme.colors.onPrimary
+                                        : Theme.colors.textPrimary
+                                    }
+                                    fontSize={13}
+                                    fontWeight="bold"
+                                  />
+                                </Container>
+                              </InkWell>
+                            );
+                          },
+                        )}
+                      </Row>
+                    </SingleChildScrollView>
+                  </Column>
+                )}
 
               <SizedBox height={24} />
 

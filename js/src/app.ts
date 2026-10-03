@@ -7,6 +7,8 @@ import {
   Text,
   Button,
 } from "fuickjs";
+import { Theme } from "./theme";
+import { ThemeProvider } from "./components/ThemeProvider";
 import OnboardingPage from "./pages/OnboardingPage";
 import HomeProxyPage from "./pages/HomeProxyPage";
 import CreateWalletPage from "./pages/wallet/CreateWalletPage";
@@ -27,7 +29,7 @@ import React from "react";
 const CustomErrorUI = (error: Error) =>
   React.createElement(
     Container,
-    { color: "#E0F7FA" },
+    { color: Theme.colors.background },
     React.createElement(
       Column,
       {
@@ -38,7 +40,7 @@ const CustomErrorUI = (error: Error) =>
       React.createElement(Text, {
         text: "Oops! Something went wrong",
         fontSize: 22,
-        color: "#006064",
+        color: Theme.colors.textPrimary,
         fontWeight: "bold",
         margin: { bottom: 16 },
       }),
@@ -47,16 +49,16 @@ const CustomErrorUI = (error: Error) =>
         {
           padding: 12,
           decoration: {
-            color: "#FFFFFF",
+            color: Theme.colors.surface,
             borderRadius: 8,
-            border: { width: 1, color: "#B2EBF2" },
+            border: { width: 1, color: Theme.colors.border },
           },
           margin: { bottom: 20 },
         },
         React.createElement(Text, {
           text: error?.message || "Unknown Error",
           fontSize: 14,
-          color: "#00838F",
+          color: Theme.colors.textSecondary,
           maxLines: 5,
           overflow: "ellipsis",
         }),
@@ -80,48 +82,30 @@ export async function initApp() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cast = (args: unknown) => (args || {}) as any;
 
-    Router.register("/", (args) => {
-      return React.createElement(HomeProxyPage, cast(args));
-    });
-    Router.register("/wallet/onboarding", (args) =>
-      React.createElement(OnboardingPage, cast(args)),
-    );
-    Router.register("/wallet/create", (args) =>
-      React.createElement(CreateWalletPage, cast(args)),
-    );
-    Router.register("/wallet/import", (args) =>
-      React.createElement(ImportWalletPage, cast(args)),
-    );
-    Router.register("/wallet/home", (args) =>
-      React.createElement(MainTabsPage, cast(args)),
-    );
-    Router.register("/wallet/list", (args) =>
-      React.createElement(WalletListPage, cast(args)),
-    );
-    Router.register("/wallet/detail", (args) =>
-      React.createElement(WalletDetailPage, cast(args)),
-    );
-    Router.register("/wallet/receive", (args) =>
-      React.createElement(ReceivePage, cast(args)),
-    );
-    Router.register("/wallet/send", (args) =>
-      React.createElement(SendPage, cast(args)),
-    );
-    Router.register("/wallet/chain_select", (args) =>
-      React.createElement(ChainSelectPage, cast(args)),
-    );
-    Router.register("/wallet/add_token", (args) =>
-      React.createElement(AddTokenPage, cast(args)),
-    );
-    Router.register("/wallet/scan_tokens", (args) =>
-      React.createElement(ScanTokensPage, cast(args)),
-    );
-    Router.register("/wallet/dapp_discover", (args) =>
-      React.createElement(DAppDiscoverPage, cast(args)),
-    );
-    Router.register("/wallet/dapp_browser", (args) =>
-      React.createElement(DAppBrowserPage, cast(args)),
-    );
+    // 统一在此处套 ThemeProvider：主题订阅只写这一处，
+    // 页面组件自身不需要（也不应该）调用 useAppTheme。
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const page = (Component: any) => (args: unknown) =>
+      React.createElement(
+        ThemeProvider,
+        null,
+        React.createElement(Component, cast(args)),
+      );
+
+    Router.register("/", page(HomeProxyPage));
+    Router.register("/wallet/onboarding", page(OnboardingPage));
+    Router.register("/wallet/create", page(CreateWalletPage));
+    Router.register("/wallet/import", page(ImportWalletPage));
+    Router.register("/wallet/home", page(MainTabsPage));
+    Router.register("/wallet/list", page(WalletListPage));
+    Router.register("/wallet/detail", page(WalletDetailPage));
+    Router.register("/wallet/receive", page(ReceivePage));
+    Router.register("/wallet/send", page(SendPage));
+    Router.register("/wallet/chain_select", page(ChainSelectPage));
+    Router.register("/wallet/add_token", page(AddTokenPage));
+    Router.register("/wallet/scan_tokens", page(ScanTokensPage));
+    Router.register("/wallet/dapp_discover", page(DAppDiscoverPage));
+    Router.register("/wallet/dapp_browser", page(DAppBrowserPage));
 
     console.log("Wallet App Initialized");
   } catch (e) {

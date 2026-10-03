@@ -294,7 +294,7 @@ export default function ScanTokensPage({
                               padding={{ horizontal: 16, vertical: 8 }}
                               decoration={{
                                 color: isAdded
-                                  ? "#FFFFFF1F"
+                                  ? Theme.colors.surfaceHighlight
                                   : Theme.colors.primary,
                                 borderRadius: Theme.borderRadius.full,
                               }}
@@ -302,7 +302,9 @@ export default function ScanTokensPage({
                               <Text
                                 text={isAdded ? "已添加" : "添加"}
                                 color={
-                                  isAdded ? Theme.colors.textSecondary : "white"
+                                  isAdded
+                                    ? Theme.colors.textSecondary
+                                    : Theme.colors.onPrimary
                                 }
                                 fontSize={13}
                                 fontWeight="bold"

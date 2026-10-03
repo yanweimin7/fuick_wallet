@@ -122,15 +122,19 @@ const BANNERS = [
   "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&q=80",
 ];
 
-const CATEGORIES = [
+/**
+ * 分类色必须走函数惰性求值：若在模块顶层读取 Theme.colors，
+ * 只会拿到「bundle 首次 import 时」的那一套，切主题后不会更新。
+ */
+const getCategories = () => [
   { name: "涨幅榜", icon: "trending_up", color: Theme.colors.success },
   { name: "跌幅榜", icon: "trending_down", color: Theme.colors.error },
   { name: "新币", icon: "fiber_new", color: Theme.colors.accent },
-  { name: "Defi", icon: "account_balance", color: "#2DD4BF" },
-  { name: "GameFi", icon: "sports_esports", color: "#F59E0B" },
-  { name: "Layer2", icon: "layers", color: "#60A5FA" },
-  { name: "NFT", icon: "image", color: "#F472B6" },
-  { name: "更多", icon: "apps", color: "#94A3B8" },
+  { name: "Defi", icon: "account_balance", color: Theme.colors.accentVariant },
+  { name: "GameFi", icon: "sports_esports", color: Theme.colors.warning },
+  { name: "Layer2", icon: "layers", color: Theme.colors.info },
+  { name: "NFT", icon: "image", color: Theme.colors.pink },
+  { name: "更多", icon: "apps", color: Theme.colors.violet },
 ];
 
 function CryptoItem({ crypto }: { crypto: Crypto; index: number }) {
@@ -277,41 +281,34 @@ export default function MarketPage() {
     [],
   );
 
-  const categoriesGrid = useMemo(
-    () =>
-      CATEGORIES.map((cat, i) => (
+  // 不用 useMemo：deps 为空会把首帧的主题色固化下来，切主题后不更新
+  const categoriesGrid = getCategories().map((cat, i) => (
+    <Container
+      key={i}
+      alignment="center"
+      padding={{ vertical: 14 }}
+      decoration={{
+        color: Theme.colors.surface,
+        borderRadius: Theme.borderRadius.l,
+        border: { color: Theme.colors.border, width: 1 },
+      }}
+    >
+      <Column mainAxisAlignment="center">
         <Container
-          key={i}
-          alignment="center"
-          padding={{ vertical: 14 }}
-          decoration={{
-            color: Theme.colors.surface,
-            borderRadius: Theme.borderRadius.l,
-            border: { color: Theme.colors.border, width: 1 },
-          }}
+          width={42}
+          height={42}
+          borderRadius={14}
+          color={cat.color + "22"}
         >
-          <Column mainAxisAlignment="center">
-            <Container
-              width={42}
-              height={42}
-              borderRadius={14}
-              color={cat.color + "22"}
-            >
-              <Center>
-                <Icon name={cat.icon} color={cat.color} size={22} />
-              </Center>
-            </Container>
-            <SizedBox height={8} />
-            <Text
-              text={cat.name}
-              fontSize={12}
-              color={Theme.colors.textPrimary}
-            />
-          </Column>
+          <Center>
+            <Icon name={cat.icon} color={cat.color} size={22} />
+          </Center>
         </Container>
-      )),
-    [],
-  );
+        <SizedBox height={8} />
+        <Text text={cat.name} fontSize={12} color={Theme.colors.textPrimary} />
+      </Column>
+    </Container>
+  ));
 
   const tabBarTabs = useMemo(
     () => TABS.map((t) => <Tab key={t} text={t} />),
@@ -322,38 +319,41 @@ export default function MarketPage() {
     <DefaultTabController length={TABS.length} initialIndex={0}>
       <Scaffold backgroundColor={Theme.colors.background}>
         <CustomScrollView>
-            <SliverAppBar pinned={true} expandedHeight={0}>
-              <Container
-                color={Theme.colors.background}
-              >
-                 <Padding padding={{ left: 16, right: 16, bottom: 10, top: 8 }}>
-                 <Row
-                   mainAxisAlignment="spaceBetween"
-                   crossAxisAlignment="center"
-                 >
-                   <Expanded flex={1}>
-                     <Column crossAxisAlignment="start">
-                       <Text
-                         text="行情"
-                         fontSize={24}
-                         color="white"
-                         fontWeight="bold"
-                       />
-                     </Column>
-                   </Expanded>
-                   <Container
-                     width={40}
-                     height={40}
-                     alignment="center"
-                     decoration={{
-                       color: "#FFFFFF1F",
-                       borderRadius: Theme.borderRadius.full,
-                     }}
-                   >
-                     <Icon name="notifications" color="white" size={22} />
-                   </Container>
-                 </Row>
-               </Padding>
+<SliverAppBar pinned={true} expandedHeight={0}>
+            <Container color={Theme.colors.background}>
+              <Padding padding={{ left: 16, right: 16, bottom: 10, top: 8 }}>
+                <Row
+                  mainAxisAlignment="spaceBetween"
+                  crossAxisAlignment="center"
+                >
+                  <Expanded flex={1}>
+                    <Column crossAxisAlignment="start">
+                      <Text
+                        text="行情"
+                        fontSize={24}
+                        color={Theme.colors.textPrimary}
+                        fontWeight="bold"
+                      />
+                    </Column>
+                  </Expanded>
+                  <Container
+                    width={40}
+                    height={40}
+                    alignment="center"
+                    decoration={{
+                      color: Theme.colors.surfaceVariant,
+                      borderRadius: Theme.borderRadius.full,
+                      border: { color: Theme.colors.border, width: 1 },
+                    }}
+                  >
+                    <Icon
+                      name="notifications"
+                      color={Theme.colors.textPrimary}
+                      size={22}
+                    />
+                  </Container>
+                </Row>
+              </Padding>
             </Container>
           </SliverAppBar>
 

@@ -36,6 +36,7 @@ import { CustomTokenService } from "../../services/CustomTokenService";
 import { formatAmount } from "../../utils/format";
 import { Theme } from "../../theme";
 import { IconBadge } from "../../components/common";
+import { ThemeToggle } from "../../components/ThemeProvider";
 import { Icons, ChainIcons, TokenIcons } from "../../assets/icons";
 
 export default function WalletHomePage() {
@@ -454,6 +455,8 @@ export default function WalletHomePage() {
               </Container>
             </GestureDetector>,
             <SizedBox key="space2" width={8} />,
+            <ThemeToggle key="themeToggle" />,
+            <SizedBox key="spaceTheme" width={8} />,
             <GestureDetector
               key="settings"
               onTap={async () => {
@@ -514,14 +517,14 @@ export default function WalletHomePage() {
                       >
                         <Text
                           text="总资产 (Est.)"
-                          color="#FFFFFFCC"
+                          color={Theme.colors.onHero + "E6"}
                           fontSize={14}
                         />
                         <InkWell onTap={() => setHideBalance(!hideBalance)}>
                           <Container
                             padding={6}
                             decoration={{
-                              color: "#FFFFFF1F",
+                              color: Theme.colors.onHero + "1A",
                               borderRadius: Theme.borderRadius.full,
                             }}
                           >
@@ -531,6 +534,7 @@ export default function WalletHomePage() {
                                   ? Icons.visibilityOff
                                   : Icons.visibility
                               }
+                              tintColor={Theme.colors.onHero}
                               width={18}
                               height={18}
                               fit="contain"
@@ -545,14 +549,14 @@ export default function WalletHomePage() {
                             ? "••••••"
                             : `${displayBalance} ${chain?.symbol || "ETH"}`
                         }
-                        color="white"
+                        color={Theme.colors.onHero}
                         fontSize={36}
                         fontWeight="bold"
                       />
                       <SizedBox height={4} />
                       <Text
                         text={`≈ $${(parseFloat(displayBalance) || 0).toFixed(2)} · ${chain?.name || ""}`}
-                        color="#FFFFFF99"
+                        color={Theme.colors.onHero + "E6"}
                         fontSize={13}
                       />
                       <SizedBox height={18} />
@@ -560,14 +564,18 @@ export default function WalletHomePage() {
                         <Container
                           padding={{ horizontal: 14, vertical: 8 }}
                           decoration={{
-                            color: "#FFFFFF1F",
+                            color: Theme.colors.onHero + "1A",
                             borderRadius: Theme.borderRadius.full,
-                            border: { color: "#FFFFFF33", width: 1 },
+                            border: {
+                              color: Theme.colors.onHero + "33",
+                              width: 1,
+                            },
                           }}
                         >
                           <Row mainAxisSize="min" crossAxisAlignment="center">
                             <Image
                               url={Icons.copy}
+                              tintColor={Theme.colors.onHero}
                               width={14}
                               height={14}
                               fit="contain"
@@ -575,7 +583,7 @@ export default function WalletHomePage() {
                             <SizedBox width={8} />
                             <Text
                               text={formatAddress(fullAddress)}
-                              color="white"
+                              color={Theme.colors.onHero}
                               fontSize={13}
                               fontWeight="500"
                             />
@@ -587,16 +595,10 @@ export default function WalletHomePage() {
                           margin={{ top: 12 }}
                           padding={{ horizontal: 10, vertical: 4 }}
                           decoration={{
-                            color:
-                              entry.source === "chainbase"
-                                ? "#3B82F633"
-                                : "#F59E0B33",
+                            color: Theme.colors.onHero + "1A",
                             borderRadius: Theme.borderRadius.full,
                             border: {
-                              color:
-                                entry.source === "chainbase"
-                                  ? "#3B82F6"
-                                  : "#F59E0B",
+                              color: Theme.colors.onHero + "2E",
                               width: 1,
                             },
                           }}
@@ -605,11 +607,7 @@ export default function WalletHomePage() {
                             text={`数据来源: ${
                               entry.source === "chainbase" ? "Chainbase" : "RPC"
                             }`}
-                            color={
-                              entry.source === "chainbase"
-                                ? "#93C5FD"
-                                : "#FCD34D"
-                            }
+                            color={Theme.colors.onHero + "E6"}
                             fontSize={11}
                             fontWeight="600"
                           />
