@@ -18,7 +18,7 @@ import {
   TabBarView,
   Tab,
 } from "fuickjs";
-import { Theme } from "../../theme";
+import { Theme, ThemeColorKey, themeColor } from "../../theme";
 import { ThemeAwareListView } from "../../components/ThemeAwareListView";
 import { Chip, IconBadge } from "../../components/common";
 import { DAppBridgeService } from "../../services/DAppBridgeService";
@@ -32,14 +32,15 @@ interface DApp {
 
 interface Category {
   title: string;
-  accent: string;
+  /** 语义色键而非具体色值：静态数据不该在 import 时冻结颜色 */
+  accent: ThemeColorKey;
   apps: DApp[];
 }
 
 const SOLANA_CATEGORIES: Category[] = [
   {
     title: "DeFi",
-    accent: Theme.colors.primary,
+    accent: "primary",
     apps: [
       { name: "Jupiter", url: "https://jup.ag", desc: "Solana 聚合交易" },
       { name: "Raydium", url: "https://raydium.io", desc: "AMM / 流动性池" },
@@ -54,7 +55,7 @@ const SOLANA_CATEGORIES: Category[] = [
   },
   {
     title: "NFT",
-    accent: Theme.colors.accent,
+    accent: "accent",
     apps: [
       { name: "Magic Eden", url: "https://magiceden.io", desc: "NFT 市场" },
       { name: "Tensor", url: "https://tensor.trade", desc: "NFT 交易" },
@@ -62,7 +63,7 @@ const SOLANA_CATEGORIES: Category[] = [
   },
   {
     title: "工具",
-    accent: Theme.colors.accent,
+    accent: "accent",
     apps: [
       {
         name: "Solscan",
@@ -83,7 +84,7 @@ const SOLANA_CATEGORIES: Category[] = [
 const MAINNET_CATEGORIES: Category[] = [
   {
     title: "DeFi",
-    accent: Theme.colors.primary,
+    accent: "primary",
     apps: [
       { name: "Uniswap", url: "https://app.uniswap.org", desc: "去中心化交易" },
       { name: "1inch", url: "https://app.1inch.dev", desc: "聚合交易" },
@@ -100,7 +101,7 @@ const MAINNET_CATEGORIES: Category[] = [
   },
   {
     title: "NFT",
-    accent: Theme.colors.accent,
+    accent: "accent",
     apps: [
       { name: "OpenSea", url: "https://opensea.io", desc: "NFT 市场" },
       { name: "Blur", url: "https://blur.io", desc: "NFT 交易" },
@@ -108,7 +109,7 @@ const MAINNET_CATEGORIES: Category[] = [
   },
   {
     title: "工具",
-    accent: Theme.colors.accent,
+    accent: "accent",
     apps: [
       { name: "Etherscan", url: "https://etherscan.io", desc: "区块浏览器" },
     ],
@@ -353,6 +354,9 @@ function TabContent({
   query: string;
   onOpen: (app: DApp) => void;
 }) {
+  // 分类色在渲染时从当前主题解析
+  const accentOf = (c: Category) => themeColor(c.accent);
+
   const filtered = categories
     .map((c) => ({
       ...c,
@@ -392,7 +396,7 @@ function TabContent({
                   height={16}
                   margin={{ right: 8 }}
                   decoration={{
-                    color: cat.accent,
+                    color: accentOf(cat),
                     borderRadius: Theme.borderRadius.full,
                   }}
                 />
@@ -410,7 +414,7 @@ function TabContent({
                 itemBuilder={(index: number) => (
                   <DAppCard
                     app={cat.apps[index]}
-                    accent={cat.accent}
+                    accent={accentOf(cat)}
                     onTap={() => onOpen(cat.apps[index])}
                   />
                 )}

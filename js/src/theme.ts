@@ -343,6 +343,35 @@ export const Theme = {
 export type ThemeColors = ThemePalette;
 
 /**
+ * 语义色键。用于「模块级静态数据」里标记颜色：
+ * 数据本身是静态的，但颜色必须在渲染时从当前主题解析，
+ * 否则会在 bundle 首次 import 时被冻结，切主题后不更新。
+ */
+export type ThemeColorKey =
+  | "primary"
+  | "primaryVariant"
+  | "accent"
+  | "accentVariant"
+  | "success"
+  | "warning"
+  | "error"
+  | "info"
+  | "textPrimary"
+  | "textSecondary"
+  | "textHint"
+  | "surface"
+  | "surfaceVariant"
+  | "border"
+  | "divider"
+  | "pink"
+  | "violet";
+
+/** 按语义色键取当前主题下的实际色值 */
+export function themeColor(key: ThemeColorKey): string {
+  return Theme.colors[key];
+}
+
+/**
  * 每个页面组件在顶部调用一次：订阅主题变化，切换时重渲染自身子树。
  * （框架是标准 React 语义，父组件 setState 会重跑整棵子树。）
  */
