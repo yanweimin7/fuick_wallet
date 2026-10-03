@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   Scaffold,
   AppBar,
-  ListView,
   Image,
   useNavigator,
   Text,
@@ -18,6 +17,7 @@ import { PasswordService } from "../../services/PasswordService";
 import WalletDeleteDialog from "./WalletDeleteDialog";
 import WalletClearDialog from "./WalletClearDialog";
 import { Theme } from "../../theme";
+import { ThemeAwareListView } from "../../components/ThemeAwareListView";
 import { Card, ThemeButton } from "../../components/common";
 import { Icons } from "../../assets/icons";
 
@@ -109,7 +109,7 @@ export default function WalletListPage(props: {
           <Column>
             <Container height={1} color={Theme.colors.divider} />
             <Expanded>
-              <ListView
+              <ThemeAwareListView
                 padding={{ top: 16, left: 16, right: 16, bottom: 16 }}
                 itemCount={wallets.length}
                 itemBuilder={(index: number) => {

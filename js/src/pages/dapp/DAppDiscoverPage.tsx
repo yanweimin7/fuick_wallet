@@ -13,13 +13,13 @@ import {
   SafeArea,
   SingleChildScrollView,
   Expanded,
-  ListView,
   DefaultTabController,
   TabBar,
   TabBarView,
   Tab,
 } from "fuickjs";
 import { Theme } from "../../theme";
+import { ThemeAwareListView } from "../../components/ThemeAwareListView";
 import { Chip, IconBadge } from "../../components/common";
 import { DAppBridgeService } from "../../services/DAppBridgeService";
 
@@ -403,7 +403,7 @@ function TabContent({
                   color={Theme.colors.textPrimary}
                 />
               </Row>
-              <ListView
+              <ThemeAwareListView
                 shrinkWrap={true}
                 physics="never"
                 itemCount={cat.apps.length}
